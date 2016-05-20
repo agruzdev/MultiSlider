@@ -3,10 +3,8 @@ package amaze.soft
 import java.net.InetSocketAddress
 
 import akka.actor._
-import akka.camel.CamelExtension
 import akka.io.{IO, Tcp}
-import org.apache.camel.component.mina2.Mina2Component
-
+import org.slf4j.LoggerFactory
 
 /**
  * Created by Alexey on 19.05.2016.
@@ -14,35 +12,30 @@ import org.apache.camel.component.mina2.Mina2Component
  */
 
 object ServerApp extends App {
-
-  val system = ActorSystem("MultiSliderActors")
-  val camel = CamelExtension(system)
-  camel.context.addComponent("mina2", new Mina2Component(camel.context))
-  val server = system.actorOf(Props[ServerApp])
-  println("Actors system is created!")
+  private val logger = LoggerFactory.getLogger(classOf[ServerApp])
+  val actorsSystem = ActorSystem("MultiSliderActors")
+  logger.info("Actors system is created!")
+  val server = actorsSystem.actorOf(Props[ServerApp], ServerApp.getClass.getName)
+  logger.info("Server is created!")
 }
 
-class SimplisticHandler extends Actor {
-  import Tcp._
-  def receive = {
-    case Received(data) => sender() ! println(data)
-    case PeerClosed     => println("disconnected"); context stop self
-  }
-}
 
 class ServerApp extends Actor {
-
   import Tcp._
-  IO(Tcp)(ServerApp.system) ! Bind(self, new InetSocketAddress("localhost", 8800))
+  IO(Tcp)(ServerApp.actorsSystem) ! Bind(self, new InetSocketAddress("localhost", 8800))
 
   def receive = {
-    case b @ Bound(localAddress) => println("listening " + localAddress)
+    case b @ Bound(localAddress) =>
+      ServerApp.logger.info("Listening to " + localAddress)
 
-    case CommandFailed(_: Bind) => context stop self
+    case CommandFailed(_: Bind) =>
+      ServerApp.logger.info("Fail"); context stop self
 
     case c @ Connected(remote, local) =>
-      val handler = context.actorOf(Props[SimplisticHandler])
-      val connection = sender()
-      connection ! Register(handler)
+      ServerApp.logger.info("remote = " + remote)
+      ServerApp.logger.info("local  = " + local)
+      val _connection = sender()
+      val _handler = context.actorOf(Props(classOf[LobbyActor], _connection))
+      _connection ! Register(_handler)
   }
 }
