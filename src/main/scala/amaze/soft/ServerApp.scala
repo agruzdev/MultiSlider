@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
  */
 
 object ServerApp extends App {
-  private val logger = LoggerFactory.getLogger(classOf[ServerApp])
+  private val logger = LoggerFactory.getLogger(ServerApp.getClass.getName)
   val actorsSystem = ActorSystem("MultiSliderActors")
   logger.info("Actors system is created!")
   val server = actorsSystem.actorOf(Props[ServerApp], ServerApp.getClass.getName)
