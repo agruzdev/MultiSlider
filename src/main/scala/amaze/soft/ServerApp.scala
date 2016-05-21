@@ -8,7 +8,8 @@ import org.slf4j.LoggerFactory
 
 /**
  * Created by Alexey on 19.05.2016.
- *
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Alexey Gruzdev
  */
 
 object ServerApp extends App {
