@@ -1,0 +1,10 @@
+// All commands should be encoded in UTF-8
+
+{"jsonClass":"Message$CreateRoom","playerName":"doge","roomName":"woof"}
+{"jsonClass":"Message$CloseRoom"}
+{"jsonClass":"Message$GetRooms"}
+
+{"jsonClass":"Message$JoinRoom","playerName":"cate","roomName":"meow"}
+{"jsonClass":"Message$LeaveRoom"}
+
+{"jsonClass":"Message$EjectPlayer","playerName":"cate"}
