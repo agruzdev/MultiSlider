@@ -18,23 +18,29 @@ object ServerApp extends App {
   logger.info("Actors system is created!")
   val server = actorsSystem.actorOf(Props[ServerApp], ServerApp.getClass.getName)
   logger.info("Server is created!")
+
+  val m_ip   = if(args.length > 1) args(0) else "localhost"
+  val m_port = if(args.length > 2) args(1).toInt else 8800
 }
 
 
 class ServerApp extends Actor {
+  import ServerApp._
   import Tcp._
-  IO(Tcp)(ServerApp.actorsSystem) ! Bind(self, new InetSocketAddress("localhost", 8800))
+
+  logger.info("Create socket for " + m_ip + ":" + m_port)
+  IO(Tcp)(ServerApp.actorsSystem) ! Bind(self, new InetSocketAddress(m_ip, m_port))
 
   def receive = {
     case b @ Bound(localAddress) =>
-      ServerApp.logger.info("Listening to " + localAddress)
+      logger.info("Listening to " + localAddress)
 
     case CommandFailed(_: Bind) =>
-      ServerApp.logger.info("Fail"); context stop self
+      logger.info("Fail"); context stop self
 
     case c @ Connected(remote, local) =>
-      ServerApp.logger.info("remote = " + remote)
-      ServerApp.logger.info("local  = " + local)
+      logger.info("remote = " + remote)
+      logger.info("local  = " + local)
       val _connection = sender()
       val _handler = context.actorOf(Props(classOf[LobbyActor], _connection))
       _connection ! Register(_handler)
