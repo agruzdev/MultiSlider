@@ -5,6 +5,7 @@ package amaze.soft
  *
  */
 object Constants {
+  val RESPONCE_GREETINGS = "Hello, Client!"
   val RESPONSE_SUCC = "SUCC"
   val RESPONSE_SUCK = "SUCK"
 }

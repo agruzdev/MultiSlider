@@ -3,6 +3,7 @@ package amaze.soft
 import akka.actor.{Actor, ActorRef}
 import akka.io.Tcp
 import akka.util.ByteString
+import amaze.soft.Message._
 import net.liftweb.json
 import net.liftweb.json.{DefaultFormats, ShortTypeHints}
 import org.slf4j.LoggerFactory
@@ -14,13 +15,12 @@ import org.slf4j.LoggerFactory
 
 object LobbyActor
 {
+  case class LobbyInfo(hostName: String, roomName: String)
+
   object State extends Enumeration {
     type State = Value
     val Virgin, Opened, Ready = Value
   }
-
-  trait JsonMessage
-  case class RegisterRoom(playerName: String, roomName: String) extends JsonMessage
 
   val logger = LoggerFactory.getLogger(LobbyActor.getClass.getName)
 }
@@ -32,8 +32,9 @@ class LobbyActor(
   import LobbyActor._
   import Tcp._
 
-  implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(classOf[RegisterRoom])))
+  implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(classOf[RegisterRoom], classOf[GetRooms])))
   var state = Virgin
+  val selfId = self.toString()
 
   private def shutdown() = {
     logger.info("Disconnected")
@@ -41,9 +42,8 @@ class LobbyActor(
   }
 
   override def preStart() = {
-    logger.info("Created hadler for " + host.path)
-    Depot.registerLobby("1", self)
-    host ! Tcp.Write(ByteString("Hello Client!\n"))
+    logger.info("Created handler for " + host.path)
+    host ! Tcp.Write(ByteString(Constants.RESPONCE_GREETINGS))
   }
 
   override def receive = {
@@ -52,16 +52,26 @@ class LobbyActor(
         val msg = json.parse(data.decodeString("UTF-8")).extract[JsonMessage]
         logger.info(msg.toString)
         msg match {
-          case RegisterRoom(player, room) => logger.error("Register message!")
+          case RegisterRoom(player, room) =>
+            logger.info("Got a RegisterRoom message!")
+            if(!Depot.registerLobby(selfId, LobbyInfo(player, room))){
+              logger.warn("Room is already created!")
+              sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
+            } else {
+              sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
+            }
+          case GetRooms() =>
+            logger.info("Got a GetRooms message!")
+            sender() ! Tcp.Write(ByteString(json.Serialization.write(Depot.getLobbies)))
           case _ => logger.error("Unknown message!")
         }
-        sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC + "\n"))
       } catch {
         case err: Exception =>
-          logger.warn("Failed to parse json message")
-          sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK + "\n"))
+          logger.error(err.getMessage, err.getCause)
+          err.printStackTrace()
+          sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
       }
-    case PeerClosed     =>
+    case PeerClosed =>
       shutdown()
     case ErrorClosed(cause) =>
       logger.warn("Connection is closed; Reason = " + cause)
@@ -71,6 +81,7 @@ class LobbyActor(
   }
 
   override def postStop() = {
+    Depot.unregisterLobby(selfId)
     logger.info("Destroyed handler for " + host.path)
   }
 }
