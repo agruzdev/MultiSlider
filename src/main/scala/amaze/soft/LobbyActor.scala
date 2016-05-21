@@ -3,6 +3,8 @@ package amaze.soft
 import akka.actor.{Actor, ActorRef}
 import akka.io.Tcp
 import akka.util.ByteString
+import net.liftweb.json
+import net.liftweb.json.{DefaultFormats, ShortTypeHints}
 import org.slf4j.LoggerFactory
 
 /**
@@ -12,14 +14,26 @@ import org.slf4j.LoggerFactory
 
 object LobbyActor
 {
+  object State extends Enumeration {
+    type State = Value
+    val Virgin, Opened, Ready = Value
+  }
+
+  trait JsonMessage
+  case class RegisterRoom(playerName: String, roomName: String) extends JsonMessage
+
   val logger = LoggerFactory.getLogger(LobbyActor.getClass.getName)
 }
 
 class LobbyActor(
   val host: ActorRef
 ) extends Actor {
+  import LobbyActor.State._
   import LobbyActor._
   import Tcp._
+
+  implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(classOf[RegisterRoom])))
+  var state = Virgin
 
   private def shutdown() = {
     logger.info("Disconnected")
@@ -34,8 +48,19 @@ class LobbyActor(
 
   override def receive = {
     case Received(data) =>
-      logger.info(data.toString())
-      sender() ! Tcp.Write(ByteString("OK\n"))
+      try {
+        val msg = json.parse(data.decodeString("UTF-8")).extract[JsonMessage]
+        logger.info(msg.toString)
+        msg match {
+          case RegisterRoom(player, room) => logger.error("Register message!")
+          case _ => logger.error("Unknown message!")
+        }
+        sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC + "\n"))
+      } catch {
+        case err: Exception =>
+          logger.warn("Failed to parse json message")
+          sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK + "\n"))
+      }
     case PeerClosed     =>
       shutdown()
     case ErrorClosed(cause) =>

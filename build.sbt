@@ -28,3 +28,6 @@ libraryDependencies += "org.apache.camel" % "camel-mina2" % "2.17.1"
 // http://mvnrepository.com/artifact/org.apache.camel/camel-http
 libraryDependencies += "org.apache.camel" % "camel-http" % "2.17.1"
 
+// http://mvnrepository.com/artifact/net.liftweb/lift-json_2.11
+libraryDependencies += "net.liftweb" % "lift-json_2.11" % "3.0-M8"
+
