@@ -8,6 +8,8 @@ package amaze.soft
 object BackendMessage {
   trait JsonMessage
 
+  //-------------------------------------------------------------------------------
+  // Messages from client to server
   /**
    * Session message wrapper
    * @param sessionId id of destination session
@@ -16,7 +18,25 @@ object BackendMessage {
   case class Envelop(sessionId: Int, data: String) extends JsonMessage
 
   /**
-   * Sent by client to join session
+   * Sent by client when it is ready to begin session
    */
-  case class Join(playerName: String) extends JsonMessage
+  case class Ready(playerName: String) extends JsonMessage
+
+  /**
+   * Update current player private data
+   */
+  case class Update(playerName: String, timestamp: Long, data: String) extends  JsonMessage
+
+  //-------------------------------------------------------------------------------
+  // Messages from server to client
+
+  /**
+   * Indicates that all players are joined and session can be started
+   */
+  case class Start() extends JsonMessage
+
+  /**
+   * Universal response - send current session state
+   */
+  case class SessionState() extends JsonMessage
 }

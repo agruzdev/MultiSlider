@@ -22,6 +22,10 @@ object Depot {
   var frontend: ActorRef = null
   var backend:  ActorRef = null
 
+  var ip_address = ""
+  var port_frontend = 0
+  var port_backend = 0
+
   def registerLobby(roomName: String, info: RoomInfo) : Boolean = {
     var status = false
     logger.info("Register lobby \"" + roomName + "\" created by \"" + info.host.name + "\"")
@@ -44,4 +48,13 @@ object Depot {
   }
 
   def getLobbies = lobbies
+
+
+  def getAddressFront = {
+    ip_address + ":" + port_frontend.toString
+  }
+
+  def getAddressBack = {
+    ip_address + ":" + port_backend.toString
+  }
 }

@@ -23,12 +23,12 @@ object Frontend extends App {
   private val m_logger = LoggerFactory.getLogger(Frontend.getClass.getName)
 
   // Cmd arguments: <ip> <frontend port> <backend port>
-  private val m_ip   = if(args.length > 1) args(0) else "localhost"
-  private val m_portFront = if(args.length > 2) args(1).toInt else 8800
-  private val m_portBack  = if(args.length > 3) args(2).toInt else 8700
+  Depot.ip_address    = if(args.length > 1) args(0) else "localhost"
+  Depot.port_frontend = if(args.length > 2) args(1).toInt else 8800
+  Depot.port_backend  = if(args.length > 3) args(2).toInt else 8700
 
   Depot.frontend = Depot.actorsSystem.actorOf(Props[Frontend], Constants.FRONTEND_NAME)
-  Depot.backend  = Depot.actorsSystem.actorOf(Props(classOf[Backend], m_ip, m_portBack), Constants.BACKEND_NAME)
+  Depot.backend  = Depot.actorsSystem.actorOf(Props(classOf[Backend], Depot.ip_address, Depot.port_backend), Constants.BACKEND_NAME)
 }
 
 
@@ -37,8 +37,8 @@ class Frontend extends Actor {
   import Tcp._
 
   m_logger.info("Frontend is created!")
-  IO(Tcp)(Depot.actorsSystem) ! Bind(self, new InetSocketAddress(m_ip, m_portFront))
-  m_logger.info("Created TCP socket for " + m_ip + ":" + m_portFront)
+  IO(Tcp)(Depot.actorsSystem) ! Bind(self, new InetSocketAddress(Depot.ip_address, Depot.port_frontend))
+  m_logger.info("Created TCP socket for " + Depot.ip_address + ":" + Depot.port_frontend)
 
   def receive = {
     case b @ Bound(localAddress) =>

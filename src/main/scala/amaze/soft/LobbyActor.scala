@@ -30,7 +30,7 @@ object LobbyActor
   // States of lobby
   object State extends Enumeration {
     type State = Value
-    val Virgin, Host, Joined = Value
+    val Virgin, Host, Joined, Zombie = Value
   }
 
   // Send message asking to add self to a lobby
@@ -50,8 +50,9 @@ class LobbyActor(
   import LobbyActor._
   import Tcp._
 
-  private implicit val formats = DefaultFormats.withHints(ShortTypeHints(
-    List(classOf[CreateRoom], classOf[CloseRoom], classOf[GetRooms], classOf[JoinRoom], classOf[LeaveRoom], classOf[EjectPlayer], classOf[StartSession])))
+  private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
+    classOf[CreateRoom], classOf[CloseRoom], classOf[GetRooms], classOf[JoinRoom], classOf[LeaveRoom],
+    classOf[EjectPlayer], classOf[StartSession], classOf[SessionStarted])))
 
   // Current lobby state
   var m_state = Virgin
@@ -148,16 +149,21 @@ class LobbyActor(
           //---------------------------------------------------------------------
           case StartSession() =>
             logger.info("Got a StartSession message!")
-            implicit val timeout = Timeout(Constants.FUTURE_TIMEOUT)
-            val sessionId = Await.result(Depot.backend ? CreateSession(m_room.name), timeout.duration).asInstanceOf[Int]
-            if(sessionId >= 0) {
-              sender() ! Tcp.Write(ByteString(sessionId toString))
+            if(m_state == Host) {
+              implicit val timeout = Timeout(Constants.FUTURE_TIMEOUT)
+              val sessionId = Await.result(Depot.backend ? CreateSession(
+                m_room.name, m_players.values.map(info => info.name).toList), timeout.duration).asInstanceOf[Int]
+              if (sessionId >= 0) {
+                m_players.values.foreach(info => { info.actor ! SessionStarted(Depot.getAddressBack, m_room.name, sessionId) })
+              } else {
+                sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
+              }
             } else {
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
           //---------------------------------------------------------------------
           case _ => logger.error("Unknown message!")
-      }
+        }
       } catch {
         case err: Exception =>
           logger.error(err.getMessage, err.getCause)
@@ -187,6 +193,13 @@ class LobbyActor(
         m_remote_user ! Tcp.Write(ByteString(Constants.MESSAGE_EJECTED))
         m_state = Virgin
       }
+
+    case SessionStarted(address, name, sessionId) =>
+      logger.info("Got a SessionStarted message!")
+      // forward to remote client
+      m_remote_user ! Tcp.Write(ByteString(json.Serialization.write(SessionStarted(address, name, sessionId))))
+      m_state = Zombie
+
     //---------------------------------------------------------------------
     case unknown: Any =>
       logger.warn("Got unknown message! Msg = " + unknown.toString)
@@ -202,6 +215,10 @@ class LobbyActor(
         Depot.unregisterLobby(m_room.name)
       case Joined => leaveRoomImpl()
       case Virgin => ()
+      case Zombie =>
+        if(m_room.host.actor == self) {
+          Depot.unregisterLobby(m_room.name)
+        }
     }
     Depot.frontend ! LobbyClosed()
     logger.info("Destroyed handler for " + m_remote_user.path)

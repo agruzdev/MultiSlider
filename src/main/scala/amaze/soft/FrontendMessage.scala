@@ -48,4 +48,10 @@ object FrontendMessage {
    * Start game session for all current players
    */
   case class StartSession() extends JsonMessage
+
+
+  /**
+   * Sent when session is created
+   */
+  case class SessionStarted(address: String, name: String, id: Int) extends JsonMessage
 }

@@ -4,7 +4,7 @@
 {"jsonClass":"FrontendMessage$CloseRoom"}
 {"jsonClass":"FrontendMessage$GetRooms"}
 
-{"jsonClass":"FrontendMessage$JoinRoom","playerName":"cate","roomName":"meow"}
+{"jsonClass":"FrontendMessage$JoinRoom","playerName":"cate","roomName":"woof"}
 {"jsonClass":"FrontendMessage$LeaveRoom"}
 
 {"jsonClass":"FrontendMessage$EjectPlayer","playerName":"cate"}
@@ -13,4 +13,7 @@
 
 //------------------------------------------
 
-{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"<data>"}
+{"jsonClass":"FrontendMessage$Ready","playerName":"doge"}
+{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"{\"jsonClass\":\"BackendMessage$Ready\",\"playerName\":\"doge\"} "}
+
+{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"{\"jsonClass\":\"BackendMessage$Update\",\"playerName\":\"doge\",\"timestamp\":1,\"data\":\"such data\"} "}

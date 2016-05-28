@@ -27,7 +27,7 @@ object Backend {
    * Creates new session with specified name
    * Sender will get session id if success (id >= 0) or -1 in the case of fail
    */
-  case class CreateSession(sessionName: String)
+  case class CreateSession(sessionName: String, players: List[String])
 
   /**
    * Closes session.
@@ -82,11 +82,11 @@ class Backend(m_ip: String, m_port: Int) extends Actor {
       }
     //----------------------------------------------------------
     // From lobby actors
-    case CreateSession(sessionName) =>
+    case CreateSession(sessionName, players) =>
       m_logger.info("Got a CreateSession message")
       val id = m_sessionsLock synchronized { if(m_freeSessions.nonEmpty) m_freeSessions.pop() else -1 }
       if(id >= 0) {
-        m_sessions.update(id, SessionInfo(id, sessionName, Depot.actorsSystem.actorOf(Props[SessionActor])))
+        m_sessions.update(id, SessionInfo(id, sessionName, Depot.actorsSystem.actorOf(Props(classOf[SessionActor], players))))
         m_logger.info("Created session \"" + sessionName + "\" with id = " + id)
       }
       sender() ! id
