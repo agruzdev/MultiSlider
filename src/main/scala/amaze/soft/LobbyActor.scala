@@ -216,7 +216,7 @@ class LobbyActor(
       case Joined => leaveRoomImpl()
       case Virgin => ()
       case Zombie =>
-        if(m_room.host.actor == self) {
+        if(m_room != null && m_room.host.actor == self) {
           Depot.unregisterLobby(m_room.name)
         }
     }

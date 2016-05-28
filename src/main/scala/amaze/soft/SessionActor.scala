@@ -5,6 +5,7 @@ import java.net.InetSocketAddress
 import akka.actor.{Actor, ActorRef}
 import akka.io.Udp
 import akka.util.ByteString
+import amaze.soft.Backend.CloseSession
 import amaze.soft.BackendMessage._
 import net.liftweb.json
 import net.liftweb.json.{DefaultFormats, ShortTypeHints}
@@ -39,12 +40,12 @@ object SessionActor
  * The MIT License (MIT)
  * Copyright (c) 2016 Alexey Gruzdev
  */
-class SessionActor(players: List[String]) extends Actor{
+class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Actor{
   import SessionActor.State._
   import SessionActor._
 
   private val m_logger = LoggerFactory.getLogger(Frontend.getClass.getName)
-  m_logger.info("Session Actor is created!")
+  m_logger.info("Session \"" + m_name + "\" is created!")
 
   val m_stats: scala.collection.mutable.HashMap[String, PlayerStatistics] =
     scala.collection.mutable.HashMap(players.map(name => {name -> null}).toSeq:_*)
@@ -53,10 +54,10 @@ class SessionActor(players: List[String]) extends Actor{
   var m_state = Waiting
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
-    classOf[Ready], classOf[Start], classOf[Update], classOf[SessionState])))
+    classOf[Ready], classOf[Start], classOf[Update], classOf[SessionState], classOf[Quit])))
 
   private def gatherSessionData(): String = {
-    json.Serialization write (m_stats.map{case (name, stats) => PlayerData(name, stats.privateData)} toList)
+    json.Serialization write (m_stats.map{case (name, stats) => PlayerData(name, if(stats != null) stats.privateData else "")} toList)
   }
 
   override def receive = {
@@ -94,13 +95,27 @@ class SessionActor(players: List[String]) extends Actor{
                   m_logger.info("Got a Update message")
                   val playerStats = m_stats.get(playerName)
                   if(playerStats.isDefined){
-                    if(playerStats.get.updateTimestamp < timestamp) {
+                    if(playerStats.get != null && playerStats.get.updateTimestamp < timestamp) {
                       m_stats.update(playerName, PlayerStatistics(playerStats.get.address, timestamp, privateData))
                       socket ! Udp.Send(ByteString(gatherSessionData()), address)
                     } else {
                       m_logger.info("[Running] Got outdated Update message")
                     }
                   }
+
+                case Quit(playerName) =>
+                  m_logger.info("Got a Quit message")
+                  val playerStats = m_stats.get(playerName)
+                  if(playerStats.isDefined && playerStats.get != null){
+                    m_stats.update(playerName, null)
+                    m_logger.info("\"" + playerName + "\" quits session \"" + m_name + "\"")
+                    if(m_stats.values.forall(_ == null)){
+                      m_logger.info("All players left session \"" + m_name + "\". Exiting.")
+                      Depot.backend ! CloseSession(m_id)
+                      context stop self
+                    }
+                  }
+
                 case _ => m_logger.error("[Running] Unexpected message")
               }
           //--------------------------------------------------------

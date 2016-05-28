@@ -27,6 +27,11 @@ object BackendMessage {
    */
   case class Update(playerName: String, timestamp: Long, data: String) extends  JsonMessage
 
+  /**
+   * Quit game session. After the last player quites the session will be destroyed
+   */
+  case class Quit(playerName: String) extends JsonMessage
+
   //-------------------------------------------------------------------------------
   // Messages from server to client
 

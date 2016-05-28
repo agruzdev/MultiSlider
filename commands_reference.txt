@@ -13,7 +13,12 @@
 
 //------------------------------------------
 
-{"jsonClass":"FrontendMessage$Ready","playerName":"doge"}
-{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"{\"jsonClass\":\"BackendMessage$Ready\",\"playerName\":\"doge\"} "}
 
-{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"{\"jsonClass\":\"BackendMessage$Update\",\"playerName\":\"doge\",\"timestamp\":1,\"data\":\"such data\"} "}
+{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"{\"jsonClass\":\"BackendMessage$Ready\",\"playerName\":\"doge\"} "}
+{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"{\"jsonClass\":\"BackendMessage$Ready\",\"playerName\":\"cate\"} "}
+
+{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"{\"jsonClass\":\"BackendMessage$Update\",\"playerName\":\"doge\",\"timestamp\":10,\"data\":\"such data\"} "}
+{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"{\"jsonClass\":\"BackendMessage$Update\",\"playerName\":\"cate\",\"timestamp\":12,\"data\":\"nyan\"} "}
+
+{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"{\"jsonClass\":\"BackendMessage$Quit\",\"playerName\":\"doge\"} "}
+{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"{\"jsonClass\":\"BackendMessage$Quit\",\"playerName\":\"cate\"} "}

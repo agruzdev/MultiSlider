@@ -69,7 +69,9 @@ class Backend(m_ip: String, m_port: Int) extends Actor {
           //----------------------------------------------------------
           case Envelop(sessionId, packedData) =>
             m_logger.info("Backend[ready]: Forward envelop for session " + sessionId)
-            m_sessions(sessionId).handler ! SignedEnvelop(socket, remote, packedData)
+            if(m_sessions(sessionId) != null) {
+              m_sessions(sessionId).handler ! SignedEnvelop(socket, remote, packedData)
+            }
           //----------------------------------------------------------
           case _ =>
             m_logger.error("Backend[ready]: Unknown message!")
@@ -86,7 +88,7 @@ class Backend(m_ip: String, m_port: Int) extends Actor {
       m_logger.info("Got a CreateSession message")
       val id = m_sessionsLock synchronized { if(m_freeSessions.nonEmpty) m_freeSessions.pop() else -1 }
       if(id >= 0) {
-        m_sessions.update(id, SessionInfo(id, sessionName, Depot.actorsSystem.actorOf(Props(classOf[SessionActor], players))))
+        m_sessions.update(id, SessionInfo(id, sessionName, Depot.actorsSystem.actorOf(Props(classOf[SessionActor], id, sessionName, players))))
         m_logger.info("Created session \"" + sessionName + "\" with id = " + id)
       }
       sender() ! id
