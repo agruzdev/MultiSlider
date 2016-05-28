@@ -23,9 +23,9 @@ object Frontend extends App {
   private val m_logger = LoggerFactory.getLogger(Frontend.getClass.getName)
 
   // Cmd arguments: <ip> <frontend port> <backend port>
-  Depot.ip_address    = if(args.length > 1) args(0) else "localhost"
-  Depot.port_frontend = if(args.length > 2) args(1).toInt else 8800
-  Depot.port_backend  = if(args.length > 3) args(2).toInt else 8700
+  Depot.ip_address    = if(args.length > 0) args(0) else "localhost"
+  Depot.port_frontend = if(args.length > 1) args(1).toInt else 8800
+  Depot.port_backend  = if(args.length > 2) args(2).toInt else 8700
 
   Depot.frontend = Depot.actorsSystem.actorOf(Props[Frontend], Constants.FRONTEND_NAME)
   Depot.backend  = Depot.actorsSystem.actorOf(Props(classOf[Backend], Depot.ip_address, Depot.port_backend), Constants.BACKEND_NAME)
