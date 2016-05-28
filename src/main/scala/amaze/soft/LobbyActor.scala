@@ -4,13 +4,15 @@ import akka.actor.{Actor, ActorRef}
 import akka.io.Tcp
 import akka.pattern.ask
 import akka.util.{Timeout, ByteString}
-import amaze.soft.Message._
+import amaze.soft.Backend.CreateSession
+import amaze.soft.Frontend.LobbyClosed
+import amaze.soft.FrontendMessage._
 import net.liftweb.json
 import net.liftweb.json.{DefaultFormats, ShortTypeHints}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
-
+import scala.collection.JavaConversions._
 
 /**
  * Created by Alexey on 20.05.2016.
@@ -49,7 +51,7 @@ class LobbyActor(
   import Tcp._
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(
-    List(classOf[CreateRoom], classOf[CloseRoom], classOf[GetRooms], classOf[JoinRoom], classOf[LeaveRoom], classOf[EjectPlayer])))
+    List(classOf[CreateRoom], classOf[CloseRoom], classOf[GetRooms], classOf[JoinRoom], classOf[LeaveRoom], classOf[EjectPlayer], classOf[StartSession])))
 
   // Current lobby state
   var m_state = Virgin
@@ -78,7 +80,7 @@ class LobbyActor(
     // User messages got by TCP
     case Received(data) =>
       try {
-        val msg = json.parse(data.decodeString("UTF-8")).extract[JsonMessage]
+        val msg = json.parse(data.decodeString(Constants.MESSAGE_ENCODING)).extract[JsonMessage]
         logger.info(msg.toString)
         msg match {
           //---------------------------------------------------------------------
@@ -107,14 +109,14 @@ class LobbyActor(
           case GetRooms() =>
             logger.info("Got a GetRooms message!")
             sender() ! Tcp.Write(ByteString(json.Serialization.write(Depot.getLobbies.map({ case (name, info) => RoomHeader(name, info.host.name) }).toList)))
+
           //---------------------------------------------------------------------
           case JoinRoom(player, roomName) =>
             logger.info("Got a JoinRoom message!")
             if (m_state == Virgin) {
-              val target = Depot.getLobbies.get(roomName)
-              if (target.isDefined) {
+              val m_room = Depot.getLobbies.get(roomName)
+              if (m_room != null) {
                 m_myself = PlayerInfo(player, self)
-                m_room = target.get
                 implicit val timeout = Timeout(Constants.FUTURE_TIMEOUT)
                 if (Await.result(m_room.host.actor ? AddPlayer(m_myself), timeout.duration).asInstanceOf[Boolean]) {
                   m_state = Joined
@@ -140,6 +142,16 @@ class LobbyActor(
               } else {
                 sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
               }
+            } else {
+              sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
+            }
+          //---------------------------------------------------------------------
+          case StartSession() =>
+            logger.info("Got a StartSession message!")
+            implicit val timeout = Timeout(Constants.FUTURE_TIMEOUT)
+            val sessionId = Await.result(Depot.backend ? CreateSession(m_room.name), timeout.duration).asInstanceOf[Int]
+            if(sessionId >= 0) {
+              sender() ! Tcp.Write(ByteString(sessionId toString))
             } else {
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
@@ -191,6 +203,7 @@ class LobbyActor(
       case Joined => leaveRoomImpl()
       case Virgin => ()
     }
+    Depot.frontend ! LobbyClosed()
     logger.info("Destroyed handler for " + m_remote_user.path)
   }
 

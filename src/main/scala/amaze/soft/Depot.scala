@@ -1,5 +1,8 @@
 package amaze.soft
 
+import java.util
+
+import akka.actor.{ActorRef, ActorSystem}
 import amaze.soft.LobbyActor.RoomInfo
 import org.slf4j.LoggerFactory
 
@@ -11,14 +14,20 @@ import org.slf4j.LoggerFactory
 object Depot {
   private val logger = LoggerFactory.getLogger(Depot.getClass.getName)
   private val lock: Object = new Object
-  private var lobbies: Map[String, RoomInfo] = Map()
+  private val lobbies: util.TreeMap[String, RoomInfo] = new util.TreeMap()
+
+  val actorsSystem = ActorSystem("MultiSliderActors")
+  logger.info("Actors system is created!")
+
+  var frontend: ActorRef = null
+  var backend:  ActorRef = null
 
   def registerLobby(roomName: String, info: RoomInfo) : Boolean = {
     var status = false
     logger.info("Register lobby \"" + roomName + "\" created by \"" + info.host.name + "\"")
     lock.synchronized {
-      if (lobbies.get(roomName).isEmpty) {
-        lobbies += roomName -> info
+      if (!lobbies.containsKey(roomName)) {
+        lobbies.put(roomName, info)
         status = true
       }
     }
@@ -29,7 +38,7 @@ object Depot {
   def unregisterLobby(roomName: String) = {
     logger.info("Remove lobby \"" + roomName + "\"")
     lock.synchronized {
-      lobbies -= roomName
+      lobbies.remove(roomName)
     }
     logger.info("All lobbies = " + lobbies)
   }

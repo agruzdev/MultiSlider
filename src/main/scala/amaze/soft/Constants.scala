@@ -11,7 +11,13 @@ object Constants {
   val RESPONCE_GREETINGS = "Hello, Client!"
   val RESPONSE_SUCC = "SUCC"
   val RESPONSE_SUCK = "SUCK"
+  val RESPONSE_SUCK_IS_FULL = "SERVER_IS_FULL"
   val MESSAGE_EJECTED = "EJECTED"
 
   val FUTURE_TIMEOUT = 30 seconds
+
+  val FRONTEND_NAME = "MultiSlider:Frontend"
+  val BACKEND_NAME = "MultiSlider:Backend"
+
+  val MESSAGE_ENCODING = "UTF-8"
 }

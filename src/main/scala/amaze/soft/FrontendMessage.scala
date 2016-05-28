@@ -6,7 +6,7 @@ package amaze.soft
  * Copyright (c) 2016 Alexey Gruzdev
  */
 
-object Message {
+object FrontendMessage {
   trait JsonMessage
 
   /**
@@ -43,4 +43,9 @@ object Message {
    * Can be send only by host
    */
   case class EjectPlayer(playerName: String) extends JsonMessage
+
+  /**
+   * Start game session for all current players
+   */
+  case class StartSession() extends JsonMessage
 }

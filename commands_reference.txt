@@ -1,10 +1,16 @@
 // All commands should be encoded in UTF-8
 
-{"jsonClass":"Message$CreateRoom","playerName":"doge","roomName":"woof"}
-{"jsonClass":"Message$CloseRoom"}
-{"jsonClass":"Message$GetRooms"}
+{"jsonClass":"FrontendMessage$CreateRoom","playerName":"doge","roomName":"woof"}
+{"jsonClass":"FrontendMessage$CloseRoom"}
+{"jsonClass":"FrontendMessage$GetRooms"}
 
-{"jsonClass":"Message$JoinRoom","playerName":"cate","roomName":"meow"}
-{"jsonClass":"Message$LeaveRoom"}
+{"jsonClass":"FrontendMessage$JoinRoom","playerName":"cate","roomName":"meow"}
+{"jsonClass":"FrontendMessage$LeaveRoom"}
 
-{"jsonClass":"Message$EjectPlayer","playerName":"cate"}
+{"jsonClass":"FrontendMessage$EjectPlayer","playerName":"cate"}
+
+{"jsonClass":"FrontendMessage$StartSession"}
+
+//------------------------------------------
+
+{"jsonClass":"BackendMessage$Envelop","sessionId":0,"data":"<data>"}
