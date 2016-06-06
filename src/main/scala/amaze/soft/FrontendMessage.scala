@@ -45,10 +45,14 @@ object FrontendMessage {
   case class EjectPlayer(playerName: String) extends JsonMessage
 
   /**
+   * Is sent by any user when he changed some settings
+   */
+  case class Update(data: String) extends JsonMessage
+
+  /**
    * Start game session for all current players
    */
   case class StartSession() extends JsonMessage
-
 
   /**
    * Sent when session is created

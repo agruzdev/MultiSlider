@@ -7,6 +7,8 @@
 {"jsonClass":"FrontendMessage$JoinRoom","playerName":"cate","roomName":"woof"}
 {"jsonClass":"FrontendMessage$LeaveRoom"}
 
+{"jsonClass":"FrontendMessage$Update","data":"such update"}
+
 {"jsonClass":"FrontendMessage$EjectPlayer","playerName":"cate"}
 
 {"jsonClass":"FrontendMessage$StartSession"}

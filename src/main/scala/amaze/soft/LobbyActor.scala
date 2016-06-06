@@ -39,6 +39,8 @@ object LobbyActor
   case class RemovePlayer(player: PlayerInfo)
   // Get this message if lobby was closed or you were ejected
   case class Ejected()
+  // Broadcast Update message to all users except of updateSender
+  case class UpdateBroadcast(updateSender: ActorRef, updateMsg: Update)
 
   val logger = LoggerFactory.getLogger(LobbyActor.getClass.getName)
 }
@@ -52,7 +54,7 @@ class LobbyActor(
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
     classOf[CreateRoom], classOf[CloseRoom], classOf[GetRooms], classOf[JoinRoom], classOf[LeaveRoom],
-    classOf[EjectPlayer], classOf[StartSession], classOf[SessionStarted])))
+    classOf[EjectPlayer], classOf[StartSession], classOf[SessionStarted], classOf[Update])))
 
   // Current lobby state
   var m_state = Virgin
@@ -115,7 +117,7 @@ class LobbyActor(
           case JoinRoom(player, roomName) =>
             logger.info("Got a JoinRoom message!")
             if (m_state == Virgin) {
-              val m_room = Depot.getLobbies.get(roomName)
+              m_room = Depot.getLobbies.get(roomName)
               if (m_room != null) {
                 m_myself = PlayerInfo(player, self)
                 implicit val timeout = Timeout(Constants.FUTURE_TIMEOUT)
@@ -146,6 +148,13 @@ class LobbyActor(
             } else {
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
+          //---------------------------------------------------------------------
+          case Update(_: String) =>
+            logger.info("Got a UpdateBroadcast message!")
+            if(m_state == Host || m_state == Joined) {
+              m_room.host.actor ! UpdateBroadcast(self, msg.asInstanceOf[Update])
+            }
+
           //---------------------------------------------------------------------
           case StartSession() =>
             logger.info("Got a StartSession message!")
@@ -192,6 +201,14 @@ class LobbyActor(
       if(m_state == Joined) {
         m_remote_user ! Tcp.Write(ByteString(Constants.MESSAGE_EJECTED))
         m_state = Virgin
+      }
+
+    case UpdateBroadcast(updateSender: ActorRef, updateMessage: Update) =>
+      if(m_state == Host) {
+        m_players.foreach{ case (playerActor, _) => if(playerActor != self) playerActor ! UpdateBroadcast(updateSender, updateMessage) }
+      }
+      if(self != updateSender) {
+        m_remote_user ! Tcp.Write(ByteString( json.Serialization.write(updateMessage)))
       }
 
     case SessionStarted(address, name, sessionId) =>
