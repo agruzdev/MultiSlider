@@ -1,5 +1,5 @@
-/.idea/*
-/project/target/*
-/project/project/*
-/target/*
-/multislider-log.txt
+/server/.idea/*
+/server/project/target/*
+/server/project/project/*
+/server/target/*
+/server/multislider-log.txt
