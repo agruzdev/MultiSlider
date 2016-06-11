@@ -3,3 +3,5 @@
 /server/project/project/*
 /server/target/*
 /server/multislider-log.txt
+/client/build/*
+/sample/build/*
