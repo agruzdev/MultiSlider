@@ -11,6 +11,6 @@ int main()
 {
     Lobby lobby;
     Callback callback;
-    Host* host = lobby.becomeHost(&callback);
+    Host* host = lobby.becomeHost("doge", "woof", &callback);
     return 0;
 }

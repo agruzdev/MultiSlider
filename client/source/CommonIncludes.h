@@ -8,7 +8,9 @@
 #ifndef _MULTI_SLIDER_COMMON_INCLUDES_H_
 #define _MULTI_SLIDER_COMMON_INCLUDES_H_
 
+#include <cassert>
 #include <cstdint>
+#include <string>
 
 #if defined(_MSC_VER) && (_MSC_VER < 1800)
 #include <tr1/memory>

@@ -27,13 +27,13 @@ namespace multislider
 
     public:
         MULTISLIDER_EXPORT
-        Lobby() throw(Fail);
+        Lobby();
 
         MULTISLIDER_EXPORT
         ~Lobby();
 
         MULTISLIDER_EXPORT
-        Host* becomeHost(HostCallback* callback);
+        Host* becomeHost(const std::string & playerName, const std::string & roomName, HostCallback* callback);
     };
 
 }

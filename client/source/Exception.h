@@ -13,19 +13,60 @@
 namespace multislider
 {
 
-    class Fail
+    class RuntimeError
         : public std::runtime_error
     {
     public:
-        Fail(const std::string & msg) 
+        RuntimeError(const std::string & msg)
             : std::runtime_error(msg)
         { }
 
-        Fail(const char* msg)
+        RuntimeError(const char* msg)
             : std::runtime_error(msg)
+        { }
+
+        virtual ~RuntimeError()
         { }
     };
 
+    class NetworkError
+        : public RuntimeError
+    {
+    public:
+        NetworkError(const std::string & msg)
+            : RuntimeError(msg)
+        { }
+
+        NetworkError(const char* msg)
+            : RuntimeError(msg)
+        { }
+    };
+
+    class ProtocolError
+        : public RuntimeError
+    {
+    public:
+        ProtocolError(const std::string & msg)
+            : RuntimeError(msg)
+        { }
+
+        ProtocolError(const char* msg)
+            : RuntimeError(msg)
+        { }
+    };
+
+    class ServerError
+        : public RuntimeError
+    {
+    public:
+        ServerError(const std::string & msg)
+            : RuntimeError(msg)
+        { }
+
+        ServerError(const char* msg)
+            : RuntimeError(msg)
+        { }
+    };
 }
 
 #endif

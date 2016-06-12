@@ -11,6 +11,10 @@
 #include "TCPInterface.h"
 
 #include "Lobby.h"
+#include "Constants.h"
+#include "Utility.h"
+
+using namespace RakNet;
 
 namespace
 {
@@ -36,9 +40,15 @@ namespace multislider
         std::cout << "Init..." << std::endl;
         mTcp.reset(RakNet::TCPInterface::GetInstance(), TcpDeleter());
         if (!mTcp->Start(8801, 64)) {
-            throw Fail("Lobby[Lobby]: Failed to start TCP interface");
+            throw NetworkError("Lobby[Lobby]: Failed to start TCP interface");
         }
-        mTcp->Connect(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
+        SystemAddress address = mTcp->Connect(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
+        if (address == UNASSIGNED_SYSTEM_ADDRESS) {
+            throw NetworkError("Lobby[Lobby]: Failed to connect to server");
+        }
+        if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_GREET)) {
+            throw ProtocolError("Lobby[Lobby]: Unrecognized greeting");
+        }
     }
     //-------------------------------------------------------
 
@@ -49,9 +59,9 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    Host* Lobby::becomeHost(HostCallback* callback)
+    Host* Lobby::becomeHost(const std::string & playerName, const std::string & roomName, HostCallback* callback)
     {
-        mHostInstance.reset(new Host(mTcp, callback));
+        mHostInstance.reset(new Host(mTcp, playerName, roomName, callback));
         return mHostInstance.get();
     }
 }

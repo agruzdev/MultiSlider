@@ -29,12 +29,17 @@ namespace multislider
     {
         shared_ptr<RakNet::TCPInterface> mTcp;
         HostCallback* mCallback;
+        const std::string mPlayerName;
+        const std::string mRoomName;
+        //-------------------------------------------------------
+
+        static std::string makeMsgCreateRoom(const std::string & playerName, const std::string & roomName);
 
         Host(const Host &);
         Host & operator=(const Host &);
 
     public:
-        Host(shared_ptr<RakNet::TCPInterface> connection, HostCallback* callback);
+        Host(shared_ptr<RakNet::TCPInterface> connection, const std::string & playerName, const std::string & roomName, HostCallback* callback);
         ~Host();
 
         //-------------------------------------------------------
