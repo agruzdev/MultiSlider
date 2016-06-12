@@ -9,6 +9,7 @@
 #define _MULTI_SLIDER_HOST_H_
 
 #include "CommonIncludes.h"
+#include "LibInterface.h"
 #include "RoomInfo.h"
 
 namespace RakNet
@@ -23,7 +24,7 @@ namespace multislider
     class HostCallback
     {
     public:
-        ~HostCallback() {}
+        virtual ~HostCallback() {}
 
         /**
          *  Is called as soon as the room is created on the server

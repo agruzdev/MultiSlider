@@ -9,9 +9,10 @@
 #include <iostream>
 #include <thread>
 
-#include "Lobby.h"
+#include "Host.h"
 #include "Constants.h"
 #include "Utility.h"
+#include "Exception.h"
 
 #include "TCPInterface.h"
 #include "RakString.h"
