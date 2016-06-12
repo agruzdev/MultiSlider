@@ -19,11 +19,12 @@ namespace multislider
         static const char RESPONSE_SUCC[]  = "SUCC";
         static const char RESPONSE_SUCK[]  = "SUCK";
 
-        static const char MESSAGE_CLASS_CREATE_ROOM[] = "FrontendMessage$CreateRoom";
-
         static const char MESSAGE_KEY_CLASS[]        = "jsonClass";
         static const char MESSAGE_KEY_PLAYER_NAME[]  = "playerName";
         static const char MESSAGE_KEY_ROOM_NAME[]    = "roomName";
+
+        static const char MESSAGE_CLASS_CREATE_ROOM[] = "FrontendMessage$CreateRoom";
+        static const char MESSAGE_CLASS_GET_ROOMS[] = "FrontendMessage$GetRooms";
 
         static const uint64_t DEFAULT_TIMEOUT_MS = 10000; // 10 seconds
     }

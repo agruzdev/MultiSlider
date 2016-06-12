@@ -14,7 +14,10 @@
 #include "Constants.h"
 #include "Utility.h"
 
+#include "jsonxx.h"
+
 using namespace RakNet;
+using namespace jsonxx;
 
 namespace
 {
@@ -26,6 +29,7 @@ namespace
     {
         void operator()(RakNet::TCPInterface* tcp) const
         {
+            tcp->Stop();
             RakNet::TCPInterface::DestroyInstance(tcp);
         }
     };
@@ -53,15 +57,38 @@ namespace multislider
     //-------------------------------------------------------
 
     Lobby::~Lobby()
-    {
-        std::cout << "Shutdown" << std::endl;
-        mTcp->Stop();
-    }
+    { }
     //-------------------------------------------------------
 
-    Host* Lobby::becomeHost(const std::string & playerName, const std::string & roomName, HostCallback* callback)
+    Host* Lobby::createRoom(const std::string & playerName, const std::string & roomName, HostCallback* callback)
     {
         mHostInstance.reset(new Host(mTcp, playerName, roomName, callback));
         return mHostInstance.get();
+    }
+    //-------------------------------------------------------
+
+    std::vector<RoomInfo> Lobby::getRooms() const
+    {
+        assert(mTcp.get() != NULL);
+
+        Object jsonGetRooms;
+        jsonGetRooms << constants::MESSAGE_KEY_CLASS << constants::MESSAGE_CLASS_GET_ROOMS;
+        std::string message = jsonGetRooms.write(JSON);
+        mTcp->Send(message.c_str(), message.size(), mTcp->HasCompletedConnectionAttempt(), false);
+        Packet* packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
+        if (packet == NULL || responsed(packet, constants::RESPONSE_SUCK)) {
+            throw ServerError("Lobby[Lobby]: Failed to get rooms list!");
+        }
+
+        Array roomsArray;
+        roomsArray.parse(std::string(castPointerTo<char*>(packet->data), packet->length));
+        std::vector<RoomInfo> rooms;
+        rooms.resize(roomsArray.size());
+        for (size_t i = 0; i < roomsArray.size(); ++i) {
+            Object jsonRoom = roomsArray.get<Object>(i);
+            rooms[i].roomName = jsonRoom.get<std::string>("name", "<Unknown>");
+            rooms[i].hostName = jsonRoom.get<std::string>("host", "<Unknown>");
+        }
+        return rooms;
     }
 }

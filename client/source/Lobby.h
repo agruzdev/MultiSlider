@@ -8,6 +8,8 @@
 #ifndef _MULTI_SLIDER_LOBBY_H_
 #define _MULTI_SLIDER_LOBBY_H_
 
+#include <vector>
+
 #include "LibInterface.h"
 #include "CommonIncludes.h"
 #include "Host.h"
@@ -15,7 +17,13 @@
 
 namespace multislider
 {
-    
+
+    struct RoomInfo
+    {
+        std::string hostName;
+        std::string roomName;
+    };
+
     class Lobby
     {
         shared_ptr<RakNet::TCPInterface> mTcp;
@@ -33,7 +41,11 @@ namespace multislider
         ~Lobby();
 
         MULTISLIDER_EXPORT
-        Host* becomeHost(const std::string & playerName, const std::string & roomName, HostCallback* callback);
+        Host* createRoom(const std::string & playerName, const std::string & roomName, HostCallback* callback);
+
+        MULTISLIDER_EXPORT
+        std::vector<RoomInfo> getRooms() const;
+
     };
 
 }
