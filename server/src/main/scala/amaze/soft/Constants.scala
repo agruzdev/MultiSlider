@@ -8,7 +8,7 @@ import scala.concurrent.duration._
  * Copyright (c) 2016 Alexey Gruzdev
  */
 object Constants {
-  val RESPONCE_GREETINGS = "Hello, Client!"
+  val RESPONCE_GREETINGS = "HALO"
   val RESPONSE_SUCC = "SUCC"
   val RESPONSE_SUCK = "SUCK"
   val RESPONSE_SUCK_IS_FULL = "SERVER_IS_FULL"

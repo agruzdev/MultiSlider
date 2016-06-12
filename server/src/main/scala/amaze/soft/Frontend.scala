@@ -62,7 +62,7 @@ class Frontend extends Actor {
         m_logger.info("Lobbies number = " + m_lobbyActorsCounter)
         val handler = context.actorOf(Props(classOf[LobbyActor], client))
         client ! Register(handler)
-        client ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
+        client ! Tcp.Write(ByteString(Constants.RESPONCE_GREETINGS))
       } else {
         client ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK_IS_FULL))
         client ! Tcp.Close

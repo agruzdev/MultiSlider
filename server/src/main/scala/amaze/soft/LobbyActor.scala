@@ -74,7 +74,7 @@ class LobbyActor(
   // On created
   override def preStart() = {
     logger.info("Created handler for " + m_remote_user.path)
-    m_remote_user ! Tcp.Write(ByteString(Constants.RESPONCE_GREETINGS))
+    //m_remote_user ! Tcp.Write(ByteString(Constants.RESPONCE_GREETINGS))
   }
 
   // Handle messages
