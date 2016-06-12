@@ -10,6 +10,7 @@
 #include "Lobby.h"
 #include "Constants.h"
 #include "Utility.h"
+#include "Exception.h"
 
 #include "jsonxx.h"
 
@@ -96,5 +97,21 @@ namespace multislider
             rooms[i].hostName = jsonRoom.get<std::string>("host", "<Unknown>");
         }
         return rooms;
+    }
+    //-------------------------------------------------------
+
+    Client* Lobby::joinRoom(const std::string & playerName, const RoomInfo & room, ClientCallback* callback)
+    {
+        if (playerName.empty()) {
+            throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");
+        }
+        if (room.roomName.empty() || room.hostName.empty()) {
+            throw ProtocolError("Lobby[createRoom]: room info is invalid!");
+        }
+        if (callback == NULL) {
+            throw ProtocolError("Lobby[createRoom]: callback can't be null!");
+        }
+        mClientInstance.reset(new Client(mTcp, mServerAddress, playerName, room, callback));
+        return mClientInstance.get();
     }
 }

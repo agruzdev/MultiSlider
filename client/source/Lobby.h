@@ -10,11 +10,8 @@
 
 #include <vector>
 
-#include "LibInterface.h"
-#include "CommonIncludes.h"
 #include "Host.h"
-#include "Exception.h"
-#include "RoomInfo.h"
+#include "Client.h"
 
 namespace multislider
 {
@@ -24,7 +21,8 @@ namespace multislider
         shared_ptr<RakNet::TCPInterface> mTcp;
         shared_ptr<RakNet::SystemAddress> mServerAddress;
 
-        shared_ptr<Host> mHostInstance;
+        shared_ptr<Host>   mHostInstance;
+        shared_ptr<Client> mClientInstance;
 
         Lobby(const Lobby &);
         Lobby & operator=(const Lobby &);
@@ -40,14 +38,25 @@ namespace multislider
          *  Create new room on the server
          *  @param playerName name of the current player. It will be assigned as host of the created room
          *  @param roomName name of the room
-         *  @param callback callback for reacting events from the server, can't be null
+         *  @param callback callback for host events, can't be null
          */
         MULTISLIDER_EXPORT
         Host* createRoom(const std::string & playerName, const std::string & roomName, HostCallback* callback);
 
+        /**
+         *  Get a list of all opened rooms on the server
+         */
         MULTISLIDER_EXPORT
         std::vector<RoomInfo> getRooms() const;
 
+        /**
+         *  Join a room
+         *  @param playerName name of the current player
+         *  @param room reference to the room info to join
+         *  @param callback callback for client events, can't be null
+         */
+        MULTISLIDER_EXPORT
+        Client* joinRoom(const std::string & playerName, const RoomInfo & room, ClientCallback* callback);
     };
 
 }

@@ -1,5 +1,6 @@
 
 #include "../../client/source/Lobby.h"
+#include "../../client/source/Exception.h"
 
 #include <iostream>
 #include <mutex>
@@ -52,23 +53,42 @@ public:
     }
 };
 
+
+class ClientCallbackSample
+    : public ClientCallback
+{
+public:
+
+    void onJoined(const std::string & playerName, const RoomInfo & room) override
+    {
+        std::cout << "[" << playerName << "]: I joined \"" << room.roomName << "\"" << std::endl;
+    }
+};
+
+
 class ClientSample
 {
     std::mutex mMutex;
 public:
     void run()
     {
-        std::unique_lock<std::mutex> lock(mMutex);
-        gCvJoin.wait(lock, []() {return gFlagJoin.load(); });
+        ClientCallbackSample callback;
+        {
+            std::unique_lock<std::mutex> lock(mMutex);
+            gCvJoin.wait(lock, []() {return gFlagJoin.load(); });
 
-        Lobby lobby;
-        std::vector<RoomInfo> rooms = lobby.getRooms();
-        for (auto & info : rooms) {
-            std::cout << info.roomName << " by " << info.hostName << std::endl;
+            Lobby lobby;
+            std::vector<RoomInfo> rooms = lobby.getRooms();
+            for (auto & info : rooms) {
+                std::cout << info.roomName << " by " << info.hostName << std::endl;
+            }
+            if (!rooms.empty()) {
+                lobby.joinRoom("Player2", rooms[0], &callback);
+
+            }
+            gFlagFinish = true;
+            gCvFinish.notify_one();
         }
-
-        gFlagFinish = true;
-        gCvFinish.notify_one();
     }
 };
 

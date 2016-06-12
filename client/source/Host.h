@@ -57,6 +57,9 @@ namespace multislider
     
         ~Host();
 
+        /**
+         *  Close the current room
+         */
         MULTISLIDER_EXPORT
         void closeRoom();
     };
