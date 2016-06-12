@@ -43,6 +43,7 @@ namespace multislider
         assert(mTcp.get() != NULL);
         assert(!playerName.empty());
         assert(!roomName.empty());
+        assert(mCallback != NULL);
 
         std::string createRoomMessage = makeMsgCreateRoom(mPlayerName, mRoomName);
         RakNet::SystemAddress serverAddr = mTcp->HasCompletedConnectionAttempt();
@@ -50,6 +51,7 @@ namespace multislider
         if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_SUCC)) {
             throw ServerError("Host[Host]: Failed to create a new room!");
         }
+        mCallback->onCreated();
     }
     //-------------------------------------------------------
 

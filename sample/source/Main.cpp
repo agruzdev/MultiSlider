@@ -15,9 +15,15 @@ std::atomic_bool gFlagFinish{ false };
 std::condition_variable gCvJoin;
 std::condition_variable gCvFinish;
 
-class Callback
+class HostCallbackSample
     : public HostCallback
-{ };
+{
+public:
+    void onCreated() override
+    {
+        std::cout << "Room is created!" << std::endl;
+    }
+};
 
 
 class HostSample
@@ -27,7 +33,7 @@ public:
     void run()
     {
         Lobby lobby;
-        Callback callback;
+        HostCallbackSample callback;
         Host* host = lobby.createRoom("Player1", "Room1", &callback);
 
         gFlagJoin = true;

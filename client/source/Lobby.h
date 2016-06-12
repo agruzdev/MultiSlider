@@ -40,6 +40,12 @@ namespace multislider
         MULTISLIDER_EXPORT
         ~Lobby();
 
+        /**
+         *  Create new room on the server
+         *  @param playerName name of the current player. It will be assigned as host of the created room
+         *  @param roomName name of the room
+         *  @param callback callback for reacting events from the server, can't be null
+         */
         MULTISLIDER_EXPORT
         Host* createRoom(const std::string & playerName, const std::string & roomName, HostCallback* callback);
 

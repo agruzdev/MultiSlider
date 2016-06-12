@@ -5,9 +5,6 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
-
-#include <iostream>
-
 #include "TCPInterface.h"
 
 #include "Lobby.h"
@@ -41,7 +38,6 @@ namespace multislider
 
     Lobby::Lobby()
     {
-        std::cout << "Init..." << std::endl;
         mTcp.reset(RakNet::TCPInterface::GetInstance(), TcpDeleter());
         if (!mTcp->Start(8801, 64)) {
             throw NetworkError("Lobby[Lobby]: Failed to start TCP interface");
@@ -62,6 +58,15 @@ namespace multislider
 
     Host* Lobby::createRoom(const std::string & playerName, const std::string & roomName, HostCallback* callback)
     {
+        if (playerName.empty()) {
+            throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");
+        }
+        if (roomName.empty()) {
+            throw ProtocolError("Lobby[createRoom]: roomName can't be empty!");
+        }
+        if (callback == NULL) {
+            throw ProtocolError("Lobby[createRoom]: callback can't be null!");
+        }
         mHostInstance.reset(new Host(mTcp, playerName, roomName, callback));
         return mHostInstance.get();
     }

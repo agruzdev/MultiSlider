@@ -23,6 +23,10 @@ namespace multislider
     public:
         ~HostCallback() {}
 
+        /**
+         *  Is called as soon as the room is created on the server
+         */
+        virtual void onCreated() { };
     };
 
     class Host
