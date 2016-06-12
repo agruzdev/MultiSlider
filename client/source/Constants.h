@@ -28,6 +28,7 @@ namespace multislider
         static const char MESSAGE_CLASS_CLOSE_ROOM[]  = "FrontendMessage$CloseRoom";
 
         static const char MESSAGE_CLASS_JOIN_ROOM[]   = "FrontendMessage$JoinRoom";
+        static const char MESSAGE_CLASS_LEAVE_ROOM[]  = "FrontendMessage$LeaveRoom";
 
         static const uint64_t DEFAULT_TIMEOUT_MS = 10000; // 10 seconds
     }

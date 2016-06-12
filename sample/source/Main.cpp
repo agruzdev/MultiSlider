@@ -63,6 +63,11 @@ public:
     {
         std::cout << "[" << playerName << "]: I joined \"" << room.roomName << "\"" << std::endl;
     }
+
+    void onLeft(const std::string & playerName, const RoomInfo & room) override
+    {
+        std::cout << "[" << playerName << "]: I left \"" << room.roomName << "\"" << std::endl;
+    }
 };
 
 
@@ -83,8 +88,8 @@ public:
                 std::cout << info.roomName << " by " << info.hostName << std::endl;
             }
             if (!rooms.empty()) {
-                lobby.joinRoom("Player2", rooms[0], &callback);
-
+                Client* client = lobby.joinRoom("Player2", rooms[0], &callback);
+                //client->leaveRoom();
             }
             gFlagFinish = true;
             gCvFinish.notify_one();

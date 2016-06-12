@@ -43,15 +43,33 @@ namespace multislider
             throw ServerError("Client[Client]: Failed to join a room");
         }
         mCallback->onJoined(mPlayerName, mMyRoom);
+        mIsJoined = true;
     }
     //-------------------------------------------------------
 
     Client::~Client()
     {
-
+        if (mIsJoined) {
+            try {
+                leaveRoom();
+            }
+            catch (RuntimeError &) {
+            }
+        }
     }
-
     //-------------------------------------------------------
 
-
+    void Client::leaveRoom()
+    {
+        Object leaveRoomJson;
+        leaveRoomJson << constants::MESSAGE_KEY_CLASS << constants::MESSAGE_CLASS_LEAVE_ROOM;
+        std::string leaveRoomMessage = leaveRoomJson.write(JSON);
+        mTcp->Send(leaveRoomMessage.c_str(), leaveRoomMessage.size(), *mServerAddress, false);
+        if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_SUCC)) {
+            throw ServerError("Client[Client]: Failed to leave a room");
+        }
+        mCallback->onLeft(mPlayerName, mMyRoom);
+        mIsJoined = false;
+    }
+    //-------------------------------------------------------
 }

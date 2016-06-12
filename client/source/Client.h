@@ -10,6 +10,7 @@
 
 #include "CommonIncludes.h"
 #include "RoomInfo.h"
+#include "LibInterface.h"
 
 namespace RakNet
 {
@@ -29,16 +30,22 @@ namespace multislider
          *  Is called as soon as player 'playerName' has joined the room 'room'
          */
         virtual void onJoined(const std::string & playerName, const RoomInfo & room) { };
+
+        /**
+         *  Is called after the player left the room
+         */
+        virtual void onLeft(const std::string & playerName, const RoomInfo & room) { };
     };
 
     class Client
     {
         shared_ptr<RakNet::TCPInterface> mTcp;
         shared_ptr<RakNet::SystemAddress> mServerAddress;
-        
+
         ClientCallback* mCallback;
         RoomInfo mMyRoom;
         std::string mPlayerName;
+        bool mIsJoined;
 
         //-------------------------------------------------------
 
@@ -47,10 +54,11 @@ namespace multislider
 
     public:
         Client(shared_ptr<RakNet::TCPInterface> connection, shared_ptr<RakNet::SystemAddress> address, const std::string & playerName, const RoomInfo & room, ClientCallback* callback);
-    
+
         ~Client();
 
-
+        MULTISLIDER_EXPORT
+        void leaveRoom();
     };
 
 }
