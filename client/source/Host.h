@@ -9,10 +9,12 @@
 #define _MULTI_SLIDER_HOST_H_
 
 #include "CommonIncludes.h"
+#include "RoomInfo.h"
 
 namespace RakNet
 {
     class TCPInterface;
+    struct SystemAddress;
 }
 
 namespace multislider
@@ -26,15 +28,22 @@ namespace multislider
         /**
          *  Is called as soon as the room is created on the server
          */
-        virtual void onCreated() { };
+        virtual void onCreated(RoomInfo & room) { };
+
+        /**
+         *  Is called after server room is closed
+         */
+        virtual void onClosed(RoomInfo & room) { };
     };
 
     class Host
     {
         shared_ptr<RakNet::TCPInterface> mTcp;
+        shared_ptr<RakNet::SystemAddress> mServerAddress;
+        
         HostCallback* mCallback;
-        const std::string mPlayerName;
-        const std::string mRoomName;
+        RoomInfo mMyRoom;
+        bool mIsOpened;
         //-------------------------------------------------------
 
         static std::string makeMsgCreateRoom(const std::string & playerName, const std::string & roomName);
@@ -43,11 +52,12 @@ namespace multislider
         Host & operator=(const Host &);
 
     public:
-        Host(shared_ptr<RakNet::TCPInterface> connection, const std::string & playerName, const std::string & roomName, HostCallback* callback);
+        Host(shared_ptr<RakNet::TCPInterface> connection, shared_ptr<RakNet::SystemAddress> address, const std::string & playerName, const std::string & roomName, HostCallback* callback);
+    
         ~Host();
 
-        //-------------------------------------------------------
-        friend class Lobby;
+        MULTISLIDER_EXPORT
+        void closeRoom();
     };
 
 }

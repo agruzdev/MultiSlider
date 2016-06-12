@@ -42,8 +42,9 @@ namespace multislider
         if (!mTcp->Start(8801, 64)) {
             throw NetworkError("Lobby[Lobby]: Failed to start TCP interface");
         }
-        SystemAddress address = mTcp->Connect(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
-        if (address == UNASSIGNED_SYSTEM_ADDRESS) {
+        mServerAddress.reset(new SystemAddress);
+        *mServerAddress = mTcp->Connect(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
+        if (*mServerAddress == UNASSIGNED_SYSTEM_ADDRESS) {
             throw NetworkError("Lobby[Lobby]: Failed to connect to server");
         }
         if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_GREET)) {
@@ -67,7 +68,7 @@ namespace multislider
         if (callback == NULL) {
             throw ProtocolError("Lobby[createRoom]: callback can't be null!");
         }
-        mHostInstance.reset(new Host(mTcp, playerName, roomName, callback));
+        mHostInstance.reset(new Host(mTcp, mServerAddress, playerName, roomName, callback));
         return mHostInstance.get();
     }
     //-------------------------------------------------------
@@ -79,7 +80,7 @@ namespace multislider
         Object jsonGetRooms;
         jsonGetRooms << constants::MESSAGE_KEY_CLASS << constants::MESSAGE_CLASS_GET_ROOMS;
         std::string message = jsonGetRooms.write(JSON);
-        mTcp->Send(message.c_str(), message.size(), mTcp->HasCompletedConnectionAttempt(), false);
+        mTcp->Send(message.c_str(), message.size(), *mServerAddress, false);
         Packet* packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
         if (packet == NULL || responsed(packet, constants::RESPONSE_SUCK)) {
             throw ServerError("Lobby[Lobby]: Failed to get rooms list!");

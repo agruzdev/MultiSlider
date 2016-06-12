@@ -19,9 +19,14 @@ class HostCallbackSample
     : public HostCallback
 {
 public:
-    void onCreated() override
+    void onCreated(RoomInfo & room) override
     {
-        std::cout << "Room is created!" << std::endl;
+        std::cout << "Room \"" << room.roomName << "\" is created!" << std::endl;
+    }
+
+    void onClosed(RoomInfo & room) override
+    {
+        std::cout << "Room \"" << room.roomName << "\" is closed!" << std::endl;
     }
 };
 
@@ -32,15 +37,18 @@ class HostSample
 public:
     void run()
     {
-        Lobby lobby;
         HostCallbackSample callback;
-        Host* host = lobby.createRoom("Player1", "Room1", &callback);
+        {
+            Lobby lobby;
+            Host* host = lobby.createRoom("Player1", "Room1", &callback);
 
-        gFlagJoin = true;
-        gCvJoin.notify_one();
+            gFlagJoin = true;
+            gCvJoin.notify_one();
 
-        std::unique_lock<std::mutex> lock(mMutex);
-        gCvFinish.wait(lock, []() {return gFlagFinish.load(); });
+            std::unique_lock<std::mutex> lock(mMutex);
+            gCvFinish.wait(lock, []() {return gFlagFinish.load(); });
+            //host->closeRoom();
+        }
     }
 };
 
@@ -66,8 +74,22 @@ public:
 
 int main()
 {
-    auto host   = std::async(std::launch::async, []() { HostSample().run(); });
-    auto client = std::async(std::launch::async, []() { ClientSample().run(); });
+    auto host   = std::async(std::launch::async, []() { 
+        try {
+            HostSample().run();
+        }
+        catch (RuntimeError & e) {
+            std::cout << e.what() << std::endl;
+        }
+    });
+    auto client = std::async(std::launch::async, []() { 
+        try {
+            ClientSample().run();
+        }
+        catch (RuntimeError & e) {
+            std::cout << e.what() << std::endl;
+        }
+    });
 
     client.wait();
     host.wait();

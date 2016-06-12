@@ -24,7 +24,8 @@ namespace multislider
         static const char MESSAGE_KEY_ROOM_NAME[]    = "roomName";
 
         static const char MESSAGE_CLASS_CREATE_ROOM[] = "FrontendMessage$CreateRoom";
-        static const char MESSAGE_CLASS_GET_ROOMS[] = "FrontendMessage$GetRooms";
+        static const char MESSAGE_CLASS_GET_ROOMS[]   = "FrontendMessage$GetRooms";
+        static const char MESSAGE_CLASS_CLOSE_ROOM[]  = "FrontendMessage$CloseRoom";
 
         static const uint64_t DEFAULT_TIMEOUT_MS = 10000; // 10 seconds
     }

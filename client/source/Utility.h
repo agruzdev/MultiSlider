@@ -65,7 +65,8 @@ namespace multislider
     bool responsed(const RakNet::Packet* packet, const char* expected)
     {   
         assert(std::strlen(expected) == 4);
-        return (packet->length == 4) && 
+        return (packet != NULL) && 
+            (packet->length == 4) &&
             (*castPointerTo<const uint32_t*>(packet->data) == *castPointerTo<const uint32_t*>(expected));
     }
 }

@@ -14,19 +14,15 @@
 #include "CommonIncludes.h"
 #include "Host.h"
 #include "Exception.h"
+#include "RoomInfo.h"
 
 namespace multislider
 {
 
-    struct RoomInfo
-    {
-        std::string hostName;
-        std::string roomName;
-    };
-
     class Lobby
     {
         shared_ptr<RakNet::TCPInterface> mTcp;
+        shared_ptr<RakNet::SystemAddress> mServerAddress;
 
         shared_ptr<Host> mHostInstance;
 
