@@ -20,15 +20,16 @@ class HostCallbackSample
     : public HostCallback
 {
 public:
-    void onCreated(RoomInfo & room) override
+    void onCreated(const RoomInfo & room) override
     {
         std::cout << "Room \"" << room.roomName << "\" is created!" << std::endl;
     }
 
-    void onClosed(RoomInfo & room) override
+    void onClosed(const RoomInfo & room) override
     {
         std::cout << "Room \"" << room.roomName << "\" is closed!" << std::endl;
     }
+
 };
 
 
@@ -46,9 +47,14 @@ public:
             gFlagJoin = true;
             gCvJoin.notify_one();
 
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+
+            host->broadcast("TestMessage1");
+            std::cout << "Server sent broadcast" << std::endl;
+
             std::unique_lock<std::mutex> lock(mMutex);
             gCvFinish.wait(lock, []() {return gFlagFinish.load(); });
-            //host->closeRoom();
+            host->closeRoom();
         }
     }
 };
@@ -67,6 +73,11 @@ public:
     void onLeft(const std::string & playerName, const RoomInfo & room) override
     {
         std::cout << "[" << playerName << "]: I left \"" << room.roomName << "\"" << std::endl;
+    }
+
+    void onBroadcast(const std::string & playerName, const std::string & message) override
+    {
+        std::cout << "[" << playerName << "]: I got broadcast message \"" << message << "\"" << std::endl;
     }
 };
 
@@ -89,7 +100,11 @@ public:
             }
             if (!rooms.empty()) {
                 Client* client = lobby.joinRoom("Player2", rooms[0], &callback);
-                //client->leaveRoom();
+
+                while (0 == client->receive())
+                { }
+
+                client->leaveRoom();
             }
             gFlagFinish = true;
             gCvFinish.notify_one();

@@ -72,4 +72,34 @@ namespace multislider
         mIsJoined = false;
     }
     //-------------------------------------------------------
+
+    void Client::broadcast(const std::string & data)
+    {
+        Object broadcastJson;
+        broadcastJson << constants::MESSAGE_KEY_CLASS << constants::MESSAGE_CLASS_BROADCAST;
+        broadcastJson << constants::MESSAGE_KEY_DATA << data;
+        std::string broadcastMessage = broadcastJson.write(JSON);
+        mTcp->Send(broadcastMessage.c_str(), broadcastMessage.size(), *mServerAddress, false);
+    }
+    //-------------------------------------------------------
+
+    uint32_t Client::receive() const
+    {
+        uint32_t counter(0);
+        for (;;) {
+            Packet* packet = mTcp->Receive();
+            if (packet == NULL) {
+                break;
+            }
+            Object broadcastJson;
+            broadcastJson.parse(std::string(castPointerTo<char*>(packet->data), packet->length));
+            std::string message = broadcastJson.get<std::string>(constants::MESSAGE_KEY_DATA, "");
+            if (!message.empty()) {
+                mCallback->onBroadcast(mPlayerName, message);
+                ++counter;
+            }
+        }
+        return counter;
+    }
+
 }

@@ -26,7 +26,7 @@ namespace multislider
         uint64_t time = 0;
         for (;;) {
             packet = connection->Receive();
-            if (packet != NULL || time > timeoutMilliseconds) {
+            if (packet != NULL || time >= timeoutMilliseconds) {
                 break;
             }
             RakSleep(attemptsTimeoutMilliseconds);

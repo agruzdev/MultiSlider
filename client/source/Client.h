@@ -29,12 +29,17 @@ namespace multislider
         /**
          *  Is called as soon as player 'playerName' has joined the room 'room'
          */
-        virtual void onJoined(const std::string & playerName, const RoomInfo & room) { };
+        virtual void onJoined(const std::string & playerName, const RoomInfo & room) { }
 
         /**
          *  Is called after the player left the room
          */
-        virtual void onLeft(const std::string & playerName, const RoomInfo & room) { };
+        virtual void onLeft(const std::string & playerName, const RoomInfo & room) { }
+
+        /**
+         *  Is called for each broadcast message
+         */
+        virtual void onBroadcast(const std::string & playerName, const std::string & message) { }
     };
 
     class Client
@@ -57,8 +62,27 @@ namespace multislider
 
         ~Client();
 
+        /**
+         *  Leave the current room
+         *  After leaving Client instance can't be reused for another room
+         */
         MULTISLIDER_EXPORT
         void leaveRoom();
+
+        /**
+         *  Broadcast data to all players in the room
+         *  Not blocking call
+         */
+        MULTISLIDER_EXPORT
+        void broadcast(const std::string & data);
+
+        /**
+         *  Check incoming broadcast messages and call callback for the each message
+         *  @return number of processed messages
+         */
+        MULTISLIDER_EXPORT
+        uint32_t receive() const;
+
     };
 
 }

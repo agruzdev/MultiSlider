@@ -22,6 +22,7 @@ namespace multislider
         static const char MESSAGE_KEY_CLASS[]        = "jsonClass";
         static const char MESSAGE_KEY_PLAYER_NAME[]  = "playerName";
         static const char MESSAGE_KEY_ROOM_NAME[]    = "roomName";
+        static const char MESSAGE_KEY_DATA[]         = "data";
 
         static const char MESSAGE_CLASS_CREATE_ROOM[] = "FrontendMessage$CreateRoom";
         static const char MESSAGE_CLASS_GET_ROOMS[]   = "FrontendMessage$GetRooms";
@@ -29,6 +30,8 @@ namespace multislider
 
         static const char MESSAGE_CLASS_JOIN_ROOM[]   = "FrontendMessage$JoinRoom";
         static const char MESSAGE_CLASS_LEAVE_ROOM[]  = "FrontendMessage$LeaveRoom";
+
+        static const char MESSAGE_CLASS_BROADCAST[]   = "FrontendMessage$Update";
 
         static const uint64_t DEFAULT_TIMEOUT_MS = 10000; // 10 seconds
     }

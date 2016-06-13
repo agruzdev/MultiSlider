@@ -29,12 +29,17 @@ namespace multislider
         /**
          *  Is called as soon as the room is created on the server
          */
-        virtual void onCreated(RoomInfo & room) { };
+        virtual void onCreated(const RoomInfo & room) { }
 
         /**
          *  Is called after server room is closed
          */
-        virtual void onClosed(RoomInfo & room) { };
+        virtual void onClosed(const RoomInfo & room) { }
+
+        /**
+         *  Is called for each broadcast message
+         */
+        virtual void onBroadcast(const RoomInfo & room, const std::string & message) { }
     };
 
     class Host
@@ -62,6 +67,20 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         void closeRoom();
+
+        /**
+         *  Broadcast data to all players in the room
+         *  Not blocking call
+         */
+        MULTISLIDER_EXPORT
+        void broadcast(const std::string & data);
+
+        /**
+         *  Check incoming broadcast messages and call callback for the each message
+         *  @return number of processed messages
+         */
+        MULTISLIDER_EXPORT
+        uint32_t receive() const;
     };
 
 }
