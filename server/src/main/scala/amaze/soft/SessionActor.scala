@@ -10,6 +10,7 @@ import amaze.soft.BackendMessage._
 import net.liftweb.json
 import net.liftweb.json.{DefaultFormats, ShortTypeHints}
 import org.slf4j.LoggerFactory
+import scala.concurrent.duration._
 
 object SessionActor
 {
@@ -54,7 +55,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
   var m_state = Waiting
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
-    classOf[Ready], classOf[Start], classOf[Update], classOf[SessionState], classOf[Quit])))
+    classOf[Ready], classOf[Start], classOf[Update], classOf[SessionState], classOf[Quit], classOf[RequestSync], classOf[Sync])))
 
   private def gatherSessionData(): String = {
     json.Serialization write (m_stats.map{case (name, stats) => PlayerData(name, if(stats != null) stats.privateData else "")} toList)
@@ -102,6 +103,12 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                       m_logger.info("[Running] Got outdated Update message")
                     }
                   }
+
+                case RequestSync(_, delay, syncId) =>
+                  m_logger.info("Got a RequestSync message")
+                  Depot.actorsSystem.scheduler.scheduleOnce(delay milliseconds) {
+                    m_stats.values.foreach( stat => socket ! Udp.Send(ByteString(json.Serialization.write(Sync(syncId))), stat.address))
+                  } (Depot.actorsSystem.dispatcher)
 
                 case Quit(playerName) =>
                   m_logger.info("Got a Quit message")
