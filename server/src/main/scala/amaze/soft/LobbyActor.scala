@@ -101,6 +101,9 @@ class LobbyActor(
           //---------------------------------------------------------------------
           case CloseRoom() =>
             logger.info("Got a CloseRoom message!")
+            if(m_state == Zombie) {
+              sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
+            }
             if (m_state == Host) {
               Depot.unregisterLobby(m_room.name)
               m_state = Virgin
@@ -215,6 +218,7 @@ class LobbyActor(
       logger.info("Got a SessionStarted message!")
       // forward to remote client
       m_remote_user ! Tcp.Write(ByteString(json.Serialization.write(SessionStarted(address, name, sessionId))))
+      leaveRoomImpl()
       m_state = Zombie
 
     //---------------------------------------------------------------------
@@ -245,6 +249,9 @@ class LobbyActor(
    * Method of a Client
    */
   private def leaveRoomImpl() : Boolean = {
+    if(m_state == Zombie) {
+      return true
+    }
     if(m_state == Joined) {
       implicit val timeout = Timeout(Constants.FUTURE_TIMEOUT)
       if(Await.result(m_room.host.actor ? RemovePlayer(m_myself), timeout.duration).asInstanceOf[Boolean]) {

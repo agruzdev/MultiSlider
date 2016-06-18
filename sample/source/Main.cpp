@@ -12,9 +12,11 @@ using namespace multislider;
 
 std::atomic_bool gFlagJoin  { false };
 std::atomic_bool gFlagFinish{ false };
+std::atomic_bool gFlagSession{ false };
 
 std::condition_variable gCvJoin;
 std::condition_variable gCvFinish;
+std::condition_variable gCvSession;
 
 class HostCallbackSample
     : public HostCallback
@@ -30,6 +32,10 @@ public:
         std::cout << "Room \"" << room.roomName << "\" is closed!" << std::endl;
     }
 
+    void onSessionStart(const RoomInfo & room, SessionPtr session) override
+    {
+        std::cout << "Room \"" << room.roomName << "\" session is started!" << std::endl;
+    }
 };
 
 
@@ -52,8 +58,21 @@ public:
             host->broadcast("TestMessage1");
             std::cout << "Server sent broadcast" << std::endl;
 
-            std::unique_lock<std::mutex> lock(mMutex);
-            gCvFinish.wait(lock, []() {return gFlagFinish.load(); });
+            {
+                std::unique_lock<std::mutex> lock(mMutex);
+                gCvSession.wait(lock, []() {return gFlagSession.load(); });
+            }
+
+            host->startSession();
+            while (0 == host->receive()) 
+            { }
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+
+            {
+                std::unique_lock<std::mutex> lock(mMutex);
+                gCvFinish.wait(lock, []() {return gFlagFinish.load(); });
+            }
             host->closeRoom();
         }
     }
@@ -78,6 +97,11 @@ public:
     void onBroadcast(const std::string & playerName, const std::string & message) override
     {
         std::cout << "[" << playerName << "]: I got broadcast message \"" << message << "\"" << std::endl;
+    }
+
+    void onSessionStart(const std::string & playerName, SessionPtr session) override
+    {
+        std::cout << "[" << playerName << "]: I got SessionStarted message!" << std::endl;
     }
 };
 
@@ -104,6 +128,13 @@ public:
                 while (0 == client->receive())
                 { }
 
+                gFlagSession = true;
+                gCvSession.notify_one();
+
+                while (0 == client->receive()) 
+                { }
+
+                std::this_thread::sleep_for(std::chrono::seconds(1));
                 client->leaveRoom();
             }
             gFlagFinish = true;

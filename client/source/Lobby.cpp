@@ -36,6 +36,7 @@ namespace
 
 namespace multislider
 {
+    using namespace constants;
 
     Lobby::Lobby()
     {
@@ -79,10 +80,10 @@ namespace multislider
         assert(mTcp.get() != NULL);
 
         Object jsonGetRooms;
-        jsonGetRooms << constants::MESSAGE_KEY_CLASS << constants::MESSAGE_CLASS_GET_ROOMS;
+        jsonGetRooms << MESSAGE_KEY_CLASS << frontend::GET_ROOMS;
         std::string message = jsonGetRooms.write(JSON);
         mTcp->Send(message.c_str(), message.size(), *mServerAddress, false);
-        Packet* packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
+        shared_ptr<Packet> packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
         if (packet == NULL || responsed(packet, constants::RESPONSE_SUCK)) {
             throw ServerError("Lobby[Lobby]: Failed to get rooms list!");
         }

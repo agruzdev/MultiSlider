@@ -11,6 +11,7 @@
 #include "CommonIncludes.h"
 #include "LibInterface.h"
 #include "RoomInfo.h"
+#include "Session.h"
 
 namespace RakNet
 {
@@ -40,6 +41,11 @@ namespace multislider
          *  Is called for each broadcast message
          */
         virtual void onBroadcast(const RoomInfo & room, const std::string & message) { }
+
+        /**
+         *  Is called as soon as a host has started a session
+         */
+        virtual void onSessionStart(const RoomInfo & room, SessionPtr session) { }
     };
 
     class Host
@@ -51,8 +57,6 @@ namespace multislider
         RoomInfo mMyRoom;
         bool mIsOpened;
         //-------------------------------------------------------
-
-        static std::string makeMsgCreateRoom(const std::string & playerName, const std::string & roomName);
 
         Host(const Host &);
         Host & operator=(const Host &);
@@ -81,6 +85,12 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         uint32_t receive() const;
+
+        /**
+         *  Start game session for all joined players
+         */
+        MULTISLIDER_EXPORT
+        void startSession();
     };
 
 }
