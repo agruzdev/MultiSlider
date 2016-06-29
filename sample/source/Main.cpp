@@ -18,6 +18,19 @@ std::condition_variable gCvJoin;
 std::condition_variable gCvFinish;
 std::condition_variable gCvSession;
 
+class SessionCallbackSample
+    : public SessionCallback
+{
+public:
+    void onStart()
+    {
+        std::cout << "SessionCallback: onStart()" << std::endl;
+    }
+};
+
+SessionPtr gHostSession;
+SessionPtr gClientSession;
+
 class HostCallbackSample
     : public HostCallback
 {
@@ -35,6 +48,7 @@ public:
     void onSessionStart(const RoomInfo & room, SessionPtr session) override
     {
         std::cout << "Room \"" << room.roomName << "\" session is started!" << std::endl;
+        gHostSession = session;
     }
 };
 
@@ -46,6 +60,7 @@ public:
     void run()
     {
         HostCallbackSample callback;
+        SessionCallbackSample sessionCallback;
         {
             Lobby lobby;
             Host* host = lobby.createRoom("Player1", "Room1", &callback);
@@ -66,6 +81,12 @@ public:
             host->startSession();
             while (0 == host->receive()) 
             { }
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+
+            if (gHostSession != nullptr) {
+                gHostSession->Startup(&sessionCallback);
+            }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -102,6 +123,7 @@ public:
     void onSessionStart(const std::string & playerName, SessionPtr session) override
     {
         std::cout << "[" << playerName << "]: I got SessionStarted message!" << std::endl;
+        gClientSession = session;
     }
 };
 

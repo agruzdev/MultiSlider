@@ -30,22 +30,22 @@ namespace multislider
         /**
          *  Is called as soon as the room is created on the server
          */
-        virtual void onCreated(const RoomInfo & room) { }
+        virtual void onCreated(const RoomInfo & /*room*/) { }
 
         /**
          *  Is called after server room is closed
          */
-        virtual void onClosed(const RoomInfo & room) { }
+        virtual void onClosed(const RoomInfo & /*room*/) { }
 
         /**
          *  Is called for each broadcast message
          */
-        virtual void onBroadcast(const RoomInfo & room, const std::string & message) { }
+        virtual void onBroadcast(const RoomInfo & /*room*/, const std::string & /*message*/) { }
 
         /**
          *  Is called as soon as a host has started a session
          */
-        virtual void onSessionStart(const RoomInfo & room, SessionPtr session) { }
+        virtual void onSessionStart(const RoomInfo & /*room*/, SessionPtr /*session*/) { }
     };
 
     class Host

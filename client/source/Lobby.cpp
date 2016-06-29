@@ -89,7 +89,7 @@ namespace multislider
         }
 
         Array roomsArray;
-        roomsArray.parse(std::string(castPointerTo<char*>(packet->data), packet->length));
+        roomsArray.parse(std::string(pointer_cast<char*>(packet->data), packet->length));
         std::vector<RoomInfo> rooms;
         rooms.resize(roomsArray.size());
         for (size_t i = 0; i < roomsArray.size(); ++i) {

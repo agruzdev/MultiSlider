@@ -75,7 +75,7 @@ namespace multislider
      */
     template <typename _TypeTo, typename _TypeFrom>
     inline 
-    _TypeTo castPointerTo(_TypeFrom* ptr)
+    _TypeTo pointer_cast(_TypeFrom* ptr)
     {
         return static_cast<_TypeTo>(static_cast<void*>(ptr));
     }
@@ -85,7 +85,7 @@ namespace multislider
      */
     template <typename _TypeTo, typename _TypeFrom>
     inline 
-    _TypeTo castPointerTo(const _TypeFrom* ptr)
+    _TypeTo pointer_cast(const _TypeFrom* ptr)
     {
         return static_cast<_TypeTo>(static_cast<const void*>(ptr));
     }
@@ -102,7 +102,7 @@ namespace multislider
         assert(std::strlen(expected) == 4);
         return (packet != NULL) && 
             (packet->length == 4) &&
-            (*castPointerTo<const uint32_t*>(packet->data) == *castPointerTo<const uint32_t*>(expected));
+            (*pointer_cast<const uint32_t*>(packet->data) == *pointer_cast<const uint32_t*>(expected));
     }
 
     /**
@@ -117,7 +117,7 @@ namespace multislider
     }
 
     /**
-     *  Compare nessage class
+     *  Compare message class
      */
     inline 
     bool isMessageClass(const std::string & classString, const char* expected)
@@ -125,6 +125,15 @@ namespace multislider
         return 0 == std::strcmp(classString.c_str(), expected);
     }
 
+    /**
+     *  Get size of a C-style array
+     */
+    template <typename _T, size_t _N>
+    inline
+    size_t arrayLengh(const _T(&)[_N])
+    {
+        return _N;
+    }
 }
 
 

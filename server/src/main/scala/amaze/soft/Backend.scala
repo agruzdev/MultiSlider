@@ -62,6 +62,7 @@ class Backend(m_ip: String, m_port: Int) extends Actor {
   def ready(socket: ActorRef): Receive = {
     case Udp.Received(data, remote) =>
       m_logger.info("Got a datagram")
+      m_logger.info("Datagram = " + data.decodeString(Constants.MESSAGE_ENCODING))
       try {
         val msg = json.parse(data.decodeString(Constants.MESSAGE_ENCODING)).extract[JsonMessage]
         m_logger.info(msg.toString)

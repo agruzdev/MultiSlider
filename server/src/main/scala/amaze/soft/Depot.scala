@@ -57,4 +57,21 @@ object Depot {
   def getAddressBack = {
     ip_address + ":" + port_backend.toString
   }
+
+  def getIpBack = {
+    ip_address
+  }
+
+  def getIpFront = {
+    ip_address
+  }
+
+  def getPortFront = {
+    port_frontend
+  }
+
+  def getPortBack = {
+    port_backend
+  }
+
 }

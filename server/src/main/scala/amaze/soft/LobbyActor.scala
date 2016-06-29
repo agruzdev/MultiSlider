@@ -166,7 +166,7 @@ class LobbyActor(
               val sessionId = Await.result(Depot.backend ? CreateSession(
                 m_room.name, m_players.values.map(info => info.name).toList), timeout.duration).asInstanceOf[Int]
               if (sessionId >= 0) {
-                m_players.values.foreach(info => { info.actor ! SessionStarted(Depot.getAddressBack, m_room.name, sessionId) })
+                m_players.values.foreach(info => { info.actor ! SessionStarted(Depot.getIpBack, Depot.getPortBack, m_room.name, sessionId) })
               } else {
                 sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
               }
@@ -214,10 +214,10 @@ class LobbyActor(
         m_remote_user ! Tcp.Write(ByteString( json.Serialization.write(updateMessage)))
       }
 
-    case SessionStarted(address, name, sessionId) =>
+    case SessionStarted(ip, port, name, sessionId) =>
       logger.info("Got a SessionStarted message!")
       // forward to remote client
-      m_remote_user ! Tcp.Write(ByteString(json.Serialization.write(SessionStarted(address, name, sessionId))))
+      m_remote_user ! Tcp.Write(ByteString(json.Serialization.write(SessionStarted(ip, port, name, sessionId))))
       leaveRoomImpl()
       m_state = Zombie
 

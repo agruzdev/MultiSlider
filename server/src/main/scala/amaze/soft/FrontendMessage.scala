@@ -57,5 +57,5 @@ object FrontendMessage {
   /**
    * Sent when session is created
    */
-  case class SessionStarted(address: String, name: String, id: Int) extends JsonMessage
+  case class SessionStarted(ip: String, port: Int, name: String, id: Int) extends JsonMessage
 }
