@@ -137,7 +137,7 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Session::startup(SessionCallback* callback)
+    void Session::startup(SessionCallback* callback, uint64_t timeout)
     {
         if (callback == NULL) {
             throw RuntimeError("Session[Startup]: callback can't be null!");
@@ -148,44 +148,45 @@ namespace multislider
         if (0 != enet_socket_set_option(mSocket->enetSocket, ENET_SOCKOPT_NONBLOCK, 1)) {
             throw RuntimeError("Session[Session]: Failed to setup socket");
         }
-        //if (!enet_socket_set_option(mSocket->enetSocket, ENET_SOCKOPT_RCVBUF, ENET_HOST_RECEIVE_BUFFER_SIZE)) {
-        //    throw RuntimeError("Session[Session]: Failed to setup socket");
-        //}
-        //if (!enet_socket_set_option(mSocket->enetSocket, ENET_SOCKOPT_SNDBUF, ENET_HOST_SEND_BUFFER_SIZE)) {
-        //    throw RuntimeError("Session[Session]: Failed to setup socket");
-        //}
         mCallback = callback;
         mStarted = true;
-
 
         // Now ready
         Object readyJson;
         readyJson << MESSAGE_KEY_CLASS << backend::READY;
         readyJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
-        sendUpdDatagram(makeEnvelop(readyJson).write(JSON));
+        const std::string readyMessage = makeEnvelop(readyJson).write(JSON);
+        sendUpdDatagram(readyMessage);
 
         uint64_t time = 0;
         size_t dataLength = 0;
         while (0 == (dataLength = awaitUdpDatagram(DEFAULT_TIMEOUT_MS))) {
-            RakSleep(100);
-            time += 100;
-            if (time > DEFAULT_TIMEOUT_MS) {
-                // Resend
-                sendUpdDatagram(makeEnvelop(readyJson).write(JSON));
-                time = 0;
+            time += DEFAULT_TIMEOUT_MS;
+            if (time > timeout) {
+                throw RuntimeError("Session[Startup]: Failed to get response from server");
             }
+            // Resend
+            sendUpdDatagram(readyMessage);
         }
         if(responsed(&mReceiveBuffer[0], dataLength, RESPONSE_SUCC)) {
-            while (0 == receive()) {
-                time += 100;
-                RakSleep(100);
-                if (time > DEFAULT_TIMEOUT_MS) {
-                    // Resend
-                    sendUpdDatagram(makeEnvelop(readyJson).write(JSON));
-                    time = 0;
+            while (0 == (dataLength = awaitUdpDatagram(DEFAULT_TIMEOUT_MS))) {
+                time += DEFAULT_TIMEOUT_MS;
+                if (time > timeout) {
+                    throw RuntimeError("Session[Startup]: Failed to get response from server");
+                }
+                // Resend
+                sendUpdDatagram(readyMessage);
+            }
+            Object messageJson;
+            messageJson.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), dataLength));
+            std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
+            if (!messageClass.empty()) {
+                if (isMessageClass(messageClass, backend::START)) {
+                    mCallback->onStart(mSessionName, mPlayerName);
+                    return;
                 }
             }
-            return;
+            throw RuntimeError("Session[Startup]: Unexpected server response!");
         }
 
         Object messageJson;

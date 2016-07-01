@@ -85,7 +85,7 @@ public:
             std::this_thread::sleep_for(std::chrono::seconds(1));
 
             if (gHostSession != nullptr) {
-                gHostSession->startup(&sessionCallback);
+                gHostSession->startup(&sessionCallback, 1000 * 60);
             }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -162,7 +162,7 @@ public:
             }
 
             if (gClientSession != nullptr) {
-                gClientSession->startup(&sessionCallback);
+                gClientSession->startup(&sessionCallback, 1000 * 60);
             }
 
             gFlagFinish = true;

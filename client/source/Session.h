@@ -29,7 +29,7 @@ namespace multislider
         /**
          *  Is called as soon as all players have joined the session and are ready to start
          */
-        virtual void onStart(const std::string & sessionName, const std::string & playerName) { }
+        virtual void onStart(const std::string & /*sessionName*/, const std::string & /*playerName*/) { }
 
     }; 
 
@@ -76,7 +76,7 @@ namespace multislider
          *  @param callback Session callback can't be null
          */
         MULTISLIDER_EXPORT
-        void startup(SessionCallback* callback);
+        void startup(SessionCallback* callback, uint64_t timeout);
 
         /**
          *  Receive and handle incoming messages
