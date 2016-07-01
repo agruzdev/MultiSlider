@@ -12,6 +12,15 @@ set(RAKNET_LIBRARY_DIR "" CACHE PATH "RakNet library dir")
 link_directories(${RAKNET_LIBRARY_DIR})
 
 #--------------------------------
+# ENET
+
+set(ENET_INCLUDE_DIR "" CACHE PATH "ENET include dir")
+include_directories(${ENET_INCLUDE_DIR})
+
+set(ENET_LIBRARY_DIR "" CACHE PATH "ENET library dir")
+link_directories(${ENET_LIBRARY_DIR})
+
+#--------------------------------
 # 3rdParty projects
 
 add_subdirectory(./3rdParty)
@@ -38,3 +47,4 @@ add_library(MultiSlider SHARED ${all_sources})
 
 target_link_libraries(MultiSlider PRIVATE RakNetDLL)
 target_link_libraries(MultiSlider PRIVATE ${THIRD_PARTY_TARGETS})
+target_link_libraries(MultiSlider PRIVATE enet)

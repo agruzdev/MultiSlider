@@ -8,14 +8,10 @@
 #ifndef _MULTI_SLIDER_SESSION_H_
 #define _MULTI_SLIDER_SESSION_H_
 
+#include <vector>
+
 #include "CommonIncludes.h"
 #include "LibInterface.h"
-
-namespace RakNet
-{
-    class RakPeerInterface;
-    struct SocketDescriptor;
-}
 
 namespace jsonxx
 {
@@ -33,14 +29,18 @@ namespace multislider
         /**
          *  Is called as soon as all players have joined the session and are ready to start
          */
-        virtual void onStart() { }
+        virtual void onStart(const std::string & sessionName, const std::string & playerName) { }
 
     }; 
 
+    struct SocketImpl;
+
     class Session
     {
-        shared_ptr<RakNet::SocketDescriptor> mSocket;
-        shared_ptr<RakNet::RakPeerInterface> mPeer;
+        static bool msEnetInited;
+        //-------------------------------------------------------
+
+        shared_ptr<SocketImpl> mSocket;
         const std::string mServerIp;
         const uint16_t mServerPort;
         const std::string mPlayerName;
@@ -48,9 +48,20 @@ namespace multislider
         const uint32_t mSessionId;
         SessionCallback* mCallback;
         bool mStarted;
+
+        std::vector<uint8_t> mReceiveBuffer;
         //-------------------------------------------------------
         
+
         jsonxx::Object makeEnvelop(const jsonxx::Object & obj) const;
+
+        void sendUpdDatagram(const std::string & message) const;
+
+        /**
+         *  Returns datagram length
+         */
+        size_t awaitUdpDatagram(uint64_t timeoutMilliseconds, uint32_t attemptsTimeoutMilliseconds = 100);
+        //-------------------------------------------------------
 
     public:
         Session(std::string ip, uint16_t port, const std::string & playerName, const std::string & sessionName, uint32_t sessionId);
@@ -58,14 +69,14 @@ namespace multislider
         ~Session();
 
         MULTISLIDER_EXPORT
-        static void DestoyInstance(Session* session);
+        static void destoyInstance(Session* session);
 
         /**
          *  Call as soon as you are ready to start
          *  @param callback Session callback can't be null
          */
         MULTISLIDER_EXPORT
-        void Startup(SessionCallback* callback);
+        void startup(SessionCallback* callback);
 
         /**
          *  Receive and handle incoming messages
@@ -81,7 +92,7 @@ namespace multislider
         {
             void operator()(Session* ptr) const
             {
-                Session::DestoyInstance(ptr);
+                Session::destoyInstance(ptr);
             }
         };
     }

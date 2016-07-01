@@ -22,9 +22,9 @@ class SessionCallbackSample
     : public SessionCallback
 {
 public:
-    void onStart()
+    void onStart(const std::string & sessionName, const std::string & playerName) override
     {
-        std::cout << "SessionCallback: onStart()" << std::endl;
+        std::cout << "SessionCallback[" << playerName << "]: Started session " << sessionName << std::endl;
     }
 };
 
@@ -85,7 +85,7 @@ public:
             std::this_thread::sleep_for(std::chrono::seconds(1));
 
             if (gHostSession != nullptr) {
-                gHostSession->Startup(&sessionCallback);
+                gHostSession->startup(&sessionCallback);
             }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -135,6 +135,7 @@ public:
     void run()
     {
         ClientCallbackSample callback;
+        SessionCallbackSample sessionCallback;
         {
             std::unique_lock<std::mutex> lock(mMutex);
             gCvJoin.wait(lock, []() {return gFlagJoin.load(); });
@@ -159,6 +160,11 @@ public:
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 client->leaveRoom();
             }
+
+            if (gClientSession != nullptr) {
+                gClientSession->startup(&sessionCallback);
+            }
+
             gFlagFinish = true;
             gCvFinish.notify_one();
         }

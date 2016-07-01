@@ -49,6 +49,7 @@ namespace multislider
             static const char ENVELOP[] = "BackendMessage$Envelop";
 
             static const char READY[] = "BackendMessage$Ready";
+            static const char START[] = "BackendMessage$Start";
         }
 
         static const uint64_t DEFAULT_TIMEOUT_MS = 10000; // 10 seconds

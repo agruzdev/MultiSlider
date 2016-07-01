@@ -90,6 +90,19 @@ namespace multislider
         return static_cast<_TypeTo>(static_cast<const void*>(ptr));
     }
 
+    /**
+    *  Compare default server response
+    *  @param bytes response bytes, should be at least 4 bytes
+    *  @param expected expected response, should be exactly 4 bytes
+    */
+    inline
+    bool responsed(const uint8_t* bytes, size_t length, const char* expected)
+    {
+        assert(std::strlen(expected) == 4);
+        return (bytes != NULL) &&
+            (length == 4) &&
+            (*pointer_cast<const uint32_t*>(bytes) == *pointer_cast<const uint32_t*>(expected));
+    }
 
     /**
      *  Compare default server response 
@@ -123,6 +136,15 @@ namespace multislider
     bool isMessageClass(const std::string & classString, const char* expected)
     {
         return 0 == std::strcmp(classString.c_str(), expected);
+    }
+
+    /**
+     *  Compare message class
+     */
+    inline
+    bool isMessageClass(const uint8_t* bytes, size_t length, const char* expected)
+    {
+        return 0 == std::strncmp(pointer_cast<const char*>(bytes), expected, length);
     }
 
     /**

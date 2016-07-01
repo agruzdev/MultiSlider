@@ -10,33 +10,59 @@
 #include "Utility.h"
 #include "Constants.h"
 
-#include <RakPeerInterface.h>
-#include <RakNetTypes.h>
-#include <BitStream.h>
+#include <enet/enet.h>
+#include <RakSleep.h>
 
 #include <jsonxx.h>
 
 using namespace RakNet;
 using namespace jsonxx;
 
+
+namespace multislider
+{
+    struct SocketImpl
+    {
+        ENetSocket enetSocket;
+        bool valid;
+
+        SocketImpl()
+            : valid(false)
+        { }
+    };
+}
+
 namespace
 {
-    struct PeerDeleter
+    using namespace multislider;
+
+    struct EnetSocketDeleter
     {
-        void operator()(RakPeerInterface* ptr)
+        void operator()(SocketImpl* ptr) const
         {
-            RakPeerInterface::DestroyInstance(ptr);
+            if (ptr != NULL) {
+                if (ptr->valid) {
+                    enet_socket_destroy(ptr->enetSocket);
+                }
+            }
         }
     };
+
+
 }
 
 namespace multislider
 {
     using namespace constants;
 
-    void Session::DestoyInstance(Session* ptr)
+    //-------------------------------------------------------
+    static const size_t RECEIVE_BIFFER_SIZE = 4096;
+
+    bool Session::msEnetInited = false;
+
+    void Session::destoyInstance(Session* ptr)
     {
-        if (ptr != nullptr) {
+        if (ptr != NULL) {
             delete ptr;
         }
     }
@@ -48,18 +74,20 @@ namespace multislider
         assert(!mServerIp.empty());
         assert(!mPlayerName.empty());
         assert(!mSessionName.empty());
-        mSocket = shared_ptr<SocketDescriptor>(new SocketDescriptor(8800, 0));
-        //std::strncpy(mSocket->hostAddress, ip.c_str(), arrayLengh(mSocket->hostAddress));
-        //mSocket->port = port;
-        mPeer = shared_ptr<RakPeerInterface>(RakPeerInterface::GetInstance(), PeerDeleter());
+        if (!msEnetInited) {
+            if (!enet_initialize()) {
+                // ToDo: Inited by RaNet. Fix after getting rid of RakNet?
+                //throw RuntimeError("Session[Session]: Failed to init ENet");
+            }
+            msEnetInited = true;
+        }
+        mReceiveBuffer.resize(RECEIVE_BIFFER_SIZE);
     }
     //-------------------------------------------------------
 
     Session::~Session()
     {
-        if (mStarted) {
-            mPeer->Shutdown(0);
-        }
+
     }
     //-------------------------------------------------------
 
@@ -73,34 +101,121 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Session::Startup(SessionCallback* callback)
+    void Session::sendUpdDatagram(const std::string & message) const
+    {
+        ENetAddress address;
+        enet_address_set_host(&address, mServerIp.c_str());
+        address.port = mServerPort;
+
+        ENetBuffer buffer;
+        buffer.data = const_cast<void*>(pointer_cast<const void*>(message.c_str()));
+        buffer.dataLength = message.size();
+        if (!enet_socket_send(mSocket->enetSocket, &address, &buffer, 1)) {
+            throw RuntimeError("Session[Startup]: Failed to send UDP datagram");
+        }
+    }
+    //-------------------------------------------------------
+
+    size_t Session::awaitUdpDatagram(uint64_t timeoutMilliseconds, uint32_t attemptsTimeoutMilliseconds /* = 100 */) 
+    {
+        ENetAddress address;
+        ENetBuffer buffer;
+        buffer.data = &mReceiveBuffer[0];
+        buffer.dataLength = mReceiveBuffer.size();
+        uint64_t time = 0;
+        int len = 0;
+        while ((time < timeoutMilliseconds) && (0 == (len = enet_socket_receive(mSocket->enetSocket, &address, &buffer, 1)))) {
+            RakSleep(attemptsTimeoutMilliseconds);
+            time += attemptsTimeoutMilliseconds;
+        }
+        if (len < 0) {
+            return 0;
+        }
+        else {
+            return static_cast<size_t>(len);
+        }
+    }
+    //-------------------------------------------------------
+
+    void Session::startup(SessionCallback* callback)
     {
         if (callback == NULL) {
             throw RuntimeError("Session[Startup]: callback can't be null!");
         }
-        if (RAKNET_STARTED != mPeer->Startup(8, mSocket.get(), 1)) {
-            throw RuntimeError("Session[Startup]: failed to start RakPeer!");
+        mSocket = shared_ptr<SocketImpl>(new SocketImpl);
+        mSocket->enetSocket = enet_socket_create(ENET_SOCKET_TYPE_DATAGRAM);
+        mSocket->valid = true;
+        if (0 != enet_socket_set_option(mSocket->enetSocket, ENET_SOCKOPT_NONBLOCK, 1)) {
+            throw RuntimeError("Session[Session]: Failed to setup socket");
         }
+        //if (!enet_socket_set_option(mSocket->enetSocket, ENET_SOCKOPT_RCVBUF, ENET_HOST_RECEIVE_BUFFER_SIZE)) {
+        //    throw RuntimeError("Session[Session]: Failed to setup socket");
+        //}
+        //if (!enet_socket_set_option(mSocket->enetSocket, ENET_SOCKOPT_SNDBUF, ENET_HOST_SEND_BUFFER_SIZE)) {
+        //    throw RuntimeError("Session[Session]: Failed to setup socket");
+        //}
+        mCallback = callback;
         mStarted = true;
+
+
+        // Now ready
         Object readyJson;
         readyJson << MESSAGE_KEY_CLASS << backend::READY;
         readyJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
-        std::string readyMessage = makeEnvelop(readyJson).write(JSON);
+        sendUpdDatagram(makeEnvelop(readyJson).write(JSON));
 
-        DataStructures::List<RakNetSocket2*> sockets;
-        mPeer->GetSockets(sockets);
-        RakNetSocket2* socket = sockets.Get(0);
-        RNS2_SendParameters message;
-        message.data = pointer_cast<char*>(&readyMessage[0]);
-        message.length = readyMessage.size();
-        message.systemAddress.FromStringExplicitPort(mServerIp.c_str(), mServerPort);
-        socket->Send(&message, __FILE__, __LINE__);
+        uint64_t time = 0;
+        size_t dataLength = 0;
+        while (0 == (dataLength = awaitUdpDatagram(DEFAULT_TIMEOUT_MS))) {
+            RakSleep(100);
+            time += 100;
+            if (time > DEFAULT_TIMEOUT_MS) {
+                // Resend
+                sendUpdDatagram(makeEnvelop(readyJson).write(JSON));
+                time = 0;
+            }
+        }
+        if(responsed(&mReceiveBuffer[0], dataLength, RESPONSE_SUCC)) {
+            while (0 == receive()) {
+                time += 100;
+                RakSleep(100);
+                if (time > DEFAULT_TIMEOUT_MS) {
+                    // Resend
+                    sendUpdDatagram(makeEnvelop(readyJson).write(JSON));
+                    time = 0;
+                }
+            }
+            return;
+        }
+
+        Object messageJson;
+        messageJson.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), dataLength));
+        std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
+        if (!messageClass.empty()) {
+            if (isMessageClass(messageClass, backend::START)) {
+                mCallback->onStart(mSessionName, mPlayerName);
+                return;
+            }
+        }
+        //else 
+        throw RuntimeError("Session[Startup]: Unexpected server response!");
     }
     //-------------------------------------------------------
 
     uint32_t Session::receive()
     {
-        return 0;
+        uint32_t counter = 0;
+        size_t dataLength = 0; 
+        while((dataLength = awaitUdpDatagram(1)) > 0) {
+            ++counter;
+            Object messageJson;
+            messageJson.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), dataLength));
+            std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS));
+            if (isMessageClass(messageClass, backend::START)) {
+                mCallback->onStart(mSessionName, mPlayerName);
+            }
+        }
+        return counter;
     }
 }
 

@@ -92,6 +92,9 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
           //--------------------------------------------------------
           case Running =>
               msg match {
+                case Ready(playerName) =>
+                  () // Ignore
+
                 case Update(playerName, timestamp, privateData) =>
                   m_logger.info("Got a Update message")
                   val playerStats = m_stats.get(playerName)
