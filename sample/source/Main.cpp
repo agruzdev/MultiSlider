@@ -24,7 +24,16 @@ class SessionCallbackSample
 public:
     void onStart(const std::string & sessionName, const std::string & playerName) override
     {
-        std::cout << "SessionCallback[" << playerName << "]: Started session " << sessionName << std::endl;
+        std::cout << std::string("SessionCallback[") + playerName + "]: Started session " + sessionName + "\n";
+    }
+
+    void onUpdate(const std::string & sessionName, const std::string & playerName, const SessionData & data) override
+    {
+        std::string msg = std::string("SessionCallback[") + playerName + "]: Got session state (" + sessionName + ")\n";
+        for (auto & entry : data) {
+            msg += entry.first + " -> " + entry.second + "\n";
+        }
+        std::cout << msg;
     }
 };
 
@@ -86,9 +95,15 @@ public:
 
             if (gHostSession != nullptr) {
                 gHostSession->startup(&sessionCallback, 1000 * 60);
-            }
 
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+
+                gHostSession->broadcast("ServerDataHere");
+
+                while (0 == gHostSession->receive())
+                { }
+            }
 
             {
                 std::unique_lock<std::mutex> lock(mMutex);
@@ -163,8 +178,12 @@ public:
 
             if (gClientSession != nullptr) {
                 gClientSession->startup(&sessionCallback, 1000 * 60);
-            }
 
+                gClientSession->broadcast("ClientDataHere");
+
+                while (0 == gClientSession->receive()) 
+                { }
+            }
             gFlagFinish = true;
             gCvFinish.notify_one();
         }

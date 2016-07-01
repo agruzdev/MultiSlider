@@ -101,7 +101,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                   if(playerStats.isDefined){
                     if(playerStats.get != null && playerStats.get.updateTimestamp < timestamp) {
                       m_stats.update(playerName, PlayerStatistics(playerStats.get.address, timestamp, privateData))
-                      socket ! Udp.Send(ByteString(gatherSessionData()), address)
+                      socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData()))), address)
                     } else {
                       m_logger.info("[Running] Got outdated Update message")
                     }

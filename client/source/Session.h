@@ -9,6 +9,7 @@
 #define _MULTI_SLIDER_SESSION_H_
 
 #include <vector>
+#include <map>
 
 #include "CommonIncludes.h"
 #include "LibInterface.h"
@@ -20,6 +21,7 @@ namespace jsonxx
 
 namespace multislider
 {
+    typedef std::map<std::string, std::string> SessionData;
 
     class SessionCallback
     {
@@ -31,6 +33,10 @@ namespace multislider
          */
         virtual void onStart(const std::string & /*sessionName*/, const std::string & /*playerName*/) { }
 
+        /**
+         *  Is called as soon as server responsed broadcast message
+         */
+        virtual void onUpdate(const std::string & /*sessionName*/, const std::string & /*playerName*/, const SessionData & /*data*/) { }
     }; 
 
     struct SocketImpl;
@@ -77,6 +83,12 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         void startup(SessionCallback* callback, uint64_t timeout);
+
+        /**
+         *  Broadcast user data to all players
+         */
+        MULTISLIDER_EXPORT
+        void broadcast(const std::string & data);
 
         /**
          *  Receive and handle incoming messages

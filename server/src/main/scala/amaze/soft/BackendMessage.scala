@@ -49,7 +49,7 @@ object BackendMessage {
   /**
    * Universal response - send current session state
    */
-  case class SessionState() extends JsonMessage
+  case class SessionState(data: String) extends JsonMessage
 
   /**
    * Sync message

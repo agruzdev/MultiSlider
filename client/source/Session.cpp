@@ -79,6 +79,7 @@ namespace multislider
                 // ToDo: Inited by RaNet. Fix after getting rid of RakNet?
                 //throw RuntimeError("Session[Session]: Failed to init ENet");
             }
+            enet_time_set(0);
             msEnetInited = true;
         }
         mReceiveBuffer.resize(RECEIVE_BIFFER_SIZE);
@@ -149,7 +150,6 @@ namespace multislider
             throw RuntimeError("Session[Session]: Failed to setup socket");
         }
         mCallback = callback;
-        mStarted = true;
 
         // Now ready
         Object readyJson;
@@ -183,6 +183,7 @@ namespace multislider
             if (!messageClass.empty()) {
                 if (isMessageClass(messageClass, backend::START)) {
                     mCallback->onStart(mSessionName, mPlayerName);
+                    mStarted = true;
                     return;
                 }
             }
@@ -195,11 +196,26 @@ namespace multislider
         if (!messageClass.empty()) {
             if (isMessageClass(messageClass, backend::START)) {
                 mCallback->onStart(mSessionName, mPlayerName);
+                mStarted = true;
                 return;
             }
         }
         //else 
         throw RuntimeError("Session[Startup]: Unexpected server response!");
+    }
+    //-------------------------------------------------------
+
+    void Session::broadcast(const std::string & data)
+    {
+        if (!mStarted) {
+            throw ProtocolError("Session[broadcast]: Session was not started!");
+        }
+        Object updateJson;
+        updateJson << MESSAGE_KEY_CLASS << backend::UPDATE;
+        updateJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
+        updateJson << MESSAGE_KEY_TIMESTAMP << enet_time_get();
+        updateJson << MESSAGE_KEY_DATA << data;
+        sendUpdDatagram(makeEnvelop(updateJson).write(JSON));
     }
     //-------------------------------------------------------
 
@@ -214,6 +230,20 @@ namespace multislider
             std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS));
             if (isMessageClass(messageClass, backend::START)) {
                 mCallback->onStart(mSessionName, mPlayerName);
+            }
+            else if (isMessageClass(messageClass, backend::STATE)) {
+                Array sessionDataJson;
+                std::string dataJson = messageJson.get<std::string>(MESSAGE_KEY_DATA);
+                sessionDataJson.parse(dataJson);
+                SessionData sessionData;
+                for (size_t i = 0; i < sessionDataJson.size(); ++i) {
+                    Object entry = sessionDataJson.get<Object>(i);
+                    sessionData[entry.get<std::string>(MESSAGE_KEY_NAME)] = entry.get<std::string>(MESSAGE_KEY_DATA);
+                }
+                mCallback->onUpdate(mSessionName, mPlayerName, sessionData);
+            }
+            else {
+                throw RuntimeError("Session[receive]: Unknown datagram type!");
             }
         }
         return counter;
