@@ -95,9 +95,11 @@ namespace multislider
 
         /**
          *  Broadcast user data to all players
+         *  @param data user data to send to the server
+         *  @param forced if true then session stated will be send to all players, otherwise they will get it only after own update
          */
         MULTISLIDER_EXPORT
-        void broadcast(const std::string & data);
+        void broadcast(const std::string & data, bool forced);
 
         /**
          *  Send synchronization message to all players

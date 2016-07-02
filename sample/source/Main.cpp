@@ -104,7 +104,7 @@ public:
 
                 std::this_thread::sleep_for(std::chrono::seconds(1));
 
-                gHostSession->broadcast("ServerDataHere");
+                gHostSession->broadcast("ServerDataHere", false);
 
                 while (0 == gHostSession->receive())
                 { }
@@ -113,8 +113,10 @@ public:
 
                 gHostSession->sync(7, 1);
 
-                while (0 == gHostSession->receive())
-                { }
+                uint32_t counter = 0;
+                while (counter < 2) {
+                    counter += gHostSession->receive();
+                }
             }
 
             {
@@ -191,12 +193,17 @@ public:
             if (gClientSession != nullptr) {
                 gClientSession->startup(&sessionCallback, 1000 * 60);
 
-                gClientSession->broadcast("ClientDataHere");
+                gClientSession->broadcast("ClientDataHere", false);
 
                 uint32_t counter = 0;
                 while (counter < 2) {
                     counter += gClientSession->receive();
                 }
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+
+                gClientSession->broadcast("ForcedData", true);
+                while (0 == gClientSession->receive()) 
+                { }
             }
             gFlagFinish = true;
             gCvFinish.notify_one();

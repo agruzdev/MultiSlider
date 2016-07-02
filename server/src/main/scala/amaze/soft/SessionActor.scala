@@ -95,13 +95,17 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                 case Ready(playerName) =>
                   () // Ignore
 
-                case Update(playerName, timestamp, privateData) =>
+                case Update(playerName, timestamp, forceBroadcast, privateData) =>
                   m_logger.info("Got a Update message")
                   val playerStats = m_stats.get(playerName)
                   if(playerStats.isDefined){
                     if(playerStats.get != null && playerStats.get.updateTimestamp < timestamp) {
                       m_stats.update(playerName, PlayerStatistics(playerStats.get.address, timestamp, privateData))
-                      socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData()))), address)
+                      if(forceBroadcast) {
+                        m_stats.values.foreach( stat => socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData()))), stat.address))
+                      }else {
+                        socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData()))), address)
+                      }
                     } else {
                       m_logger.info("[Running] Got outdated Update message")
                     }

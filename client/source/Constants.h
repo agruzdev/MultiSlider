@@ -32,6 +32,7 @@ namespace multislider
         static const char MESSAGE_KEY_TIMESTAMP[]    = "timestamp";
         static const char MESSAGE_KEY_DELAY[]        = "delay";
         static const char MESSAGE_KEY_SYNC_ID[]      = "syncId";
+        static const char MESSAGE_KEY_FORCE_BROADCAST[] = "forceBroadcast";
 
         namespace frontend
         {

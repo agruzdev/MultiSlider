@@ -210,7 +210,7 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Session::broadcast(const std::string & data)
+    void Session::broadcast(const std::string & data, bool forced)
     {
         if (!mStarted) {
             throw ProtocolError("Session[broadcast]: Session was not started!");
@@ -219,6 +219,7 @@ namespace multislider
         updateJson << MESSAGE_KEY_CLASS << backend::UPDATE;
         updateJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
         updateJson << MESSAGE_KEY_TIMESTAMP << enet_time_get();
+        updateJson << MESSAGE_KEY_FORCE_BROADCAST << forced;
         updateJson << MESSAGE_KEY_DATA << data;
         sendUpdDatagram(makeEnvelop(updateJson).write(JSON));
     }
