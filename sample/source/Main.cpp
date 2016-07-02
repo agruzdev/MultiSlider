@@ -35,6 +35,11 @@ public:
         }
         std::cout << msg;
     }
+
+    void onSync(const std::string & sessionName, const std::string & playerName, uint32_t syncId) override
+    {
+        std::cout << std::string("SessionCallback[") + playerName + "]: Got sync " + std::to_string(syncId) + "\n";
+    }
 };
 
 SessionPtr gHostSession;
@@ -100,6 +105,13 @@ public:
                 std::this_thread::sleep_for(std::chrono::seconds(1));
 
                 gHostSession->broadcast("ServerDataHere");
+
+                while (0 == gHostSession->receive())
+                { }
+
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+
+                gHostSession->sync(7, 1);
 
                 while (0 == gHostSession->receive())
                 { }
@@ -169,7 +181,7 @@ public:
                 gFlagSession = true;
                 gCvSession.notify_one();
 
-                while (0 == client->receive()) 
+                while (0 == client->receive())
                 { }
 
                 std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -181,8 +193,10 @@ public:
 
                 gClientSession->broadcast("ClientDataHere");
 
-                while (0 == gClientSession->receive()) 
-                { }
+                uint32_t counter = 0;
+                while (counter < 2) {
+                    counter += gClientSession->receive();
+                }
             }
             gFlagFinish = true;
             gCvFinish.notify_one();

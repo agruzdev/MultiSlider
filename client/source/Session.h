@@ -37,6 +37,11 @@ namespace multislider
          *  Is called as soon as server responsed broadcast message
          */
         virtual void onUpdate(const std::string & /*sessionName*/, const std::string & /*playerName*/, const SessionData & /*data*/) { }
+
+        /**
+         *  Is called as soon as synchronization message is got
+         */
+        virtual void onSync(const std::string & /*sessionName*/, const std::string & /*playerName*/, uint32_t /*syncId*/) { }
     }; 
 
     struct SocketImpl;
@@ -74,6 +79,10 @@ namespace multislider
 
         ~Session();
 
+        /**
+         *  Exported for smart pointer
+         *  Don't use manually!
+         */
         MULTISLIDER_EXPORT
         static void destoyInstance(Session* session);
 
@@ -89,6 +98,14 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         void broadcast(const std::string & data);
+
+        /**
+         *  Send synchronization message to all players
+         *  @param syncId arbitrary id of the synchronization 
+         *  @param delay delay time before sending synchronization message to all players [in milliseconds]
+         */
+        MULTISLIDER_EXPORT
+        void sync(uint32_t syncId, uint64_t delay);
 
         /**
          *  Receive and handle incoming messages

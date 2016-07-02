@@ -30,6 +30,8 @@ namespace multislider
         static const char MESSAGE_KEY_ID[]           = "id";
         static const char MESSAGE_KEY_SESSION_ID[]   = "sessionId";
         static const char MESSAGE_KEY_TIMESTAMP[]    = "timestamp";
+        static const char MESSAGE_KEY_DELAY[]        = "delay";
+        static const char MESSAGE_KEY_SYNC_ID[]      = "syncId";
 
         namespace frontend
         {
@@ -52,10 +54,12 @@ namespace multislider
             // Outcoming
             static const char READY[]  = "BackendMessage$Ready";
             static const char UPDATE[] = "BackendMessage$Update";
+            static const char SYNC_REQUEST[] = "BackendMessage$RequestSync";
 
             // Incoming
             static const char START[] = "BackendMessage$Start";
             static const char STATE[] = "BackendMessage$SessionState";
+            static const char SYNC[]  = "BackendMessage$Sync";
         }
 
         static const uint64_t DEFAULT_TIMEOUT_MS = 10000; // 10 seconds

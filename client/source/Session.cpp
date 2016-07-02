@@ -219,6 +219,20 @@ namespace multislider
     }
     //-------------------------------------------------------
 
+    void Session::sync(uint32_t syncId, uint64_t delay)
+    {
+        if (!mStarted) {
+            throw ProtocolError("Session[broadcast]: Session was not started!");
+        }
+        Object syncJson;
+        syncJson << MESSAGE_KEY_CLASS << backend::SYNC_REQUEST;
+        syncJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
+        syncJson << MESSAGE_KEY_DELAY << delay;
+        syncJson << MESSAGE_KEY_SYNC_ID << syncId;
+        sendUpdDatagram(makeEnvelop(syncJson).write(JSON));
+    }
+    //-------------------------------------------------------
+
     uint32_t Session::receive()
     {
         uint32_t counter = 0;
@@ -241,6 +255,9 @@ namespace multislider
                     sessionData[entry.get<std::string>(MESSAGE_KEY_NAME)] = entry.get<std::string>(MESSAGE_KEY_DATA);
                 }
                 mCallback->onUpdate(mSessionName, mPlayerName, sessionData);
+            }
+            else if (isMessageClass(messageClass, backend::SYNC)) {
+                mCallback->onSync(mSessionName, mPlayerName, narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SYNC_ID)));
             }
             else {
                 throw RuntimeError("Session[receive]: Unknown datagram type!");
