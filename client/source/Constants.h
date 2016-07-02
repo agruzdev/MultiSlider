@@ -55,6 +55,7 @@ namespace multislider
             static const char READY[]  = "BackendMessage$Ready";
             static const char UPDATE[] = "BackendMessage$Update";
             static const char SYNC_REQUEST[] = "BackendMessage$RequestSync";
+            static const char QUIT[]   = "BackendMessage$Quit";
 
             // Incoming
             static const char START[] = "BackendMessage$Start";

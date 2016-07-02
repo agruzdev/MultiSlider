@@ -88,7 +88,12 @@ namespace multislider
 
     Session::~Session()
     {
-
+        if (mStarted) {
+            Object quitJson;
+            quitJson << MESSAGE_KEY_CLASS << backend::QUIT;
+            quitJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
+            sendUpdDatagram(makeEnvelop(quitJson).write(JSON));
+        }
     }
     //-------------------------------------------------------
 
