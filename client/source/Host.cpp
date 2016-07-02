@@ -107,10 +107,10 @@ namespace multislider
             else if (isMessageClass(messageClass, frontend::SESSION_STARTED)) {
                 SessionPtr session(new Session(
                     messageJson.get<jsonxx::String>(MESSAGE_KEY_IP, ""),
-                    static_cast<uint16_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_PORT, 0.0)),
+                    narrow_cast<uint16_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_PORT, 0.0)),
                     mMyRoom.hostName,
                     messageJson.get<jsonxx::String>(MESSAGE_KEY_NAME, ""),
-                    static_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 0.0))), details::SessionDeleter());
+                    narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 0.0))), details::SessionDeleter());
                 mCallback->onSessionStart(mMyRoom, session);
             }
             ++counter;

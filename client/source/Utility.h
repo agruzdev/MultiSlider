@@ -156,6 +156,17 @@ namespace multislider
     {
         return _N;
     }
+
+    /**
+     *  Checked cast
+     */
+    template<typename _TypeTo, typename _TypeFrom>
+    inline
+    _TypeTo narrow_cast(const _TypeFrom & val)
+    {
+        assert(static_cast<_TypeFrom>(static_cast<_TypeTo>(val)) == val);
+        return static_cast<_TypeTo>(val);
+    }
 }
 
 
