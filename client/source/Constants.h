@@ -18,6 +18,7 @@ namespace multislider
         static const char RESPONSE_GREET[] = "HALO";
         static const char RESPONSE_SUCC[]  = "SUCC";
         static const char RESPONSE_SUCK[]  = "SUCK";
+        static const char RESPONSE_ROOM_IS_FULL[] = "FULL";
 
         static const char MESSAGE_KEY_CLASS[]        = "jsonClass";
         static const char MESSAGE_KEY_PLAYER_NAME[]  = "playerName";
@@ -26,6 +27,7 @@ namespace multislider
         static const char MESSAGE_KEY_ADDRESS[]      = "address";
         static const char MESSAGE_KEY_IP[]           = "ip";
         static const char MESSAGE_KEY_PORT[]         = "port";
+        static const char MESSAGE_KEY_HOST[]         = "host";
         static const char MESSAGE_KEY_NAME[]         = "name";
         static const char MESSAGE_KEY_ID[]           = "id";
         static const char MESSAGE_KEY_SESSION_ID[]   = "sessionId";
@@ -33,6 +35,8 @@ namespace multislider
         static const char MESSAGE_KEY_DELAY[]        = "delay";
         static const char MESSAGE_KEY_SYNC_ID[]      = "syncId";
         static const char MESSAGE_KEY_FORCE_BROADCAST[] = "forceBroadcast";
+        static const char MESSAGE_KEY_PLAYERS_LIMIT[]  = "playersLimit";
+        static const char MESSAGE_KEY_PLAYERS_NUMBER[] = "playersNumber";
 
         namespace frontend
         {

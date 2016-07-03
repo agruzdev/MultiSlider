@@ -16,6 +16,8 @@ namespace multislider
     {
         std::string hostName;
         std::string roomName;
+        uint32_t playersLimit;
+        uint32_t playersNumber;
     };
 }
 

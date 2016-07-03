@@ -27,7 +27,7 @@ namespace multislider
 {
     using namespace constants;
 
-    Host::Host(shared_ptr<RakNet::TCPInterface> connection, shared_ptr<RakNet::SystemAddress> address, const std::string & playerName, const std::string & roomName, HostCallback* callback)
+    Host::Host(shared_ptr<RakNet::TCPInterface> connection, shared_ptr<RakNet::SystemAddress> address, const std::string & playerName, const std::string & roomName, uint32_t playersLimit, HostCallback* callback)
         : mTcp(connection), mCallback(callback), mServerAddress(address)
     {
         assert(mTcp.get() != NULL);
@@ -43,6 +43,7 @@ namespace multislider
         createRoomJson << MESSAGE_KEY_CLASS << frontend::CREATE_ROOM;
         createRoomJson << MESSAGE_KEY_PLAYER_NAME << playerName;
         createRoomJson << MESSAGE_KEY_ROOM_NAME << roomName;
+        createRoomJson << MESSAGE_KEY_PLAYERS_LIMIT << playersLimit;
         std::string createRoomMessage = createRoomJson.write(JSON);
 
         mTcp->Send(createRoomMessage.c_str(), createRoomMessage.size(), *mServerAddress, false);

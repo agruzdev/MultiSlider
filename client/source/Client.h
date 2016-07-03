@@ -69,6 +69,11 @@ namespace multislider
         ~Client();
 
         /**
+         * Connect server and join the room
+         */
+        int join();
+
+        /**
          *  Leave the current room
          *  After leaving Client instance can't be reused for another room
          */

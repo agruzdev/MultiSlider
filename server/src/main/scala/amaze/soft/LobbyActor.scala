@@ -23,9 +23,9 @@ import scala.collection.JavaConversions._
 object LobbyActor
 {
   // Internal structure describing room
-  case class RoomInfo(name: String, host: PlayerInfo)
+  case class RoomInfo(name: String, host: PlayerInfo, playersLimit: Int, var playersNumber: Int)
   // Simple room descriptor for clients
-  case class RoomHeader(name: String, host: String)
+  case class RoomHeader(name: String, host: String, playersLimit: Int, playersNumber: Int)
 
   // States of lobby
   object State extends Enumeration {
@@ -87,10 +87,10 @@ class LobbyActor(
         logger.info(msg.toString)
         msg match {
           //---------------------------------------------------------------------
-          case CreateRoom(player, roomName) =>
+          case CreateRoom(player, roomName, playersLimit) =>
             logger.info("Got a CreateRoom message!")
             m_myself = PlayerInfo(player, self)
-            m_room = RoomInfo(roomName, m_myself)
+            m_room = RoomInfo(roomName, m_myself, playersLimit, 1)
             if ((m_state == Virgin) && Depot.registerLobby(roomName, m_room)) {
               m_players += self -> m_myself
               m_state = Host
@@ -114,7 +114,9 @@ class LobbyActor(
           //---------------------------------------------------------------------
           case GetRooms() =>
             logger.info("Got a GetRooms message!")
-            sender() ! Tcp.Write(ByteString(json.Serialization.write(Depot.getLobbies.map({ case (name, info) => RoomHeader(name, info.host.name) }).toList)))
+            sender() ! Tcp.Write(ByteString(json.Serialization.write(Depot.getLobbies.map({
+              case (name, info) => RoomHeader(name, info.host.name, info.playersLimit, info.playersNumber)
+            }).toList)))
 
           //---------------------------------------------------------------------
           case JoinRoom(player, roomName) =>
@@ -124,11 +126,16 @@ class LobbyActor(
               if (m_room != null) {
                 m_myself = PlayerInfo(player, self)
                 implicit val timeout = Timeout(Constants.FUTURE_TIMEOUT)
-                if (Await.result(m_room.host.actor ? AddPlayer(m_myself), timeout.duration).asInstanceOf[Boolean]) {
-                  m_state = Joined
-                  sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
-                } else {
-                  sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
+                //if (Await.result(m_room.host.actor ? AddPlayer(m_myself), timeout.duration).asInstanceOf[Boolean]) {
+                val err_code = Await.result(m_room.host.actor ? AddPlayer(m_myself), timeout.duration).asInstanceOf[Int]
+                err_code match {
+                  case 0 =>
+                    m_state = Joined
+                    sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
+                  case 2 =>
+                    sender() ! Tcp.Write(ByteString(Constants.RESPONSE_ROOM_IS_FULL))
+                  case _ =>
+                    sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
                 }
               }
             } else {
@@ -266,16 +273,22 @@ class LobbyActor(
    * Method of a Host
    * Add a player to the current room
    */
-  private def addPlayerImpl(player: PlayerInfo) : Boolean = {
+  // ToDo: temporal return code. To be refactored
+  private def addPlayerImpl(player: PlayerInfo) : Int = {
     if(m_state == Host) {
       if(m_players.get(player.actor).isEmpty) {
+        if(m_players.size >= m_room.playersLimit) {
+          return 2
+        }
         m_players += player.actor -> player
+        m_room.playersNumber = m_players.size
+        Depot.updateRoomInfo(m_room)
         logger.info("Player \"" + player.name + "\" joined")
-        return true
+        return 0
       }
     }
     logger.error("Can't add a player! I'm not a host!")
-    false
+    1
   }
 
   /**

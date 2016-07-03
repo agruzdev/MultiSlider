@@ -29,6 +29,9 @@ object Depot {
   def registerLobby(roomName: String, info: RoomInfo) : Boolean = {
     var status = false
     logger.info("Register lobby \"" + roomName + "\" created by \"" + info.host.name + "\"")
+    if(info.playersNumber > info.playersLimit) {
+      return false
+    }
     lock.synchronized {
       if (!lobbies.containsKey(roomName)) {
         lobbies.put(roomName, info)
@@ -45,6 +48,13 @@ object Depot {
       lobbies.remove(roomName)
     }
     logger.info("All lobbies = " + lobbies)
+  }
+
+  def updateRoomInfo(info: RoomInfo) = {
+    logger.info("Update lobby \"" + info.name + "\"")
+    lock.synchronized {
+      lobbies.put(info.name, info)
+    }
   }
 
   def getLobbies = lobbies

@@ -51,17 +51,17 @@ class HostCallbackSample
 public:
     void onCreated(const RoomInfo & room) override
     {
-        std::cout << "Room \"" << room.roomName << "\" is created!" << std::endl;
+        std::cout << std::string("Room \"") + room.roomName + "\" is created!\n";
     }
 
     void onClosed(const RoomInfo & room) override
     {
-        std::cout << "Room \"" << room.roomName << "\" is closed!" << std::endl;
+        std::cout << std::string("Room \"") + room.roomName + "\" is closed!\n";
     }
 
     void onSessionStart(const RoomInfo & room, SessionPtr session) override
     {
-        std::cout << "Room \"" << room.roomName << "\" session is started!" << std::endl;
+        std::cout << std::string("Room \"") + room.roomName + "\" session is started!\n";
         gHostSession = session;
     }
 };
@@ -77,7 +77,7 @@ public:
         SessionCallbackSample sessionCallback;
         {
             Lobby lobby;
-            Host* host = lobby.createRoom("Player1", "Room1", &callback);
+            Host* host = lobby.createRoom("Player1", "Room1", 2, &callback);
 
             gFlagJoin = true;
             gCvJoin.notify_one();
@@ -85,11 +85,16 @@ public:
             std::this_thread::sleep_for(std::chrono::seconds(2));
 
             host->broadcast("TestMessage1");
-            std::cout << "Server sent broadcast" << std::endl;
+            std::cout << "Server sent broadcast\n";
 
             {
                 std::unique_lock<std::mutex> lock(mMutex);
                 gCvSession.wait(lock, []() {return gFlagSession.load(); });
+            }
+
+            std::vector<RoomInfo> rooms = lobby.getRooms();
+            for (auto & info : rooms) {
+                std::cout << info.roomName + " by " + info.hostName + "   players: " + std::to_string(info.playersNumber) + "/" + std::to_string(info.playersLimit) + "\n";
             }
 
             host->startSession();
@@ -136,22 +141,22 @@ public:
 
     void onJoined(const std::string & playerName, const RoomInfo & room) override
     {
-        std::cout << "[" << playerName << "]: I joined \"" << room.roomName << "\"" << std::endl;
+        std::cout << std::string("[") + playerName + "]: I joined \"" + room.roomName + "\"\n";
     }
 
     void onLeft(const std::string & playerName, const RoomInfo & room) override
     {
-        std::cout << "[" << playerName << "]: I left \"" << room.roomName << "\"" << std::endl;
+        std::cout << std::string("[") + playerName + "]: I left \"" + room.roomName + "\"\n";
     }
 
     void onBroadcast(const std::string & playerName, const std::string & message) override
     {
-        std::cout << "[" << playerName << "]: I got broadcast message \"" << message << "\"" << std::endl;
+        std::cout << std::string("[") + playerName + "]: I got broadcast message \"" + message + "\"\n";
     }
 
     void onSessionStart(const std::string & playerName, SessionPtr session) override
     {
-        std::cout << "[" << playerName << "]: I got SessionStarted message!" << std::endl;
+        std::cout << std::string("[") + playerName + "]: I got SessionStarted message!\n";
         gClientSession = session;
     }
 };
@@ -172,10 +177,11 @@ public:
             Lobby lobby;
             std::vector<RoomInfo> rooms = lobby.getRooms();
             for (auto & info : rooms) {
-                std::cout << info.roomName << " by " << info.hostName << std::endl;
+                std::cout << info.roomName + " by " + info.hostName + "   players: " + std::to_string(info.playersNumber) + "/" + std::to_string(info.playersLimit) + "\n";
             }
             if (!rooms.empty()) {
-                Client* client = lobby.joinRoom("Player2", rooms[0], &callback);
+                bool full = false;
+                Client* client = lobby.joinRoom("Player2", rooms[0], &callback, full);
 
                 while (0 == client->receive())
                 { }

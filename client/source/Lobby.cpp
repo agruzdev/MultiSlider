@@ -59,7 +59,7 @@ namespace multislider
     { }
     //-------------------------------------------------------
 
-    Host* Lobby::createRoom(const std::string & playerName, const std::string & roomName, HostCallback* callback)
+    Host* Lobby::createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, HostCallback* callback)
     {
         if (playerName.empty()) {
             throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");
@@ -70,7 +70,10 @@ namespace multislider
         if (callback == NULL) {
             throw ProtocolError("Lobby[createRoom]: callback can't be null!");
         }
-        mHostInstance.reset(new Host(mTcp, mServerAddress, playerName, roomName, callback));
+        if (playersLimit < 1) {
+            throw ProtocolError("Lobby[createRoom]: players limit can't be less than 1");
+        }
+        mHostInstance.reset(new Host(mTcp, mServerAddress, playerName, roomName, playersLimit, callback));
         return mHostInstance.get();
     }
     //-------------------------------------------------------
@@ -94,14 +97,16 @@ namespace multislider
         rooms.resize(roomsArray.size());
         for (size_t i = 0; i < roomsArray.size(); ++i) {
             Object jsonRoom = roomsArray.get<Object>(i);
-            rooms[i].roomName = jsonRoom.get<std::string>("name", "<Unknown>");
-            rooms[i].hostName = jsonRoom.get<std::string>("host", "<Unknown>");
+            rooms[i].roomName = jsonRoom.get<std::string>(MESSAGE_KEY_NAME, "<Unknown>");
+            rooms[i].hostName = jsonRoom.get<std::string>(MESSAGE_KEY_HOST, "<Unknown>");
+            rooms[i].playersLimit  = narrow_cast<uint32_t>(jsonRoom.get<jsonxx::Number>(MESSAGE_KEY_PLAYERS_LIMIT, 0));
+            rooms[i].playersNumber = narrow_cast<uint32_t>(jsonRoom.get<jsonxx::Number>(MESSAGE_KEY_PLAYERS_NUMBER, 0));
         }
         return rooms;
     }
     //-------------------------------------------------------
 
-    Client* Lobby::joinRoom(const std::string & playerName, const RoomInfo & room, ClientCallback* callback)
+    Client* Lobby::joinRoom(const std::string & playerName, const RoomInfo & room, ClientCallback* callback, bool & isFull)
     {
         if (playerName.empty()) {
             throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");
@@ -113,6 +118,16 @@ namespace multislider
             throw ProtocolError("Lobby[createRoom]: callback can't be null!");
         }
         mClientInstance.reset(new Client(mTcp, mServerAddress, playerName, room, callback));
-        return mClientInstance.get();
+        isFull = false;
+        switch (mClientInstance->join()) {
+        case 0:
+            return mClientInstance.get();
+        case 2:
+            isFull = true;
+        case 1:
+        default:
+            mClientInstance.reset();
+            return NULL;
+        }
     }
 }

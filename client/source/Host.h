@@ -62,7 +62,7 @@ namespace multislider
         Host & operator=(const Host &);
 
     public:
-        Host(shared_ptr<RakNet::TCPInterface> connection, shared_ptr<RakNet::SystemAddress> address, const std::string & playerName, const std::string & roomName, HostCallback* callback);
+        Host(shared_ptr<RakNet::TCPInterface> connection, shared_ptr<RakNet::SystemAddress> address, const std::string & playerName, const std::string & roomName, uint32_t playersLimit, HostCallback* callback);
     
         ~Host();
 

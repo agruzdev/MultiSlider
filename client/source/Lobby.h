@@ -38,10 +38,11 @@ namespace multislider
          *  Create new room on the server
          *  @param playerName name of the current player. It will be assigned as host of the created room
          *  @param roomName name of the room
+         *  @param palyersLimit maximum number of players in the room (should be >= 1)
          *  @param callback callback for host events, can't be null
          */
         MULTISLIDER_EXPORT
-        Host* createRoom(const std::string & playerName, const std::string & roomName, HostCallback* callback);
+        Host* createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, HostCallback* callback);
 
         /**
          *  Get a list of all opened rooms on the server
@@ -56,7 +57,7 @@ namespace multislider
          *  @param callback callback for client events, can't be null
          */
         MULTISLIDER_EXPORT
-        Client* joinRoom(const std::string & playerName, const RoomInfo & room, ClientCallback* callback);
+        Client* joinRoom(const std::string & playerName, const RoomInfo & room, ClientCallback* callback, bool & isFull);
     };
 
 }
