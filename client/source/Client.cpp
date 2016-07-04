@@ -86,11 +86,12 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Client::broadcast(const std::string & data)
+    void Client::broadcast(const std::string & data, bool toSelf)
     {
         Object broadcastJson;
         broadcastJson << MESSAGE_KEY_CLASS << frontend::BROADCAST;
         broadcastJson << MESSAGE_KEY_DATA << data;
+        broadcastJson << MESSAGE_KEY_TO_SELF << toSelf;
         std::string broadcastMessage = broadcastJson.write(JSON);
         mTcp->Send(broadcastMessage.c_str(), broadcastMessage.size(), *mServerAddress, false);
     }

@@ -1,13 +1,13 @@
 // All commands should be encoded in UTF-8
 
-{"jsonClass":"FrontendMessage$CreateRoom","playerName":"doge","roomName":"woof"}
+{"jsonClass":"FrontendMessage$CreateRoom","playerName":"doge","roomName":"woof","playersLimit":4}
 {"jsonClass":"FrontendMessage$CloseRoom"}
 {"jsonClass":"FrontendMessage$GetRooms"}
 
 {"jsonClass":"FrontendMessage$JoinRoom","playerName":"cate","roomName":"woof"}
 {"jsonClass":"FrontendMessage$LeaveRoom"}
 
-{"jsonClass":"FrontendMessage$Update","data":"such update"}
+{"jsonClass":"FrontendMessage$Update","toSelf":false,"data":"such update"}
 
 {"jsonClass":"FrontendMessage$EjectPlayer","playerName":"cate"}
 

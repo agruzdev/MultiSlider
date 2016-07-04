@@ -24,6 +24,7 @@ namespace multislider
         static const char MESSAGE_KEY_PLAYER_NAME[]  = "playerName";
         static const char MESSAGE_KEY_ROOM_NAME[]    = "roomName";
         static const char MESSAGE_KEY_DATA[]         = "data";
+        static const char MESSAGE_KEY_TO_SELF[]      = "toSelf";
         static const char MESSAGE_KEY_ADDRESS[]      = "address";
         static const char MESSAGE_KEY_IP[]           = "ip";
         static const char MESSAGE_KEY_PORT[]         = "port";

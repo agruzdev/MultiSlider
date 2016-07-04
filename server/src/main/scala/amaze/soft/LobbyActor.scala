@@ -159,7 +159,7 @@ class LobbyActor(
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
           //---------------------------------------------------------------------
-          case Update(_: String) =>
+          case Update(_: String, _: Boolean) =>
             logger.info("Got a UpdateBroadcast message!")
             if(m_state == Host || m_state == Joined) {
               m_room.host.actor ! UpdateBroadcast(self, msg.asInstanceOf[Update])
@@ -217,7 +217,7 @@ class LobbyActor(
       if(m_state == Host) {
         m_players.foreach{ case (playerActor, _) => if(playerActor != self) playerActor ! UpdateBroadcast(updateSender, updateMessage) }
       }
-      if(self != updateSender) {
+      if(updateMessage.toSelf || self != updateSender) {
         m_remote_user ! Tcp.Write(ByteString( json.Serialization.write(updateMessage)))
       }
 
@@ -298,6 +298,8 @@ class LobbyActor(
   private def removePlayerImpl(player: PlayerInfo) : Boolean = {
     if(m_state == Host) {
       m_players -= player.actor
+      m_room.playersNumber = m_players.size
+      Depot.updateRoomInfo(m_room)
       logger.info("Player \"" + player.name + "\" left")
       return true
     }

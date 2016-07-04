@@ -47,7 +47,7 @@ object FrontendMessage {
   /**
    * Is sent by any user when he changed some settings
    */
-  case class Update(data: String) extends JsonMessage
+  case class Update(data: String, toSelf: Boolean) extends JsonMessage
 
   /**
    * Start game session for all current players

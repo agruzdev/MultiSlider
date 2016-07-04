@@ -1,6 +1,6 @@
 
-#include "../../client/source/Lobby.h"
-#include "../../client/source/Exception.h"
+#include "../../../client/source/Lobby.h"
+#include "../../../client/source/Exception.h"
 
 #include <iostream>
 #include <mutex>
@@ -84,7 +84,7 @@ public:
 
             std::this_thread::sleep_for(std::chrono::seconds(2));
 
-            host->broadcast("TestMessage1");
+            host->broadcast("TestMessage1", false);
             std::cout << "Server sent broadcast\n";
 
             {

@@ -85,7 +85,7 @@ namespace multislider
          *  Not blocking call
          */
         MULTISLIDER_EXPORT
-        void broadcast(const std::string & data);
+        void broadcast(const std::string & data, bool toSelf);
 
         /**
          *  Check incoming broadcast messages and call callback for the each message
