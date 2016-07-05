@@ -36,7 +36,7 @@ namespace multislider
         /**
          *  Is called as soon as server responsed broadcast message
          */
-        virtual void onUpdate(const std::string & /*sessionName*/, const std::string & /*playerName*/, const SessionData & /*data*/) { }
+        virtual void onUpdate(const std::string & /*sessionName*/, const std::string & /*playerName*/, const SessionData & /*data*/, const std::string & /*sharedData*/) { }
 
         /**
          *  Is called as soon as synchronization message is got
@@ -100,6 +100,15 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         void broadcast(const std::string & data, bool forced);
+
+        /**
+        *  Broadcast user data to all players
+        *  @param data user data to send to the server
+        *  @param sharedData data shared by all users, is overwritten by all users
+        *  @param forced if true then session stated will be send to all players, otherwise they will get it only after own update
+        */
+        MULTISLIDER_EXPORT
+        void broadcast(const std::string & data, const std::string & sharedData, bool forced);
 
         /**
          *  Send synchronization message to all players

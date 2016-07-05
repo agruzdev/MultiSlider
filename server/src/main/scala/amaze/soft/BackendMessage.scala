@@ -25,7 +25,7 @@ object BackendMessage {
   /**
    * Update current player private data
    */
-  case class Update(playerName: String, timestamp: Long, forceBroadcast: Boolean, data: String) extends  JsonMessage
+  case class Update(playerName: String, timestamp: Long, forceBroadcast: Boolean, data: String, sharedData: String) extends  JsonMessage
 
   /**
    * Request server to send sync message to all players
@@ -49,7 +49,7 @@ object BackendMessage {
   /**
    * Universal response - send current session state
    */
-  case class SessionState(data: String) extends JsonMessage
+  case class SessionState(data: String, sharedData: String) extends JsonMessage
 
   /**
    * Sync message

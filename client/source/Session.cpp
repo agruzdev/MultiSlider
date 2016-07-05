@@ -187,8 +187,8 @@ namespace multislider
             std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
             if (!messageClass.empty()) {
                 if (isMessageClass(messageClass, backend::START)) {
-                    mCallback->onStart(mSessionName, mPlayerName);
                     mStarted = true;
+                    mCallback->onStart(mSessionName, mPlayerName);
                     return;
                 }
             }
@@ -200,8 +200,8 @@ namespace multislider
         std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
         if (!messageClass.empty()) {
             if (isMessageClass(messageClass, backend::START)) {
-                mCallback->onStart(mSessionName, mPlayerName);
                 mStarted = true;
+                mCallback->onStart(mSessionName, mPlayerName);
                 return;
             }
         }
@@ -210,7 +210,7 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Session::broadcast(const std::string & data, bool forced)
+    void Session::broadcast(const std::string & data, const std::string & sharedData, bool forced)
     {
         if (!mStarted) {
             throw ProtocolError("Session[broadcast]: Session was not started!");
@@ -221,7 +221,14 @@ namespace multislider
         updateJson << MESSAGE_KEY_TIMESTAMP << enet_time_get();
         updateJson << MESSAGE_KEY_FORCE_BROADCAST << forced;
         updateJson << MESSAGE_KEY_DATA << data;
+        updateJson << MESSAGE_KEY_SHARED_DATA << sharedData;
         sendUpdDatagram(makeEnvelop(updateJson).write(JSON));
+    }
+    //-------------------------------------------------------
+
+    void Session::broadcast(const std::string & data, bool forced)
+    {
+        broadcast(data, std::string(), forced);
     }
     //-------------------------------------------------------
 
@@ -256,11 +263,12 @@ namespace multislider
                 std::string dataJson = messageJson.get<std::string>(MESSAGE_KEY_DATA);
                 sessionDataJson.parse(dataJson);
                 SessionData sessionData;
+                std::string shared;
                 for (size_t i = 0; i < sessionDataJson.size(); ++i) {
                     Object entry = sessionDataJson.get<Object>(i);
                     sessionData[entry.get<std::string>(MESSAGE_KEY_NAME)] = entry.get<std::string>(MESSAGE_KEY_DATA);
                 }
-                mCallback->onUpdate(mSessionName, mPlayerName, sessionData);
+                mCallback->onUpdate(mSessionName, mPlayerName, sessionData, messageJson.get<jsonxx::String>(MESSAGE_KEY_SHARED_DATA, ""));
             }
             else if (isMessageClass(messageClass, backend::SYNC)) {
                 mCallback->onSync(mSessionName, mPlayerName, narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SYNC_ID)));

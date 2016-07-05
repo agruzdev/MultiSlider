@@ -27,12 +27,13 @@ public:
         std::cout << std::string("SessionCallback[") + playerName + "]: Started session " + sessionName + "\n";
     }
 
-    void onUpdate(const std::string & sessionName, const std::string & playerName, const SessionData & data) override
+    void onUpdate(const std::string & sessionName, const std::string & playerName, const SessionData & data, const std::string & sharedData) override
     {
         std::string msg = std::string("SessionCallback[") + playerName + "]: Got session state (" + sessionName + ")\n";
         for (auto & entry : data) {
             msg += entry.first + " -> " + entry.second + "\n";
         }
+        msg += std::string("_shared_ -> ") + sharedData + "\n";
         std::cout << msg;
     }
 
@@ -109,7 +110,7 @@ public:
 
                 std::this_thread::sleep_for(std::chrono::seconds(1));
 
-                gHostSession->broadcast("ServerDataHere", false);
+                gHostSession->broadcast("ServerDataHere", "OverwrittenShared", false);
 
                 while (0 == gHostSession->receive())
                 { }
@@ -199,7 +200,7 @@ public:
             if (gClientSession != nullptr) {
                 gClientSession->startup(&sessionCallback, 1000 * 60);
 
-                gClientSession->broadcast("ClientDataHere", false);
+                gClientSession->broadcast("ClientDataHere", "SharedHere", false);
 
                 uint32_t counter = 0;
                 while (counter < 2) {

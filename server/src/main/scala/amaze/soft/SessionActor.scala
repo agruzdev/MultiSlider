@@ -50,9 +50,12 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
 
   val m_stats: scala.collection.mutable.HashMap[String, PlayerStatistics] =
     scala.collection.mutable.HashMap(players.map(name => {name -> null}).toSeq:_*)
-  m_logger.info(players.toString())
+
+  var m_shared_stats = PlayerStatistics(null, 0, "")
 
   var m_state = Waiting
+
+  m_logger.info(players.toString())
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
     classOf[Ready], classOf[Start], classOf[Update], classOf[SessionState], classOf[Quit], classOf[RequestSync], classOf[Sync])))
@@ -95,16 +98,19 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                 case Ready(playerName) =>
                   () // Ignore
 
-                case Update(playerName, timestamp, forceBroadcast, privateData) =>
+                case Update(playerName, timestamp, forceBroadcast, privateData, sharedData) =>
                   m_logger.info("Got a Update message")
                   val playerStats = m_stats.get(playerName)
                   if(playerStats.isDefined){
                     if(playerStats.get != null && playerStats.get.updateTimestamp < timestamp) {
                       m_stats.update(playerName, PlayerStatistics(playerStats.get.address, timestamp, privateData))
+                      if (sharedData != null && sharedData.nonEmpty && m_shared_stats.updateTimestamp < timestamp) {
+                        m_shared_stats = PlayerStatistics(null, timestamp, sharedData)
+                      }
                       if(forceBroadcast) {
-                        m_stats.values.foreach( stat => socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData()))), stat.address))
+                        m_stats.values.foreach( stat => socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData(), m_shared_stats.privateData))), stat.address))
                       }else {
-                        socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData()))), address)
+                        socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData(), m_shared_stats.privateData))), address)
                       }
                     } else {
                       m_logger.info("[Running] Got outdated Update message")
