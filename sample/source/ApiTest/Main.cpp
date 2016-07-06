@@ -18,6 +18,10 @@ std::condition_variable gCvJoin;
 std::condition_variable gCvFinish;
 std::condition_variable gCvSession;
 
+static const char SERVER_ADDRESS[] = "127.0.0.1";
+static const uint16_t SERVER_FRONTEND_PORT = 8800;
+static const uint16_t SERVER_BACKEND_PORT  = 8700;
+
 class SessionCallbackSample
     : public SessionCallback
 {
@@ -77,7 +81,7 @@ public:
         HostCallbackSample callback;
         SessionCallbackSample sessionCallback;
         {
-            Lobby lobby;
+            Lobby lobby(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
             Host* host = lobby.createRoom("Player1", "Room1", 2, &callback);
 
             gFlagJoin = true;
@@ -175,7 +179,7 @@ public:
             std::unique_lock<std::mutex> lock(mMutex);
             gCvJoin.wait(lock, []() {return gFlagJoin.load(); });
 
-            Lobby lobby;
+            Lobby lobby(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
             std::vector<RoomInfo> rooms = lobby.getRooms();
             for (auto & info : rooms) {
                 std::cout << info.roomName + " by " + info.hostName + "   players: " + std::to_string(info.playersNumber) + "/" + std::to_string(info.playersLimit) + "\n";

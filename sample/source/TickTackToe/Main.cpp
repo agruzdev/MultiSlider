@@ -69,7 +69,7 @@ public:
     {
         mFinish = false;
 
-        Lobby lobby;
+        Lobby lobby(ip, port);
         std::string username;
         std::cout << "Please introduce yourself: ";
         std::cin >> username;

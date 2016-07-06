@@ -29,7 +29,7 @@ namespace multislider
 
     public:
         MULTISLIDER_EXPORT
-        Lobby();
+        Lobby(const std::string & serverIp, uint16_t serverPort);
 
         MULTISLIDER_EXPORT
         ~Lobby();

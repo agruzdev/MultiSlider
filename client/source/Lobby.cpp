@@ -19,10 +19,6 @@ using namespace jsonxx;
 
 namespace
 {
-    static const char SERVER_ADDRESS[] = "127.0.0.1";
-    static const uint16_t SERVER_FRONTEND_PORT = 8800;
-    static const uint16_t SERVER_BACKEND_PORT  = 8700;
-
     struct TcpDeleter
     {
         void operator()(RakNet::TCPInterface* tcp) const
@@ -31,21 +27,20 @@ namespace
             RakNet::TCPInterface::DestroyInstance(tcp);
         }
     };
-
 }
 
 namespace multislider
 {
     using namespace constants;
 
-    Lobby::Lobby()
+    Lobby::Lobby(const std::string & serverIp, uint16_t serverPort)
     {
         mTcp.reset(RakNet::TCPInterface::GetInstance(), TcpDeleter());
         if (!mTcp->Start(8801, 64)) {
             throw NetworkError("Lobby[Lobby]: Failed to start TCP interface");
         }
         mServerAddress.reset(new SystemAddress);
-        *mServerAddress = mTcp->Connect(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
+        *mServerAddress = mTcp->Connect(serverIp.c_str(), serverPort);
         if (*mServerAddress == UNASSIGNED_SYSTEM_ADDRESS) {
             throw NetworkError("Lobby[Lobby]: Failed to connect to server");
         }
