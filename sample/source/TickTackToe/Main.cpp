@@ -278,6 +278,9 @@ public:
         }
         std::cout << std::endl;
         std::cout << std::endl;
+        std::cout << "Options:" << std::endl;
+        std::cout << "  <letter><number> - to make turn into the position <letter><number>" << std::endl;
+        std::cout << std::endl;
 
         switch (winCode) {
         default:
@@ -286,7 +289,7 @@ public:
                 std::cout << "Your turn!" << std::endl;
             }
             else {
-                std::cout << std::endl;
+                std::cout << "Please wait..." << std::endl;
             }
             break;
         case 1:
@@ -419,21 +422,22 @@ public:
         const bool myTurn   = (isHost && hostTurn) || (!mHost && !hostTurn);
         const char mySymbol = ((isHost && mHostPlaysCrosses) || (!mHost && !mHostPlaysCrosses)) ? 'X' : 'O';
 
+        // Check win
+        const char winSym = checkWin(field);
+        int winCode = 0; // 0 - nothing, 1 - win, 2 - loose, 3 - draw
+        if (winSym != ' ') {
+            winCode = (winSym == mySymbol) ? 1 : 2;
+        }
+        if (0 == winCode) {
+            if (field.find(' ') == std::string::npos) {
+                winCode = 3;
+            }
+        }
+        if (winCode != 0) {
+            mFinish = true;
+        }
+
         for (;;) {
-            // Check win
-            const char winSym = checkWin(field);
-            int winCode = 0; // 0 - nothing, 1 - win, 2 - loose, 3 - draw
-            if (winSym != ' ') {
-                winCode = (winSym == mySymbol) ? 1 : 2;
-            }
-            if (0 == winCode) {
-                if (field.find(' ') == std::string::npos) {
-                    winCode = 3;
-                }
-            }
-            if (winCode != 0) {
-                mFinish = true;
-            }
             // Draw screen
             drawGameScreen(sessionName, field, myTurn, mySymbol, winCode);
             // Make turn
@@ -479,8 +483,12 @@ int main(int argc, char** argv)
     std::string ip = std::string(argv[1]);
     uint16_t port  = static_cast<uint16_t>(atoi(argv[2]));
 
-    Controller ctrl;
-    ctrl.run(ip, port);
-
+    try {
+        Controller ctrl;
+        ctrl.run(ip, port);
+    }
+    catch (RuntimeError & err) {
+        std::cout << err.what() << std::endl;
+    }
     return 0;
 }

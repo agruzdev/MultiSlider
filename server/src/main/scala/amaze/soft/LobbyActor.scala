@@ -23,9 +23,9 @@ import scala.collection.JavaConversions._
 object LobbyActor
 {
   // Internal structure describing room
-  case class RoomInfo(name: String, host: PlayerInfo, playersLimit: Int, var playersNumber: Int)
+  case class RoomStats(name: String, host: PlayerInfo, playersLimit: Int, var playersNumber: Int)
   // Simple room descriptor for clients
-  case class RoomHeader(name: String, host: String, playersLimit: Int, playersNumber: Int)
+  case class RoomInfo(name: String, host: String, playersLimit: Int, playersNumber: Int)
 
   // States of lobby
   object State extends Enumeration {
@@ -59,7 +59,7 @@ class LobbyActor(
   // Current lobby state
   var m_state = Virgin
   // Current room (valid only is Host or Joined)
-  var m_room: RoomInfo = null
+  var m_room: RoomStats = null
   // All players in the room
   var m_players: Map[ActorRef, PlayerInfo] = Map()
   // My player info
@@ -90,7 +90,7 @@ class LobbyActor(
           case CreateRoom(player, roomName, playersLimit) =>
             logger.info("Got a CreateRoom message!")
             m_myself = PlayerInfo(player, self)
-            m_room = RoomInfo(roomName, m_myself, playersLimit, 1)
+            m_room = RoomStats(roomName, m_myself, playersLimit, 1)
             if ((m_state == Virgin) && Depot.registerLobby(roomName, m_room)) {
               m_players += self -> m_myself
               m_state = Host
@@ -115,7 +115,7 @@ class LobbyActor(
           case GetRooms() =>
             logger.info("Got a GetRooms message!")
             sender() ! Tcp.Write(ByteString(json.Serialization.write(Depot.getLobbies.map({
-              case (name, info) => RoomHeader(name, info.host.name, info.playersLimit, info.playersNumber)
+              case (name, info) => RoomInfo(name, info.host.name, info.playersLimit, info.playersNumber)
             }).toList)))
 
           //---------------------------------------------------------------------

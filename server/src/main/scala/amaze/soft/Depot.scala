@@ -3,7 +3,7 @@ package amaze.soft
 import java.util
 
 import akka.actor.{ActorRef, ActorSystem}
-import amaze.soft.LobbyActor.RoomInfo
+import amaze.soft.LobbyActor.RoomStats
 import org.slf4j.LoggerFactory
 
 /**
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 object Depot {
   private val logger = LoggerFactory.getLogger(Depot.getClass.getName)
   private val lock: Object = new Object
-  private val lobbies: util.TreeMap[String, RoomInfo] = new util.TreeMap()
+  private val lobbies: util.TreeMap[String, RoomStats] = new util.TreeMap()
 
   val actorsSystem = ActorSystem("MultiSliderActors")
   logger.info("Actors system is created!")
@@ -26,7 +26,7 @@ object Depot {
   var port_frontend = 0
   var port_backend = 0
 
-  def registerLobby(roomName: String, info: RoomInfo) : Boolean = {
+  def registerLobby(roomName: String, info: RoomStats) : Boolean = {
     var status = false
     logger.info("Register lobby \"" + roomName + "\" created by \"" + info.host.name + "\"")
     if(info.playersNumber > info.playersLimit) {
@@ -50,7 +50,7 @@ object Depot {
     logger.info("All lobbies = " + lobbies)
   }
 
-  def updateRoomInfo(info: RoomInfo) = {
+  def updateRoomInfo(info: RoomStats) = {
     logger.info("Update lobby \"" + info.name + "\"")
     lock.synchronized {
       lobbies.put(info.name, info)
