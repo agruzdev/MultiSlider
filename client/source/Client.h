@@ -71,7 +71,7 @@ namespace multislider
         /**
          * Connect server and join the room
          */
-        int join();
+        int join(const std::string & roomName);
 
         /**
          *  Leave the current room

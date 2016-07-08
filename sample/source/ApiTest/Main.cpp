@@ -56,17 +56,17 @@ class HostCallbackSample
 public:
     void onCreated(const RoomInfo & room) override
     {
-        std::cout << std::string("Room \"") + room.roomName + "\" is created!\n";
+        std::cout << std::string("Room \"") + room.getName() + "\" is created!\n";
     }
 
     void onClosed(const RoomInfo & room) override
     {
-        std::cout << std::string("Room \"") + room.roomName + "\" is closed!\n";
+        std::cout << std::string("Room \"") + room.getName() + "\" is closed!\n";
     }
 
     void onSessionStart(const RoomInfo & room, SessionPtr session) override
     {
-        std::cout << std::string("Room \"") + room.roomName + "\" session is started!\n";
+        std::cout << std::string("Room \"") + room.getName() + "\" session is started!\n";
         gHostSession = session;
     }
 };
@@ -99,7 +99,7 @@ public:
 
             std::vector<RoomInfo> rooms = lobby.getRooms();
             for (auto & info : rooms) {
-                std::cout << info.roomName + " by " + info.hostName + "   players: " + std::to_string(info.playersNumber) + "/" + std::to_string(info.playersLimit) + "\n";
+                std::cout << info.getName() + " by " + info.getHostName() + "   players: " + std::to_string(info.getPlayersNumber()) + "/" + std::to_string(info.getPlayersLimit()) + "\n";
             }
 
             host->startSession();
@@ -146,12 +146,12 @@ public:
 
     void onJoined(const std::string & playerName, const RoomInfo & room) override
     {
-        std::cout << std::string("[") + playerName + "]: I joined \"" + room.roomName + "\"\n";
+        std::cout << std::string("[") + playerName + "]: I joined \"" + room.getName() + "\"\n";
     }
 
     void onLeft(const std::string & playerName, const RoomInfo & room) override
     {
-        std::cout << std::string("[") + playerName + "]: I left \"" + room.roomName + "\"\n";
+        std::cout << std::string("[") + playerName + "]: I left \"" + room.getName() + "\"\n";
     }
 
     void onBroadcast(const std::string & playerName, const std::string & message) override
@@ -182,7 +182,7 @@ public:
             Lobby lobby(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
             std::vector<RoomInfo> rooms = lobby.getRooms();
             for (auto & info : rooms) {
-                std::cout << info.roomName + " by " + info.hostName + "   players: " + std::to_string(info.playersNumber) + "/" + std::to_string(info.playersLimit) + "\n";
+                std::cout << info.getName() + " by " + info.getHostName() + "   players: " + std::to_string(info.getPlayersNumber()) + "/" + std::to_string(info.getPlayersLimit()) + "\n";
             }
             if (!rooms.empty()) {
                 bool full = false;

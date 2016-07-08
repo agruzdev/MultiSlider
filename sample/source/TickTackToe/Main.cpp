@@ -103,7 +103,7 @@ public:
             std::cout << "Available rooms:" << std::endl;
             size_t idx = 0;
             for (const auto & info : rooms) {
-                std::cout << "  [" << idx << "]  " << info.roomName << "\t  by " << info.hostName << "\t        " << info.playersNumber << " / " << info.playersLimit << std::endl;
+                std::cout << "  [" << idx << "]  " << info.getName() << "\t  by " << info.getHostName() << "\t        " << info.getPlayersNumber() << " / " << info.getPlayersLimit() << std::endl;
             }
             std::cout << std::endl;
 
@@ -142,7 +142,7 @@ public:
                 int roomIdx = std::stoi(cmd[1]);
                 if (roomIdx >= 0 && roomIdx < static_cast<int>(rooms.size())) {
                     bool full = false;
-                    roomname = rooms[roomIdx].roomName;
+                    roomname = rooms[roomIdx].getName();
                     mClient = lobby.joinRoom(username, rooms[roomIdx], this, full);
                     if (nullptr != mClient) {
                         break;
@@ -361,13 +361,13 @@ public:
 
     void onClosed(const RoomInfo & room) override
     {
-        std::cout << std::string("Room \"") + room.roomName + "\" is closed!\n";
+        std::cout << std::string("Room \"") + room.getName() + "\" is closed!\n";
         //mFinish = true;
     }
 
     void onSessionStart(const RoomInfo & room, SessionPtr session) override
     {
-        std::cout << std::string("Room \"") + room.roomName + "\" session is started!\n";
+        std::cout << std::string("Room \"") + room.getName() + "\" session is started!\n";
         mSession = session;
         mSession->startup(this, 5 * 1000);
     }
@@ -383,7 +383,7 @@ public:
 
     void onLeft(const std::string & playerName, const RoomInfo & room) override
     {
-        std::cout << std::string("[") + playerName + "]: I left \"" + room.roomName + "\"\n";
+        std::cout << std::string("[") + playerName + "]: I left \"" + room.getName() + "\"\n";
         //mFinish = true;
     }
 

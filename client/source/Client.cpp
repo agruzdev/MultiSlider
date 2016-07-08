@@ -36,22 +36,26 @@ namespace multislider
     }
 
     //-------------------------------------------------------
-    int Client::join()
+    int Client::join(const std::string & roomName)
     {
         Object joinRoomJson;
         joinRoomJson << MESSAGE_KEY_CLASS << frontend::JOIN_ROOM;
         joinRoomJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
-        joinRoomJson << MESSAGE_KEY_ROOM_NAME << mMyRoom.roomName;
+        joinRoomJson << MESSAGE_KEY_ROOM_NAME << roomName;
         std::string joinRoomMessage = joinRoomJson.write(JSON);
         mTcp->Send(joinRoomMessage.c_str(), joinRoomMessage.size(), *mServerAddress, false);
         shared_ptr<Packet> packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
-        if (responsed(packet, constants::RESPONSE_SUCK)) {
-            //throw ServerError("Client[Client]: Failed to join a room");
-            return 1;
-        }
+        //if (responsed(packet, constants::RESPONSE_SUCK)) {
+        //    //throw ServerError("Client[Client]: Failed to join a room");
+        //    return 1;
+        //}
         if (responsed(packet, constants::RESPONSE_ROOM_IS_FULL)) {
             //throw ServerError("Client[Client]: Failed to join a room");
             return 2;
+        }
+        if (!mMyRoom.deserialize(std::string(pointer_cast<const char*>(packet->data), packet->length))) {
+            //throw ServerError("Client[Client]: Failed to join a room");
+            return 1;
         }
         mCallback->onJoined(mPlayerName, mMyRoom);
         mIsJoined = true;

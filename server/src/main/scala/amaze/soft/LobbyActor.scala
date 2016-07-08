@@ -25,7 +25,11 @@ object LobbyActor
   // Internal structure describing room
   case class RoomStats(name: String, host: PlayerInfo, playersLimit: Int, var playersNumber: Int)
   // Simple room descriptor for clients
-  case class RoomInfo(name: String, host: String, playersLimit: Int, playersNumber: Int)
+  case class RoomInfo(name: String, host: String, playersLimit: Int, playersNumber: Int, players: List[String])
+  object RoomInfo
+  {
+    def apply(roomStats: RoomStats, players: List[String]) = new RoomInfo(roomStats.name, roomStats.host.name, roomStats.playersLimit, roomStats.playersNumber, players)
+  }
 
   // States of lobby
   object State extends Enumeration {
@@ -41,6 +45,8 @@ object LobbyActor
   case class Ejected()
   // Broadcast Update message to all users except of updateSender
   case class UpdateBroadcast(updateSender: ActorRef, updateMsg: Update)
+  // Get all players list
+  case class GetPlayers()
 
   val logger = LoggerFactory.getLogger(LobbyActor.getClass.getName)
 }
@@ -94,7 +100,7 @@ class LobbyActor(
             if ((m_state == Virgin) && Depot.registerLobby(roomName, m_room)) {
               m_players += self -> m_myself
               m_state = Host
-              sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
+              sender() ! Tcp.Write(ByteString(json.Serialization.write(RoomInfo(m_room, List(m_myself.name)))))
             } else {
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
@@ -115,7 +121,7 @@ class LobbyActor(
           case GetRooms() =>
             logger.info("Got a GetRooms message!")
             sender() ! Tcp.Write(ByteString(json.Serialization.write(Depot.getLobbies.map({
-              case (name, info) => RoomInfo(name, info.host.name, info.playersLimit, info.playersNumber)
+              case (_, info) => RoomInfo(info, null)
             }).toList)))
 
           //---------------------------------------------------------------------
@@ -131,7 +137,10 @@ class LobbyActor(
                 err_code match {
                   case 0 =>
                     m_state = Joined
-                    sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
+                    //sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
+                    sender() ! Tcp.Write(ByteString(json.Serialization.write(RoomInfo(
+                      m_room, Await.result(m_room.host.actor ? GetPlayers(), timeout.duration).asInstanceOf[List[String]]
+                    ))))
                   case 2 =>
                     sender() ! Tcp.Write(ByteString(Constants.RESPONSE_ROOM_IS_FULL))
                   case _ =>
@@ -206,6 +215,9 @@ class LobbyActor(
     case RemovePlayer(player) =>
       sender() ! removePlayerImpl(player)
       logger.info("All players = " + m_players)
+
+    case GetPlayers() =>
+      sender() ! m_players.map{ case (_, info) => info.name }
 
     case Ejected() =>
       if(m_state == Joined) {

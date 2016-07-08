@@ -91,11 +91,12 @@ namespace multislider
         std::vector<RoomInfo> rooms;
         rooms.resize(roomsArray.size());
         for (size_t i = 0; i < roomsArray.size(); ++i) {
-            Object jsonRoom = roomsArray.get<Object>(i);
-            rooms[i].roomName = jsonRoom.get<std::string>(MESSAGE_KEY_NAME, "<Unknown>");
-            rooms[i].hostName = jsonRoom.get<std::string>(MESSAGE_KEY_HOST, "<Unknown>");
-            rooms[i].playersLimit  = narrow_cast<uint32_t>(jsonRoom.get<jsonxx::Number>(MESSAGE_KEY_PLAYERS_LIMIT, 0));
-            rooms[i].playersNumber = narrow_cast<uint32_t>(jsonRoom.get<jsonxx::Number>(MESSAGE_KEY_PLAYERS_NUMBER, 0));
+            //Object jsonRoom = roomsArray.get<Object>(i);
+            //rooms[i].roomName = jsonRoom.get<std::string>(MESSAGE_KEY_NAME, "<Unknown>");
+            //rooms[i].hostName = jsonRoom.get<std::string>(MESSAGE_KEY_HOST, "<Unknown>");
+            //rooms[i].playersLimit  = narrow_cast<uint32_t>(jsonRoom.get<jsonxx::Number>(MESSAGE_KEY_PLAYERS_LIMIT, 0));
+            //rooms[i].playersNumber = narrow_cast<uint32_t>(jsonRoom.get<jsonxx::Number>(MESSAGE_KEY_PLAYERS_NUMBER, 0));
+            rooms[i].deserialize(roomsArray.get<Object>(i));
         }
         return rooms;
     }
@@ -106,7 +107,7 @@ namespace multislider
         if (playerName.empty()) {
             throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");
         }
-        if (room.roomName.empty() || room.hostName.empty()) {
+        if (room.getName().empty() || room.getHostName().empty()) {
             throw ProtocolError("Lobby[createRoom]: room info is invalid!");
         }
         if (callback == NULL) {
@@ -114,7 +115,7 @@ namespace multislider
         }
         mClientInstance.reset(new Client(mTcp, mServerAddress, playerName, room, callback));
         isFull = false;
-        switch (mClientInstance->join()) {
+        switch (mClientInstance->join(room.getName())) {
         case 0:
             return mClientInstance.get();
         case 2:

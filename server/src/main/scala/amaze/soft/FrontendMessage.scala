@@ -54,6 +54,7 @@ object FrontendMessage {
    */
   case class StartSession() extends JsonMessage
 
+
   /**
    * Sent when session is created
    */

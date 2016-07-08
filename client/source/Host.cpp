@@ -36,8 +36,8 @@ namespace multislider
         assert(mCallback != NULL);
         assert(*mServerAddress != UNASSIGNED_SYSTEM_ADDRESS);
 
-        mMyRoom.hostName = playerName;
-        mMyRoom.roomName = roomName;
+        //mMyRoom.hostName = playerName;
+        //mMyRoom.roomName = roomName;
 
         Object createRoomJson;
         createRoomJson << MESSAGE_KEY_CLASS << frontend::CREATE_ROOM;
@@ -47,7 +47,16 @@ namespace multislider
         std::string createRoomMessage = createRoomJson.write(JSON);
 
         mTcp->Send(createRoomMessage.c_str(), createRoomMessage.size(), *mServerAddress, false);
-        if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_SUCC)) {
+        //if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_SUCC)) {
+        //    throw ServerError("Host[Host]: Failed to create a new room!");
+        //}
+        //shared_ptr<Packet> responce = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
+        //if (responsed(responce, constants::RESPONSE_SUCK)) {
+        //    throw ServerError("Host[Host]: Failed to create a new room!");
+        //}
+        shared_ptr<Packet> responce = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
+        if (!mMyRoom.deserialize(std::string(pointer_cast<const char*>(responce->data), responce->length)))
+        {
             throw ServerError("Host[Host]: Failed to create a new room!");
         }
         mCallback->onCreated(mMyRoom);
@@ -110,7 +119,7 @@ namespace multislider
                 SessionPtr session(new Session(
                     messageJson.get<jsonxx::String>(MESSAGE_KEY_IP, ""),
                     narrow_cast<uint16_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_PORT, 0.0)),
-                    mMyRoom.hostName,
+                    mMyRoom.getHostName(),
                     messageJson.get<jsonxx::String>(MESSAGE_KEY_NAME, ""),
                     narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 0.0))), details::SessionDeleter());
                 mCallback->onSessionStart(mMyRoom, session);
