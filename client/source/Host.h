@@ -16,35 +16,6 @@
 
 namespace multislider
 {
-#if 0
-    class Host;
-    
-    class HostCallback
-    {
-    public:
-        virtual ~HostCallback() {}
-
-        /**
-         *  Is called as soon as the room is created on the server
-         */
-        virtual void onCreated(Host* /*host*/, const RoomInfo & /*room*/) { }
-
-        /**
-         *  Is called after server room is closed
-         */
-        virtual void onClosed(Host* /*host*/, const RoomInfo & /*room*/) { }
-
-        /**
-         *  Is called for each broadcast message
-         */
-        virtual void onBroadcast(Host* /*host*/, const RoomInfo & /*room*/, const std::string & /*message*/) { }
-
-        /**
-         *  Is called as soon as a host has started a session
-         */
-        virtual void onSessionStart(Host* /*host*/, const RoomInfo & /*room*/, SessionPtr /*session*/) { }
-    };
-#endif
 
     class Host
     {

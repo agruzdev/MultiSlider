@@ -13,35 +13,6 @@
 
 namespace multislider
 {
-#if 0
-    class Client;
-
-    class ClientCallback
-    {
-    public:
-        virtual ~ClientCallback() {}
-
-        /**
-         *  Is called as soon as player 'playerName' has joined the room 'room'
-         */
-        virtual void onJoined(Client* /*client*/, const std::string & /*playerName*/, const RoomInfo & /*room*/) { }
-
-        /**
-         *  Is called after the player left the room
-         */
-        virtual void onLeft(Client* /*client*/, const std::string & /*playerName*/, const RoomInfo & /*room*/) { }
-
-        /**
-         *  Is called for each broadcast message
-         */
-        virtual void onBroadcast(Client* /*client*/, const std::string & /*playerName*/, const RoomInfo & /*room*/, const std::string & /*message*/) { }
-
-        /**
-         *  Is called as soon as a host has started a session
-         */
-        virtual void onSessionStart(Client* /*client*/, const std::string & /*playerName*/, const RoomInfo & /*room*/, SessionPtr /*session*/) { }
-    };
-#endif
     class Client
     {
         shared_ptr<RakNet::TCPInterface> mTcp;
