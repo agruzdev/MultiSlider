@@ -1,6 +1,5 @@
 
-#include "../../../client/source/Lobby.h"
-#include "../../../client/source/Exception.h"
+#include "../../../client/source/MultiSlider.h"
 
 #include <iostream>
 #include <mutex>
@@ -50,29 +49,29 @@ public:
 SessionPtr gHostSession;
 SessionPtr gClientSession;
 
-class HostCallbackSample
-    : public HostCallback
+class CallbackSample
+    : public Lobby::Callback
 {
 public:
-    void onCreated(Host* host, const RoomInfo & room) override
+    void onJoined(Lobby* lobby, const RoomInfo & room, const std::string & playerName) override
     {
-        std::cout << std::string("Room \"") + room.getName() + "\" is created!\n";
+        std::cout << std::string("[") + playerName + "]: I joined the room \"" + room.getName() + "\"!\n";
     }
 
-    void onClosed(Host* host, const RoomInfo & room) override
+    void onLeft(Lobby* lobby, const RoomInfo & room, const std::string & playerName, uint8_t flags) override
     {
-        std::cout << std::string("Room \"") + room.getName() + "\" is closed!\n";
+        std::cout << std::string("[") + playerName + "]: I left the room \"" + room.getName() + "\"!\n";
     }
 
-    void onSessionStart(Host* host, const RoomInfo & room, SessionPtr session) override
+    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & playerName, const std::string & message) override
     {
-        std::cout << std::string("Room \"") + room.getName() + "\" session is started!\n";
+        std::cout << std::string("[") + playerName + "]: got broadcast message \"" + message + "\"\n";
+    }
+
+    void onSessionStart(Lobby* lobby, const RoomInfo & room, const std::string & playerName, SessionPtr session) override
+    {
+        std::cout << std::string("[") + playerName + "]: session is started!\n";
         gHostSession = session;
-    }
-
-    void onBroadcast(Host* host, const RoomInfo & room, const std::string & message) override
-    {
-        std::cout << std::string("Room \"") + room.getName() + ": got broadcast message \"" + message + "\"\n";
     }
 };
 
@@ -83,7 +82,7 @@ class HostSample
 public:
     void run()
     {
-        HostCallbackSample callback;
+        CallbackSample callback;
         SessionCallbackSample sessionCallback;
         {
             Lobby lobby(SERVER_ADDRESS, SERVER_FRONTEND_PORT);

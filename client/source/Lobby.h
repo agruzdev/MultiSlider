@@ -10,7 +10,7 @@
 
 #include <vector>
 
-#include "Host.h"
+#include "LobbyCallback.h"
 #include "Client.h"
 
 namespace multislider
@@ -18,6 +18,11 @@ namespace multislider
 
     class Lobby
     {
+    public:
+        typedef LobbyCallback Callback;
+        //-------------------------------------------------------
+
+    private:
         shared_ptr<RakNet::TCPInterface> mTcp;
         shared_ptr<RakNet::SystemAddress> mServerAddress;
 
@@ -42,7 +47,7 @@ namespace multislider
          *  @param callback callback for host events, can't be null
          */
         MULTISLIDER_EXPORT
-        Host* createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, HostCallback* callback);
+        Host* createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback);
 
         /**
          *  Get a list of all opened rooms on the server

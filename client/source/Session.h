@@ -137,8 +137,6 @@ namespace multislider
         };
     }
 
-    typedef shared_ptr<Session> SessionPtr;
-
 }
 
 #endif 

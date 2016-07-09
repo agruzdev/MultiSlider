@@ -11,18 +11,6 @@
 
 using namespace multislider;
 
-#define VK_NO_KEY 0x00
-#define VK_KEY_0 0x30
-#define VK_KEY_1 0x31
-#define VK_KEY_2 0x32
-#define VK_KEY_3 0x33
-#define VK_KEY_4 0x34
-#define VK_KEY_5 0x35
-#define VK_KEY_6 0x36
-#define VK_KEY_7 0x37
-#define VK_KEY_8 0x38
-#define VK_KEY_9 0x39
-
 static const std::string CMD_CREATE   = "create";
 static const std::string CMD_JOIN     = "join";
 static const std::string CMD_UPDATE   = "update";

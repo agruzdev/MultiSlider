@@ -10,19 +10,15 @@
 
 #include "CommonIncludes.h"
 #include "LibInterface.h"
+#include "Lobby.h"
 #include "RoomInfo.h"
 #include "Session.h"
 
-namespace RakNet
-{
-    class TCPInterface;
-    struct SystemAddress;
-}
-
 namespace multislider
 {
+#if 0
     class Host;
-
+    
     class HostCallback
     {
     public:
@@ -48,13 +44,14 @@ namespace multislider
          */
         virtual void onSessionStart(Host* /*host*/, const RoomInfo & /*room*/, SessionPtr /*session*/) { }
     };
+#endif
 
     class Host
     {
         shared_ptr<RakNet::TCPInterface> mTcp;
         shared_ptr<RakNet::SystemAddress> mServerAddress;
         
-        HostCallback* mCallback;
+        LobbyCallback* mCallback;
         RoomInfo mMyRoom;
         bool mIsOpened;
         //-------------------------------------------------------
@@ -63,7 +60,7 @@ namespace multislider
         Host & operator=(const Host &);
 
     public:
-        Host(shared_ptr<RakNet::TCPInterface> connection, shared_ptr<RakNet::SystemAddress> address, const std::string & playerName, const std::string & roomName, uint32_t playersLimit, HostCallback* callback);
+        Host(shared_ptr<RakNet::TCPInterface> connection, shared_ptr<RakNet::SystemAddress> address, const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback);
     
         ~Host();
 

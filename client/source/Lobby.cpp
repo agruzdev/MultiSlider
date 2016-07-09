@@ -8,6 +8,7 @@
 #include "TCPInterface.h"
 
 #include "Lobby.h"
+#include "Host.h"
 #include "Constants.h"
 #include "Utility.h"
 #include "Exception.h"
@@ -32,6 +33,7 @@ namespace
 namespace multislider
 {
     using namespace constants;
+    //-------------------------------------------------------
 
     Lobby::Lobby(const std::string & serverIp, uint16_t serverPort)
     {
@@ -54,7 +56,7 @@ namespace multislider
     { }
     //-------------------------------------------------------
 
-    Host* Lobby::createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, HostCallback* callback)
+    Host* Lobby::createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback)
     {
         if (playerName.empty()) {
             throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");
