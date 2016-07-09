@@ -21,6 +21,7 @@ namespace RakNet
 
 namespace multislider
 {
+    class Client;
 
     class ClientCallback
     {
@@ -30,22 +31,22 @@ namespace multislider
         /**
          *  Is called as soon as player 'playerName' has joined the room 'room'
          */
-        virtual void onJoined(const std::string & /*playerName*/, const RoomInfo & /*room*/) { }
+        virtual void onJoined(Client* /*client*/, const std::string & /*playerName*/, const RoomInfo & /*room*/) { }
 
         /**
          *  Is called after the player left the room
          */
-        virtual void onLeft(const std::string & /*playerName*/, const RoomInfo & /*room*/) { }
+        virtual void onLeft(Client* /*client*/, const std::string & /*playerName*/, const RoomInfo & /*room*/) { }
 
         /**
          *  Is called for each broadcast message
          */
-        virtual void onBroadcast(const std::string & /*playerName*/, const std::string & /*message*/) { }
+        virtual void onBroadcast(Client* /*client*/, const std::string & /*playerName*/, const RoomInfo & /*room*/, const std::string & /*message*/) { }
 
         /**
          *  Is called as soon as a host has started a session
          */
-        virtual void onSessionStart(const std::string & /*playerName*/, SessionPtr /*session*/) { }
+        virtual void onSessionStart(Client* /*client*/, const std::string & /*playerName*/, const RoomInfo & /*room*/, SessionPtr /*session*/) { }
     };
 
     class Client

@@ -57,7 +57,7 @@ namespace multislider
             //throw ServerError("Client[Client]: Failed to join a room");
             return 1;
         }
-        mCallback->onJoined(mPlayerName, mMyRoom);
+        mCallback->onJoined(this, mPlayerName, mMyRoom);
         mIsJoined = true;
         return 0;
     }
@@ -85,7 +85,7 @@ namespace multislider
         if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_SUCC)) {
             throw ServerError("Client[Client]: Failed to leave a room");
         }
-        mCallback->onLeft(mPlayerName, mMyRoom);
+        mCallback->onLeft(this, mPlayerName, mMyRoom);
         mIsJoined = false;
     }
     //-------------------------------------------------------
@@ -95,6 +95,7 @@ namespace multislider
         Object broadcastJson;
         broadcastJson << MESSAGE_KEY_CLASS << frontend::BROADCAST;
         broadcastJson << MESSAGE_KEY_DATA << data;
+        broadcastJson << MESSAGE_KEY_ROOM << jsonxx::Null();
         broadcastJson << MESSAGE_KEY_TO_SELF << toSelf;
         std::string broadcastMessage = broadcastJson.write(JSON);
         mTcp->Send(broadcastMessage.c_str(), broadcastMessage.size(), *mServerAddress, false);
@@ -115,7 +116,7 @@ namespace multislider
             if (isMessageClass(messageClass, frontend::BROADCAST)) {
                 std::string message = messageJson.get<std::string>(constants::MESSAGE_KEY_DATA, "");
                 if (mMyRoom.deserialize(messageJson.get<Object>(constants::MESSAGE_KEY_ROOM, Object()))) {
-                    mCallback->onBroadcast(mPlayerName, message);
+                    mCallback->onBroadcast(this, mPlayerName, mMyRoom, message);
                 }
             }
             else if (isMessageClass(messageClass, frontend::SESSION_STARTED)) {
@@ -125,7 +126,7 @@ namespace multislider
                     mPlayerName, 
                     messageJson.get<jsonxx::String>(MESSAGE_KEY_NAME, ""),
                     narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 0.0))), details::SessionDeleter());
-                mCallback->onSessionStart(mPlayerName, session);
+                mCallback->onSessionStart(this, mPlayerName, mMyRoom, session);
             }
             ++counter;
         }

@@ -23,6 +23,13 @@ using namespace multislider;
 #define VK_KEY_8 0x38
 #define VK_KEY_9 0x39
 
+static const std::string CMD_CREATE   = "create";
+static const std::string CMD_JOIN     = "join";
+static const std::string CMD_UPDATE   = "update";
+static const std::string CMD_EXIT     = "exit";
+static const std::string CMD_PLAY_SYM = "play";
+static const std::string CMD_START    = "start";
+
 class Controller
     : public HostCallback, public ClientCallback, public SessionCallback
 {
@@ -30,8 +37,10 @@ class Controller
     Client*    mClient  = nullptr;
     SessionPtr mSession = nullptr;
 
-    bool mReady = false;
-    bool mFinish = false;
+    bool mHostReady   = false;
+    bool mClientReady = false;
+    bool mSetupFinish = false;
+    bool mGameFinish  = false;
 
     bool mHostPlaysCrosses = true;
 
@@ -68,8 +77,6 @@ class Controller
 public:
     void run(std::string ip, uint16_t port)
     {
-        mFinish = false;
-
         Lobby lobby(ip, port);
         std::string username;
         std::cout << "Please introduce yourself: ";
@@ -86,11 +93,6 @@ public:
         // Lobby screen
         //-------------------------------------------------------
         for (;;) {
-            const std::string CMD_CREATE = "create";
-            const std::string CMD_JOIN   = "join";
-            const std::string CMD_UPDATE = "update";
-            const std::string CMD_EXIT   = "exit";
-
             clear();
             std::cin.sync();
 
@@ -179,81 +181,34 @@ public:
 
     void setupScreen(const std::string & roomname, bool isHost)
     {
-#if 0
-        //-------------------------------------------------------
-        //-------------------------------------------------------
-        // Setup the room
-        //-------------------------------------------------------
-
-        bool finish = false;
-
-        static const std::string CMD_PLAY_SYM = "play";
-        static const std::string CMD_UPDATE = "update";
-        static const std::string CMD_START = "start";
-        while(!finish) {
-            clear();
-            std::cin.sync();
-
-            // Header 
-            std::cout << "Room " << roomname << std::endl;
-            std::cout << "--------------------------------------------------" << std::endl;
-            std::cout << std::endl;
-
-            // Info
-            std::cout << "Game options:" << std::endl;
-            std::cout << "    Host plays:   " << (mHostPlaysCrosses ? 'X' : 'O') << std::endl;
-            std::cout << "    Client plays: " << (mHostPlaysCrosses ? 'O' : 'X') << std::endl;
-            std::cout << std::endl;
-
-            // Options
-            std::cout << "Options: " << std::endl;
-            if (isHost) {
-                std::cout << "  " << CMD_PLAY_SYM << " [X or O] - change your symbol" << std::endl;
-            }
-            std::cout << "  " << CMD_UPDATE << " - update this screen" << std::endl;
-            std::cout << "  " << CMD_START << " - start the game!" << std::endl;
-            std::cout << std::endl;
-
-            // Process command
-            bool wait = false;
-            std::string cmdFull;
-            std::getline(std::cin, cmdFull);
-            auto cmd = splitCommand(cmdFull);
-            if (cmd.size() == 2 && cmd[0] == CMD_PLAY_SYM) {
-                if (cmd[1] == "X" || cmd[1] == "O") {
-                    mHost->broadcast(cmd[1], true);
-                    wait = true;
-                }
-            }
-            else if (cmdFull.empty() || (cmd.size() == 1 && cmd[0] == CMD_UPDATE)) {
-                /* pass */
-            }
-            else if (cmd.size() == 1 && cmd[0] == CMD_START) {
-                if (isHost) {
-                    mHost->startSession();
-                }
-                wait = true;
-                finish = true;
-            }
-            else {
-                std::cout << "Unknown command" << std::endl;
-            }
-
-            uint32_t count = 0;
-            do {
-                count += isHost 
-                    ? mHost->receive() 
-                    : mClient->receive();
-            } while ((0 == count) && wait);
-        }
-#else
-        auto inputHandler = std::async(std::launch::async, []() {
-            for (;;) {
+        auto inputHandler = std::async(std::launch::async, [this]() {
+            while(!mSetupFinish) {
                 std::string line;
                 std::getline(std::cin, line);
+                auto cmd = splitCommand(line);
+                if (cmd.size() == 2 && cmd[0] == CMD_PLAY_SYM) {
+                    if ((mHost != nullptr) && (cmd[1] == "X" || cmd[1] == "O")) {
+                        if (mHost != nullptr) {
+                            mHost->broadcast(cmd[1], true);
+                        }
+                    }
+                }
+                else if (cmd.size() == 1 && cmd[0] == CMD_START) {
+                    if (mHost != nullptr) {
+                        mHost->broadcast("HR", true);
+                    }
+                    else {
+                        mClient->broadcast("CR", true);
+                    }
+                    std::cout << "Waiting for all players..." << std::endl;
+                    break;
+                }
+                else {
+                    std::cout << "Unknown command!" << std::endl;
+                }
             }
         });
-        while (!mReady) {
+        while (!mSetupFinish) {
             if (mHost != nullptr) {
                 mHost->receive();
             }
@@ -263,15 +218,10 @@ public:
             pause(100);
         }
         inputHandler.wait();
-#endif
     }
 
     void drawRoomScreen(const RoomInfo & room, bool isHost)
     {
-        static const std::string CMD_PLAY_SYM = "play";
-        static const std::string CMD_UPDATE = "update";
-        static const std::string CMD_START = "start";
-
         clear();
         std::cin.clear();
 
@@ -287,8 +237,8 @@ public:
         else {
             // Info
             std::cout << "Game options:" << std::endl;
-            std::cout << "    " << room.getPlayers()[0] << "\t plays: " << (mHostPlaysCrosses ? 'X' : 'O') << std::endl;
-            std::cout << "    " << room.getPlayers()[1] << "\t plays: " << (mHostPlaysCrosses ? 'O' : 'X') << std::endl;
+            std::cout << "    " << room.getPlayers()[0] << "\t plays: " << (mHostPlaysCrosses ? 'X' : 'O') << "\t \t" << (mHostReady ? " ready!" : "") << std::endl;
+            std::cout << "    " << room.getPlayers()[1] << "\t plays: " << (mHostPlaysCrosses ? 'O' : 'X') << "\t \t" << (mClientReady ? " ready!" : "") << std::endl;
             std::cout << std::endl;
 
             // Options
@@ -296,7 +246,6 @@ public:
             if (isHost) {
                 std::cout << "  " << CMD_PLAY_SYM << " [X or O] - change your symbol" << std::endl;
             }
-            std::cout << "  " << CMD_UPDATE << " - update this screen" << std::endl;
             std::cout << "  " << CMD_START << " - start the game!" << std::endl;
             std::cout << std::endl;
         }
@@ -305,7 +254,7 @@ public:
 
     void gameScreen(const std::string & roomname, bool isHost)
     {
-        while (!mFinish) {
+        while (!mGameFinish) {
             mSession->receive();
             pause(100);
         }
@@ -404,62 +353,85 @@ public:
     //-------------------------------------------------------
     // Host callback
 
-    void onCreated(const RoomInfo & room) override
+    void onCreated(Host* host, const RoomInfo & room) override
     {
         (void)room;
         drawRoomScreen(room, true);
     }
 
-    void onBroadcast(const RoomInfo & room, const std::string & message) override
+    void onBroadcast(Host* host, const RoomInfo & room, const std::string & message) override
     {
         if (!message.empty()) {
-            mHostPlaysCrosses = (message[0] == 'X');
+            if (message.size() == 1) {
+                mHostPlaysCrosses = (message[0] == 'X');
+            }
+            else if(message.size() == 2 && message[1] == 'R') {
+                if (message[0] == 'H') {
+                    mHostReady = true;
+                }
+                else if (message[0] == 'C') {
+                    mClientReady = true;
+                }
+            }
         }
         drawRoomScreen(room, true);
-        //unblockInput();
+        if (mHostReady && mClientReady) {
+            host->startSession();
+        }
     }
 
-    void onClosed(const RoomInfo & room) override
+    void onClosed(Host* host, const RoomInfo & room) override
     {
-        std::cout << std::string("Room \"") + room.getName() + "\" is closed!\n";
+        //std::cout << std::string("Room \"") + room.getName() + "\" is closed!\n";
         //mFinish = true;
     }
 
-    void onSessionStart(const RoomInfo & room, SessionPtr session) override
+    void onSessionStart(Host* host, const RoomInfo & room, SessionPtr session) override
     {
-        std::cout << std::string("Room \"") + room.getName() + "\" session is started!\n";
+        //std::cout << std::string("Room \"") + room.getName() + "\" session is started!\n";
         mSession = session;
         mSession->startup(this, 5 * 1000);
+        mSetupFinish = true;
     }
 
 
     //-------------------------------------------------------
     // Client callback
 
-    void onJoined(const std::string & playerName, const RoomInfo & room) override
+    void onJoined(Client* client, const std::string & playerName, const RoomInfo & room) override
     {
         drawRoomScreen(room, false);
     }
 
-    void onLeft(const std::string & playerName, const RoomInfo & room) override
+    void onLeft(Client* client, const std::string & playerName, const RoomInfo & room) override
     {
-        std::cout << std::string("[") + playerName + "]: I left \"" + room.getName() + "\"\n";
-        //mFinish = true;
+        //std::cout << std::string("[") + playerName + "]: I left \"" + room.getName() + "\"\n";
     }
 
-    void onBroadcast(const std::string & playerName, const std::string & message) override
+    void onBroadcast(Client* client, const std::string & playerName, const RoomInfo & room, const std::string & message) override
     {
         if (!message.empty()) {
-            mHostPlaysCrosses = (message[0] == 'X');
+            if (message.size() == 1) {
+                mHostPlaysCrosses = (message[0] == 'X');
+            }
+            else if (message.size() == 2 && message[1] == 'R') {
+                if (message[0] == 'H') {
+                    mHostReady = true;
+                }
+                else if (message[0] == 'C') {
+                    mClientReady = true;
+                }
+            }
         }
-        //drawRoomScreen(room, false);
+        drawRoomScreen(room, false);
     }
 
-    void onSessionStart(const std::string & playerName, SessionPtr session) override
+    void onSessionStart(Client* client, const std::string & playerName, const RoomInfo & room, SessionPtr session) override
     {
-        std::cout << std::string("[") + playerName + "]: I got SessionStarted message!\n";
+        //std::cout << std::string("[") + playerName + "]: I got SessionStarted message!\n";
         mSession = session;
         mSession->startup(this, 5 * 1000);
+        mSetupFinish = true;
     }
 
     //-------------------------------------------------------
@@ -496,14 +468,14 @@ public:
             }
         }
         if (winCode != 0) {
-            mFinish = true;
+            mGameFinish = true;
         }
 
         for (;;) {
             // Draw screen
             drawGameScreen(sessionName, field, myTurn, mySymbol, winCode);
             // Make turn
-            if (!mFinish && myTurn) {
+            if (!mGameFinish && myTurn) {
                 std::string s;
                 std::getline(std::cin, s);
                 if (s.size() == 2) {
@@ -529,7 +501,7 @@ public:
 
     void onSync(const std::string & sessionName, const std::string & playerName, uint32_t syncId) override
     {
-        std::cout << std::string("SessionCallback[") + playerName + "]: Got sync " + std::to_string(syncId) + "\n";
+        //std::cout << std::string("SessionCallback[") + playerName + "]: Got sync " + std::to_string(syncId) + "\n";
     }
 };
 

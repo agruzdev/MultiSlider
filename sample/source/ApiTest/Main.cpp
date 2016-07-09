@@ -54,23 +54,23 @@ class HostCallbackSample
     : public HostCallback
 {
 public:
-    void onCreated(const RoomInfo & room) override
+    void onCreated(Host* host, const RoomInfo & room) override
     {
         std::cout << std::string("Room \"") + room.getName() + "\" is created!\n";
     }
 
-    void onClosed(const RoomInfo & room) override
+    void onClosed(Host* host, const RoomInfo & room) override
     {
         std::cout << std::string("Room \"") + room.getName() + "\" is closed!\n";
     }
 
-    void onSessionStart(const RoomInfo & room, SessionPtr session) override
+    void onSessionStart(Host* host, const RoomInfo & room, SessionPtr session) override
     {
         std::cout << std::string("Room \"") + room.getName() + "\" session is started!\n";
         gHostSession = session;
     }
 
-    void onBroadcast(const RoomInfo & room, const std::string & message) override
+    void onBroadcast(Host* host, const RoomInfo & room, const std::string & message) override
     {
         std::cout << std::string("Room \"") + room.getName() + ": got broadcast message \"" + message + "\"\n";
     }
@@ -151,22 +151,22 @@ class ClientCallbackSample
 {
 public:
 
-    void onJoined(const std::string & playerName, const RoomInfo & room) override
+    void onJoined(Client* client, const std::string & playerName, const RoomInfo & room) override
     {
         std::cout << std::string("[") + playerName + "]: I joined \"" + room.getName() + "\"\n";
     }
 
-    void onLeft(const std::string & playerName, const RoomInfo & room) override
+    void onLeft(Client* client, const std::string & playerName, const RoomInfo & room) override
     {
         std::cout << std::string("[") + playerName + "]: I left \"" + room.getName() + "\"\n";
     }
 
-    void onBroadcast(const std::string & playerName, const std::string & message) override
+    void onBroadcast(Client* client, const std::string & playerName, const RoomInfo & room, const std::string & message) override
     {
         std::cout << std::string("[") + playerName + "]: I got broadcast message \"" + message + "\"\n";
     }
 
-    void onSessionStart(const std::string & playerName, SessionPtr session) override
+    void onSessionStart(Client* client, const std::string & playerName, const RoomInfo & room, SessionPtr session) override
     {
         std::cout << std::string("[") + playerName + "]: I got SessionStarted message!\n";
         gClientSession = session;

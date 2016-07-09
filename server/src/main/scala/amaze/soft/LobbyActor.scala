@@ -226,12 +226,12 @@ class LobbyActor(
       }
 
     case UpdateBroadcast(updateSender: ActorRef, updateMessage: Update) =>
+      val updateMessageWithRoom = Update(RoomInfo(m_room, m_players.map{ case (_, info) => info.name }.toList), updateMessage.data, updateMessage.toSelf)
       if(m_state == Host) {
-        m_players.foreach{ case (playerActor, _) => if(playerActor != self) playerActor ! UpdateBroadcast(updateSender, updateMessage) }
+        m_players.foreach{ case (playerActor, _) => if(playerActor != self) playerActor ! UpdateBroadcast(updateSender, updateMessageWithRoom) }
       }
       if(updateMessage.toSelf || self != updateSender) {
-        val updateMessageWithRoom = Update(RoomInfo(m_room, m_players.map{ case (_, info) => info.name }.toList), updateMessage.data, updateMessage.toSelf)
-        m_remote_user ! Tcp.Write(ByteString( json.Serialization.write(updateMessageWithRoom)))
+        m_remote_user ! Tcp.Write(ByteString( json.Serialization.write( if(m_state == Host) updateMessageWithRoom else updateMessage )))
       }
 
     case SessionStarted(ip, port, name, sessionId) =>

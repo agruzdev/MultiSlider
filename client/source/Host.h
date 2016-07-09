@@ -21,6 +21,7 @@ namespace RakNet
 
 namespace multislider
 {
+    class Host;
 
     class HostCallback
     {
@@ -30,22 +31,22 @@ namespace multislider
         /**
          *  Is called as soon as the room is created on the server
          */
-        virtual void onCreated(const RoomInfo & /*room*/) { }
+        virtual void onCreated(Host* /*host*/, const RoomInfo & /*room*/) { }
 
         /**
          *  Is called after server room is closed
          */
-        virtual void onClosed(const RoomInfo & /*room*/) { }
+        virtual void onClosed(Host* /*host*/, const RoomInfo & /*room*/) { }
 
         /**
          *  Is called for each broadcast message
          */
-        virtual void onBroadcast(const RoomInfo & /*room*/, const std::string & /*message*/) { }
+        virtual void onBroadcast(Host* /*host*/, const RoomInfo & /*room*/, const std::string & /*message*/) { }
 
         /**
          *  Is called as soon as a host has started a session
          */
-        virtual void onSessionStart(const RoomInfo & /*room*/, SessionPtr /*session*/) { }
+        virtual void onSessionStart(Host* /*host*/, const RoomInfo & /*room*/, SessionPtr /*session*/) { }
     };
 
     class Host
