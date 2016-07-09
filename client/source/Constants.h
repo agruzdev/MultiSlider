@@ -22,6 +22,7 @@ namespace multislider
 
         static const char MESSAGE_KEY_CLASS[]        = "jsonClass";
         static const char MESSAGE_KEY_PLAYER_NAME[]  = "playerName";
+        static const char MESSAGE_KEY_ROOM[]         = "room";
         static const char MESSAGE_KEY_ROOM_NAME[]    = "roomName";
         static const char MESSAGE_KEY_DATA[]         = "data";
         static const char MESSAGE_KEY_SHARED_DATA[]  = "sharedData";

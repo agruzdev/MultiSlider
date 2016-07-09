@@ -1,5 +1,7 @@
 package amaze.soft
 
+import amaze.soft.LobbyActor.RoomInfo
+
 /**
  * Created by Alexey on 21.05.2016.
  * The MIT License (MIT)
@@ -47,7 +49,7 @@ object FrontendMessage {
   /**
    * Is sent by any user when he changed some settings
    */
-  case class Update(data: String, toSelf: Boolean) extends JsonMessage
+  case class Update(room: RoomInfo, data: String, toSelf: Boolean) extends JsonMessage
 
   /**
    * Start game session for all current players

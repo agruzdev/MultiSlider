@@ -69,6 +69,11 @@ public:
         std::cout << std::string("Room \"") + room.getName() + "\" session is started!\n";
         gHostSession = session;
     }
+
+    void onBroadcast(const RoomInfo & room, const std::string & message) override
+    {
+        std::cout << std::string("Room \"") + room.getName() + ": got broadcast message \"" + message + "\"\n";
+    }
 };
 
 
@@ -87,6 +92,8 @@ public:
             gFlagJoin = true;
             gCvJoin.notify_one();
 
+            while (0 == host->receive()) 
+            { }
             std::this_thread::sleep_for(std::chrono::seconds(2));
 
             host->broadcast("TestMessage1", false);

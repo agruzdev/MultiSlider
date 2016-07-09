@@ -84,7 +84,7 @@ namespace multislider
          *  @return number of processed messages
          */
         MULTISLIDER_EXPORT
-        uint32_t receive() const;
+        uint32_t receive();
 
         /**
          *  Start game session for all joined players

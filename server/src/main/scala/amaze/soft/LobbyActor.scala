@@ -168,7 +168,7 @@ class LobbyActor(
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
           //---------------------------------------------------------------------
-          case Update(_: String, _: Boolean) =>
+          case Update(_, _: String, _: Boolean) =>
             logger.info("Got a UpdateBroadcast message!")
             if(m_state == Host || m_state == Joined) {
               m_room.host.actor ! UpdateBroadcast(self, msg.asInstanceOf[Update])
@@ -230,7 +230,8 @@ class LobbyActor(
         m_players.foreach{ case (playerActor, _) => if(playerActor != self) playerActor ! UpdateBroadcast(updateSender, updateMessage) }
       }
       if(updateMessage.toSelf || self != updateSender) {
-        m_remote_user ! Tcp.Write(ByteString( json.Serialization.write(updateMessage)))
+        val updateMessageWithRoom = Update(RoomInfo(m_room, m_players.map{ case (_, info) => info.name }.toList), updateMessage.data, updateMessage.toSelf)
+        m_remote_user ! Tcp.Write(ByteString( json.Serialization.write(updateMessageWithRoom)))
       }
 
     case SessionStarted(ip, port, name, sessionId) =>
@@ -296,6 +297,8 @@ class LobbyActor(
         m_room.playersNumber = m_players.size
         Depot.updateRoomInfo(m_room)
         logger.info("Player \"" + player.name + "\" joined")
+        // Notify all players that somebody has joined
+        self ! UpdateBroadcast(player.actor, Update(null, "", toSelf = false))
         return 0
       }
     }

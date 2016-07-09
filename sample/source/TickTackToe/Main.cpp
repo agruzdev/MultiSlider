@@ -30,6 +30,7 @@ class Controller
     Client*    mClient  = nullptr;
     SessionPtr mSession = nullptr;
 
+    bool mReady = false;
     bool mFinish = false;
 
     bool mHostPlaysCrosses = true;
@@ -178,6 +179,7 @@ public:
 
     void setupScreen(const std::string & roomname, bool isHost)
     {
+#if 0
         //-------------------------------------------------------
         //-------------------------------------------------------
         // Setup the room
@@ -243,6 +245,60 @@ public:
                     ? mHost->receive() 
                     : mClient->receive();
             } while ((0 == count) && wait);
+        }
+#else
+        auto inputHandler = std::async(std::launch::async, []() {
+            for (;;) {
+                std::string line;
+                std::getline(std::cin, line);
+            }
+        });
+        while (!mReady) {
+            if (mHost != nullptr) {
+                mHost->receive();
+            }
+            else {
+                mClient->receive();
+            }
+            pause(100);
+        }
+        inputHandler.wait();
+#endif
+    }
+
+    void drawRoomScreen(const RoomInfo & room, bool isHost)
+    {
+        static const std::string CMD_PLAY_SYM = "play";
+        static const std::string CMD_UPDATE = "update";
+        static const std::string CMD_START = "start";
+
+        clear();
+        std::cin.clear();
+
+        // Header 
+        std::cout << "Room " << room.getName() << std::endl;
+        std::cout << "--------------------------------------------------" << std::endl;
+        std::cout << std::endl;
+
+        if (room.getPlayersNumber() < 2) {
+            std::cout << "Waiting for the second player..." << std::endl;
+            std::cout << std::endl;
+        }
+        else {
+            // Info
+            std::cout << "Game options:" << std::endl;
+            std::cout << "    " << room.getPlayers()[0] << "\t plays: " << (mHostPlaysCrosses ? 'X' : 'O') << std::endl;
+            std::cout << "    " << room.getPlayers()[1] << "\t plays: " << (mHostPlaysCrosses ? 'O' : 'X') << std::endl;
+            std::cout << std::endl;
+
+            // Options
+            std::cout << "Options: " << std::endl;
+            if (isHost) {
+                std::cout << "  " << CMD_PLAY_SYM << " [X or O] - change your symbol" << std::endl;
+            }
+            std::cout << "  " << CMD_UPDATE << " - update this screen" << std::endl;
+            std::cout << "  " << CMD_START << " - start the game!" << std::endl;
+            std::cout << std::endl;
         }
     }
 
@@ -351,11 +407,15 @@ public:
     void onCreated(const RoomInfo & room) override
     {
         (void)room;
+        drawRoomScreen(room, true);
     }
 
     void onBroadcast(const RoomInfo & room, const std::string & message) override
     {
-        mHostPlaysCrosses = (message[0] == 'X');
+        if (!message.empty()) {
+            mHostPlaysCrosses = (message[0] == 'X');
+        }
+        drawRoomScreen(room, true);
         //unblockInput();
     }
 
@@ -378,7 +438,7 @@ public:
 
     void onJoined(const std::string & playerName, const RoomInfo & room) override
     {
-        //setupScreen(room, false);
+        drawRoomScreen(room, false);
     }
 
     void onLeft(const std::string & playerName, const RoomInfo & room) override
@@ -389,8 +449,10 @@ public:
 
     void onBroadcast(const std::string & playerName, const std::string & message) override
     {
-        mHostPlaysCrosses = (message[0] == 'X');
-        //unblockInput();
+        if (!message.empty()) {
+            mHostPlaysCrosses = (message[0] == 'X');
+        }
+        //drawRoomScreen(room, false);
     }
 
     void onSessionStart(const std::string & playerName, SessionPtr session) override

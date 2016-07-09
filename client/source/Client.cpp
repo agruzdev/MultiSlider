@@ -101,7 +101,7 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    uint32_t Client::receive() const
+    uint32_t Client::receive()
     {
         uint32_t counter(0);
         for (;;) {
@@ -114,7 +114,9 @@ namespace multislider
             std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS));
             if (isMessageClass(messageClass, frontend::BROADCAST)) {
                 std::string message = messageJson.get<std::string>(constants::MESSAGE_KEY_DATA, "");
-                mCallback->onBroadcast(mPlayerName, message);
+                if (mMyRoom.deserialize(messageJson.get<Object>(constants::MESSAGE_KEY_ROOM, Object()))) {
+                    mCallback->onBroadcast(mPlayerName, message);
+                }
             }
             else if (isMessageClass(messageClass, frontend::SESSION_STARTED)) {
                 SessionPtr session(new Session(
