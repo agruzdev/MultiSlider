@@ -9,6 +9,7 @@
 
 #include "Lobby.h"
 #include "Host.h"
+#include "Client.h"
 #include "Constants.h"
 #include "Utility.h"
 #include "Exception.h"
@@ -104,7 +105,7 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    Client* Lobby::joinRoom(const std::string & playerName, const RoomInfo & room, ClientCallback* callback, bool & isFull)
+    Client* Lobby::joinRoom(const std::string & playerName, const RoomInfo & room, LobbyCallback* callback, bool & isFull)
     {
         if (playerName.empty()) {
             throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");

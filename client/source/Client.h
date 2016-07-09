@@ -8,19 +8,12 @@
 #ifndef _MULTI_SLIDER_CLIENT_H_
 #define _MULTI_SLIDER_CLIENT_H_
 
-#include "CommonIncludes.h"
+#include "LobbyCallback.h"
 #include "RoomInfo.h"
-#include "LibInterface.h"
-#include "Session.h"
-
-namespace RakNet
-{
-    class TCPInterface;
-    struct SystemAddress;
-}
 
 namespace multislider
 {
+#if 0
     class Client;
 
     class ClientCallback
@@ -48,13 +41,13 @@ namespace multislider
          */
         virtual void onSessionStart(Client* /*client*/, const std::string & /*playerName*/, const RoomInfo & /*room*/, SessionPtr /*session*/) { }
     };
-
+#endif
     class Client
     {
         shared_ptr<RakNet::TCPInterface> mTcp;
         shared_ptr<RakNet::SystemAddress> mServerAddress;
 
-        ClientCallback* mCallback;
+        LobbyCallback* mCallback;
         RoomInfo mMyRoom;
         std::string mPlayerName;
         bool mIsJoined;
@@ -65,7 +58,7 @@ namespace multislider
         Client & operator=(const Client &);
 
     public:
-        Client(shared_ptr<RakNet::TCPInterface> connection, shared_ptr<RakNet::SystemAddress> address, const std::string & playerName, const RoomInfo & room, ClientCallback* callback);
+        Client(shared_ptr<RakNet::TCPInterface> connection, shared_ptr<RakNet::SystemAddress> address, const std::string & playerName, const RoomInfo & room, LobbyCallback* callback);
 
         ~Client();
 

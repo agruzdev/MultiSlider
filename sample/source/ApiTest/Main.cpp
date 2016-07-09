@@ -71,7 +71,12 @@ public:
     void onSessionStart(Lobby* lobby, const RoomInfo & room, const std::string & playerName, SessionPtr session) override
     {
         std::cout << std::string("[") + playerName + "]: session is started!\n";
-        gHostSession = session;
+        if (playerName == room.getHostName()) {
+            gHostSession = session;
+        }
+        else {
+            gClientSession = session;
+        }
     }
 };
 
@@ -144,7 +149,7 @@ public:
     }
 };
 
-
+#if 0
 class ClientCallbackSample
     : public ClientCallback
 {
@@ -171,7 +176,7 @@ public:
         gClientSession = session;
     }
 };
-
+#endif
 
 class ClientSample
 {
@@ -179,7 +184,7 @@ class ClientSample
 public:
     void run()
     {
-        ClientCallbackSample callback;
+        CallbackSample callback;
         SessionCallbackSample sessionCallback;
         {
             std::unique_lock<std::mutex> lock(mMutex);

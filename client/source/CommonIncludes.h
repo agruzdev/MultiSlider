@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <string>
 
+#include "LibInterface.h"
+
 #if defined(_MSC_VER) && (_MSC_VER < 1800)
 #include <tr1/memory>
 namespace multislider

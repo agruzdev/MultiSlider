@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "LobbyCallback.h"
-#include "Client.h"
 
 namespace multislider
 {
@@ -62,7 +61,7 @@ namespace multislider
          *  @param callback callback for client events, can't be null
          */
         MULTISLIDER_EXPORT
-        Client* joinRoom(const std::string & playerName, const RoomInfo & room, ClientCallback* callback, bool & isFull);
+        Client* joinRoom(const std::string & playerName, const RoomInfo & room, LobbyCallback* callback, bool & isFull);
     };
 
 }

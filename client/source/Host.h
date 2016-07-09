@@ -8,7 +8,7 @@
 #ifndef _MULTI_SLIDER_HOST_H_
 #define _MULTI_SLIDER_HOST_H_
 
-#include "CommonIncludes.h"
+#include "LobbyCallback.h"
 #include "LibInterface.h"
 #include "Lobby.h"
 #include "RoomInfo.h"
