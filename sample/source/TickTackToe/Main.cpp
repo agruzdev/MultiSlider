@@ -1,6 +1,5 @@
 
-#include "../../../client/source/Lobby.h"
-#include "../../../client/source/Exception.h"
+#include "../../../client/source/MultiSlider.h"
 
 #include <cassert>
 #include <iostream>
@@ -19,7 +18,7 @@ static const std::string CMD_PLAY_SYM = "play";
 static const std::string CMD_START    = "start";
 
 class Controller
-    : public HostCallback, public ClientCallback, public SessionCallback
+    : public Lobby::Callback, public SessionCallback
 {
     Host*      mHost    = nullptr;
     Client*    mClient  = nullptr;
@@ -339,16 +338,18 @@ public:
     }
 
     //-------------------------------------------------------
-    // Host callback
+    // Lobby callback
 
-    void onCreated(Host* host, const RoomInfo & room) override
+    void onJoined(Lobby* lobby, const RoomInfo & room, const std::string & playerName) override
     {
         (void)room;
-        drawRoomScreen(room, true);
+        const bool isHost = (playerName == room.getHostName());
+        drawRoomScreen(room, isHost);
     }
 
-    void onBroadcast(Host* host, const RoomInfo & room, const std::string & message) override
+    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & playerName, const std::string & message) override
     {
+        const bool isHost = (playerName == room.getHostName());
         if (!message.empty()) {
             if (message.size() == 1) {
                 mHostPlaysCrosses = (message[0] == 'X');
@@ -362,61 +363,23 @@ public:
                 }
             }
         }
-        drawRoomScreen(room, true);
-        if (mHostReady && mClientReady) {
-            host->startSession();
+        drawRoomScreen(room, isHost);
+        if (isHost) {
+            if (mHostReady && mClientReady) {
+                mHost->startSession();
+            }
         }
     }
 
-    void onClosed(Host* host, const RoomInfo & room) override
+    void onLeft(Lobby* lobby, const RoomInfo & room, const std::string & playerName, uint8_t flags) override
     {
         //std::cout << std::string("Room \"") + room.getName() + "\" is closed!\n";
         //mFinish = true;
     }
 
-    void onSessionStart(Host* host, const RoomInfo & room, SessionPtr session) override
+    void onSessionStart(Lobby* lobby, const RoomInfo & room, const std::string & playerName, SessionPtr session) override
     {
         //std::cout << std::string("Room \"") + room.getName() + "\" session is started!\n";
-        mSession = session;
-        mSession->startup(this, 5 * 1000);
-        mSetupFinish = true;
-    }
-
-
-    //-------------------------------------------------------
-    // Client callback
-
-    void onJoined(Client* client, const std::string & playerName, const RoomInfo & room) override
-    {
-        drawRoomScreen(room, false);
-    }
-
-    void onLeft(Client* client, const std::string & playerName, const RoomInfo & room) override
-    {
-        //std::cout << std::string("[") + playerName + "]: I left \"" + room.getName() + "\"\n";
-    }
-
-    void onBroadcast(Client* client, const std::string & playerName, const RoomInfo & room, const std::string & message) override
-    {
-        if (!message.empty()) {
-            if (message.size() == 1) {
-                mHostPlaysCrosses = (message[0] == 'X');
-            }
-            else if (message.size() == 2 && message[1] == 'R') {
-                if (message[0] == 'H') {
-                    mHostReady = true;
-                }
-                else if (message[0] == 'C') {
-                    mClientReady = true;
-                }
-            }
-        }
-        drawRoomScreen(room, false);
-    }
-
-    void onSessionStart(Client* client, const std::string & playerName, const RoomInfo & room, SessionPtr session) override
-    {
-        //std::cout << std::string("[") + playerName + "]: I got SessionStarted message!\n";
         mSession = session;
         mSession->startup(this, 5 * 1000);
         mSetupFinish = true;
