@@ -21,6 +21,8 @@ namespace jsonxx
 
 namespace multislider
 {
+    class UdpSocket;
+
     typedef std::map<std::string, std::string> SessionData;
 
     class SessionCallback
@@ -44,14 +46,9 @@ namespace multislider
         virtual void onSync(const std::string & /*sessionName*/, const std::string & /*playerName*/, uint32_t /*syncId*/) { }
     }; 
 
-    struct SocketImpl;
-
     class Session
     {
-        static bool msEnetInited;
-        //-------------------------------------------------------
-
-        shared_ptr<SocketImpl> mSocket;
+        shared_ptr<UdpSocket> mSocket;
         const std::string mServerIp;
         const uint16_t mServerPort;
         const std::string mPlayerName;

@@ -12,14 +12,18 @@
 #include "Utility.h"
 #include "Exception.h"
 #include "Session.h"
+#include "UdpInterface.h"
 
 #include "jsonxx.h"
+
 
 using namespace RakNet;
 using namespace jsonxx;
 
 namespace
 {
+    static const size_t RECEIVE_BIFFER_SIZE = 4096;
+
     struct TcpDeleter
     {
         void operator()(RakNet::TCPInterface* tcp) const
@@ -36,7 +40,7 @@ namespace multislider
     //-------------------------------------------------------
 
     Lobby::Lobby(const std::string & serverIp, uint16_t serverPort)
-        : mCallback(NULL), mIsJoined(false), mIsHost(false)
+        : mServerIp(serverIp), mServerPort(serverPort), mCallback(NULL), mIsJoined(false), mIsHost(false)
     {
         mTcp.reset(RakNet::TCPInterface::GetInstance(), TcpDeleter());
         if (!mTcp->Start(8801, 64)) {
@@ -50,6 +54,8 @@ namespace multislider
         if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_GREET)) {
             throw ProtocolError("Lobby[Lobby]: Unrecognized greeting");
         }
+        mUpdSocket.reset(new UdpSocket);
+        mReceiveBuffer.resize(RECEIVE_BIFFER_SIZE);
     }
     //-------------------------------------------------------
 
@@ -110,6 +116,7 @@ namespace multislider
 
     std::vector<RoomInfo> Lobby::getRooms() const
     {
+#if 0
         assert(mTcp.get() != NULL);
 
         Object jsonGetRooms;
@@ -129,6 +136,23 @@ namespace multislider
             rooms[i].deserialize(roomsArray.get<Object>(i));
         }
         return rooms;
+#else
+        Object jsonGetRooms;
+        jsonGetRooms << MESSAGE_KEY_CLASS << frontend::GET_ROOMS;
+        UdpInterface::Instance().sendUpdDatagram(*mUpdSocket, mServerIp, mServerPort, jsonGetRooms.write(JSON));
+        size_t len = UdpInterface::Instance().awaitUdpDatagram(*mUpdSocket, mReceiveBuffer, DEFAULT_TIMEOUT_MS);
+        if(0 == len){
+            throw ServerError("Lobby[Lobby]: Failed to get rooms list!");
+        }
+        Array roomsArray;
+        roomsArray.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), len));
+        std::vector<RoomInfo> rooms;
+        rooms.resize(roomsArray.size());
+        for (size_t i = 0; i < roomsArray.size(); ++i) {
+            rooms[i].deserialize(roomsArray.get<Object>(i));
+        }
+        return rooms;
+#endif
     }
     //-------------------------------------------------------
 

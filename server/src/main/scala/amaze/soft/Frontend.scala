@@ -3,9 +3,15 @@ package amaze.soft
 import java.net.InetSocketAddress
 
 import akka.actor._
-import akka.io.{IO, Tcp}
+import akka.io.{IO, Tcp, Udp}
 import akka.util.ByteString
+import amaze.soft.FrontendMessage.{GetRooms, JsonMessage}
+import amaze.soft.LobbyActor.RoomInfo
+import net.liftweb.json
+import net.liftweb.json.{DefaultFormats, ShortTypeHints}
 import org.slf4j.LoggerFactory
+
+import scala.collection.JavaConversions._
 
 /**
  * Created by Alexey on 19.05.2016.
@@ -34,22 +40,26 @@ object Frontend extends App {
 
 class Frontend extends Actor {
   import Frontend._
-  import Tcp._
+
+  private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(classOf[GetRooms])))
 
   m_logger.info("Frontend is created!")
-  IO(Tcp)(Depot.actorsSystem) ! Bind(self, new InetSocketAddress(Depot.ip_address, Depot.port_frontend))
+  IO(Tcp)(Depot.actorsSystem) ! Tcp.Bind(self, new InetSocketAddress(Depot.ip_address, Depot.port_frontend))
   m_logger.info("Created TCP socket for " + Depot.ip_address + ":" + Depot.port_frontend)
+  IO(Udp)(Depot.actorsSystem) ! Udp.Bind(self, new InetSocketAddress(Depot.ip_address, Depot.port_frontend))
+  m_logger.info("Created UDP socket for " + Depot.ip_address + ":" + Depot.port_frontend)
 
   def receive = {
-    case b @ Bound(localAddress) =>
+    case Tcp.Bound(localAddress) =>
       m_logger.info("Listening to " + localAddress)
 
-    case CommandFailed(_: Bind) =>
+    case Tcp.CommandFailed(_: Tcp.Bind) =>
       m_logger.info("Fail"); context stop self
 
-    case c @ Connected(remote, local) =>
+    case Tcp.Connected(remote, local) =>
       m_logger.info("remote = " + remote)
       m_logger.info("local  = " + local)
+
       var status = false
       m_counterLock.synchronized {
         if (m_lobbyActorsCounter < MAX_LOBBIES_NUMBER) {
@@ -61,7 +71,7 @@ class Frontend extends Actor {
       if(status) {
         m_logger.info("Lobbies number = " + m_lobbyActorsCounter)
         val handler = context.actorOf(Props(classOf[LobbyActor], client))
-        client ! Register(handler)
+        client ! Tcp.Register(handler)
         client ! Tcp.Write(ByteString(Constants.RESPONCE_GREETINGS))
       } else {
         client ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK_IS_FULL))
@@ -73,6 +83,35 @@ class Frontend extends Actor {
         m_lobbyActorsCounter = math.max(0, m_lobbyActorsCounter - 1)
       }
       m_logger.info("Lobbies number = " + m_lobbyActorsCounter)
+
+
+    case Udp.Bound(local) =>
+      m_logger.info("UDP socket is bound")
+
+    case Udp.Received(data, remote) =>
+      m_logger.info("Got a datagram")
+      m_logger.info("Datagram = " + data.decodeString(Constants.MESSAGE_ENCODING))
+      try {
+        val msg = json.parse(data.decodeString(Constants.MESSAGE_ENCODING)).extract[JsonMessage]
+        m_logger.info(msg.toString)
+        msg match {
+          case GetRooms() =>
+            m_logger.info("Got a GetRooms message!")
+            sender() ! Udp.Send(ByteString(json.Serialization.write(Depot.getLobbies.map({
+              case (_, info) => RoomInfo(info, null)
+            }).toList)), remote)
+          case _ =>
+            m_logger.error("Unknown message!")
+        }
+      } catch {
+        case err: Exception =>
+          m_logger.error(err.getMessage, err.getCause)
+          err.printStackTrace()
+          sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
+      }
+
+    case Udp.Unbind  =>
+      sender() ! Udp.Unbind
   }
 
 }

@@ -10,46 +10,12 @@
 #include "Utility.h"
 #include "Constants.h"
 
-#include <enet/enet.h>
-#include <RakSleep.h>
+#include "UdpInterface.h"
 
 #include <jsonxx.h>
 
 using namespace RakNet;
 using namespace jsonxx;
-
-
-namespace multislider
-{
-    struct SocketImpl
-    {
-        ENetSocket enetSocket;
-        bool valid;
-
-        SocketImpl()
-            : valid(false)
-        { }
-    };
-}
-
-namespace
-{
-    using namespace multislider;
-
-    struct EnetSocketDeleter
-    {
-        void operator()(SocketImpl* ptr) const
-        {
-            if (ptr != NULL) {
-                if (ptr->valid) {
-                    enet_socket_destroy(ptr->enetSocket);
-                }
-            }
-        }
-    };
-
-
-}
 
 namespace multislider
 {
@@ -58,7 +24,7 @@ namespace multislider
     //-------------------------------------------------------
     static const size_t RECEIVE_BIFFER_SIZE = 4096;
 
-    bool Session::msEnetInited = false;
+    //bool Session::msEnetInited = false;
 
     void Session::destoyInstance(Session* ptr)
     {
@@ -74,14 +40,16 @@ namespace multislider
         assert(!mServerIp.empty());
         assert(!mPlayerName.empty());
         assert(!mSessionName.empty());
+#if 0
         if (!msEnetInited) {
             if (!enet_initialize()) {
-                // ToDo: Inited by RaNet. Fix after getting rid of RakNet?
+                // ToDo: Inited by RakNet. Fix after getting rid of RakNet?
                 //throw RuntimeError("Session[Session]: Failed to init ENet");
             }
             enet_time_set(0);
             msEnetInited = true;
         }
+#endif
         mReceiveBuffer.resize(RECEIVE_BIFFER_SIZE);
     }
     //-------------------------------------------------------
@@ -109,6 +77,7 @@ namespace multislider
 
     void Session::sendUpdDatagram(const std::string & message) const
     {
+#if 0
         ENetAddress address;
         enet_address_set_host(&address, mServerIp.c_str());
         address.port = mServerPort;
@@ -119,11 +88,17 @@ namespace multislider
         if (!enet_socket_send(mSocket->enetSocket, &address, &buffer, 1)) {
             throw RuntimeError("Session[Startup]: Failed to send UDP datagram");
         }
+#else
+        if (!UdpInterface::Instance().sendUpdDatagram(*mSocket, mServerIp, mServerPort, message)) {
+            throw RuntimeError("Session[Startup]: Failed to send UDP datagram");
+        }
+#endif
     }
     //-------------------------------------------------------
 
     size_t Session::awaitUdpDatagram(uint64_t timeoutMilliseconds, uint32_t attemptsTimeoutMilliseconds /* = 100 */) 
     {
+#if 0
         ENetAddress address;
         ENetBuffer buffer;
         buffer.data = &mReceiveBuffer[0];
@@ -140,6 +115,9 @@ namespace multislider
         else {
             return static_cast<size_t>(len);
         }
+#else
+        return UdpInterface::Instance().awaitUdpDatagram(*mSocket, mReceiveBuffer, timeoutMilliseconds, attemptsTimeoutMilliseconds);
+#endif
     }
     //-------------------------------------------------------
 
@@ -148,10 +126,8 @@ namespace multislider
         if (callback == NULL) {
             throw RuntimeError("Session[Startup]: callback can't be null!");
         }
-        mSocket = shared_ptr<SocketImpl>(new SocketImpl);
-        mSocket->enetSocket = enet_socket_create(ENET_SOCKET_TYPE_DATAGRAM);
-        mSocket->valid = true;
-        if (0 != enet_socket_set_option(mSocket->enetSocket, ENET_SOCKOPT_NONBLOCK, 1)) {
+        mSocket = shared_ptr<UdpSocket>(new UdpSocket);
+        if (0 != enet_socket_set_option(*mSocket, ENET_SOCKOPT_NONBLOCK, 1)) {
             throw RuntimeError("Session[Session]: Failed to setup socket");
         }
         mCallback = callback;

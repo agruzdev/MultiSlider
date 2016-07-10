@@ -74,7 +74,7 @@ class Controller
             std::cout << "Available rooms:" << std::endl;
             size_t idx = 0;
             for (const auto & info : rooms) {
-                std::cout << "  [" << idx << "]  " << info.getName() << "\t  by " << info.getHostName() << "\t        " << info.getPlayersNumber() << " / " << info.getPlayersLimit() << std::endl;
+                std::cout << "  [" << idx++ << "]  " << info.getName() << "\t  by " << info.getHostName() << "\t        " << info.getPlayersNumber() << " / " << info.getPlayersLimit() << std::endl;
             }
             std::cout << std::endl;
 

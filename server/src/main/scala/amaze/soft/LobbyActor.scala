@@ -3,7 +3,7 @@ package amaze.soft
 import akka.actor.{Actor, ActorRef}
 import akka.io.Tcp
 import akka.pattern.ask
-import akka.util.{Timeout, ByteString}
+import akka.util.{ByteString, Timeout}
 import amaze.soft.Backend.CreateSession
 import amaze.soft.Frontend.LobbyClosed
 import amaze.soft.FrontendMessage._
@@ -12,7 +12,6 @@ import net.liftweb.json.{DefaultFormats, ShortTypeHints}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
-import scala.collection.JavaConversions._
 
 /**
  * Created by Alexey on 20.05.2016.
@@ -59,7 +58,7 @@ class LobbyActor(
   import Tcp._
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
-    classOf[CreateRoom], classOf[CloseRoom], classOf[GetRooms], classOf[JoinRoom], classOf[LeaveRoom],
+    classOf[CreateRoom], classOf[CloseRoom], classOf[JoinRoom], classOf[LeaveRoom],
     classOf[EjectPlayer], classOf[StartSession], classOf[SessionStarted], classOf[Update])))
 
   // Current lobby state
@@ -117,12 +116,6 @@ class LobbyActor(
             } else {
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
-          //---------------------------------------------------------------------
-          case GetRooms() =>
-            logger.info("Got a GetRooms message!")
-            sender() ! Tcp.Write(ByteString(json.Serialization.write(Depot.getLobbies.map({
-              case (_, info) => RoomInfo(info, null)
-            }).toList)))
 
           //---------------------------------------------------------------------
           case JoinRoom(player, roomName) =>
@@ -168,10 +161,10 @@ class LobbyActor(
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
           //---------------------------------------------------------------------
-          case Update(_, _: String, _: Boolean) =>
+          case update @ Update(_, _: String, _: Boolean) =>
             logger.info("Got a UpdateBroadcast message!")
             if(m_state == Host || m_state == Joined) {
-              m_room.host.actor ! UpdateBroadcast(self, msg.asInstanceOf[Update])
+              m_room.host.actor ! UpdateBroadcast(self, update)
             }
 
           //---------------------------------------------------------------------
