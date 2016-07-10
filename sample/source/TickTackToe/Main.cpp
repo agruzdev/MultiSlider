@@ -22,6 +22,8 @@ class Controller
     std::unique_ptr<Lobby> mLobby = nullptr;
     SessionPtr mSession = nullptr;
 
+    std::string mUserName;
+
     bool mHostReady   = false;
     bool mClientReady = false;
     bool mSetupFinish = false;
@@ -64,24 +66,44 @@ public:
     {
         mLobby = std::make_unique<Lobby>(ip, port);
         std::string username;
-        std::cout << "Please introduce yourself: ";
-        std::cin >> username;
+        do {
+            std::cout << "Please introduce yourself: ";
+            std::cin >> mUserName;
+        } while (mUserName.empty());
 
         std::string _tmp;
         std::getline(std::cin, _tmp); // Quickfix
-
-        std::string roomname;
 
         //-------------------------------------------------------
         //-------------------------------------------------------
         // Lobby screen
         //-------------------------------------------------------
+        assert(mLobby != nullptr);
+        lobbyScreen();
+
+        //-------------------------------------------------------
+        // Setup loop
+        assert(mLobby->isJoined());
+        setupScreen();
+
+        //-------------------------------------------------------
+        // Game loop
+
+        assert(mSession != nullptr);
+        gameScreen();
+
+        //-------------------------------------------------------
+        mLobby.reset();
+    }
+
+    void lobbyScreen()
+    {
         for (;;) {
             clear();
             std::cin.sync();
 
             //Header 
-            std::cout << "Lobby of " << username << std::endl;
+            std::cout << "Lobby of " << mUserName << std::endl;
             std::cout << "--------------------------------------------------" << std::endl;
             std::cout << std::endl;
 
@@ -97,9 +119,9 @@ public:
             //Footer
             std::cout << "Options:" << std::endl;
             std::cout << "  " << CMD_CREATE << " <roomName> - to create a new room" << std::endl;
-            std::cout << "  " << CMD_JOIN   << " <number> - to join a room with number <number>" << std::endl;
+            std::cout << "  " << CMD_JOIN << " <number> - to join a room with number <number>" << std::endl;
             std::cout << "  " << CMD_UPDATE << " - to update rooms list" << std::endl;
-            std::cout << "  " << CMD_EXIT   << " - to leave" << std::endl;
+            std::cout << "  " << CMD_EXIT << " - to leave" << std::endl;
             std::cout << std::endl;
 
             // Process command
@@ -114,9 +136,8 @@ public:
                 pause(1000);
                 return;
             }
-            else if (cmd.size() == 2 && cmd[0] == CMD_CREATE) {
-                roomname = cmd[1];
-                if(Lobby::SUCCESS == mLobby->createRoom(username, roomname, 2, this)) {
+            else if (cmd.size() == 2 && cmd[0] == CMD_CREATE && cmd[1].size() > 0) {
+                if (Lobby::SUCCESS == mLobby->createRoom(mUserName, cmd[1], 2, this)) {
                     break;
                 }
                 else {
@@ -127,8 +148,7 @@ public:
             else if (cmd.size() == 2 && cmd[0] == CMD_JOIN) {
                 int roomIdx = std::stoi(cmd[1]);
                 if (roomIdx >= 0 && roomIdx < static_cast<int>(rooms.size())) {
-                    roomname = rooms[roomIdx].getName();
-                    auto status = mLobby->joinRoom(username, rooms[roomIdx], this);
+                    auto status = mLobby->joinRoom(mUserName, rooms[roomIdx], this);
                     if (Lobby::SUCCESS == status) {
                         break;
                     }
@@ -147,24 +167,9 @@ public:
                 pause(1000);
             }
         };
-
-
-        //-------------------------------------------------------
-        // Setup loop
-        assert(mLobby->isJoined());
-        setupScreen(roomname);
-
-        //-------------------------------------------------------
-        // Game loop
-
-        assert(mSession != nullptr);
-        gameScreen(roomname, mLobby->isHost());
-
-        //-------------------------------------------------------
-        mLobby.reset();
     }
 
-    void setupScreen(const std::string & roomname)
+    void setupScreen()
     {
         auto inputHandler = std::async(std::launch::async, [this]() {
             while(!mSetupFinish) {
@@ -225,7 +230,7 @@ public:
     }
 
 
-    void gameScreen(const std::string & roomname, bool isHost)
+    void gameScreen()
     {
         while (!mGameFinish) {
             mSession->receive();
