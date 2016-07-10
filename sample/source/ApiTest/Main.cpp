@@ -91,16 +91,19 @@ public:
         SessionCallbackSample sessionCallback;
         {
             Lobby lobby(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
-            Host* host = lobby.createRoom("Player1", "Room1", 2, &callback);
+            //Host* host = lobby.createRoom("Player1", "Room1", 2, &callback);
+            if (!lobby.createRoom("Player1", "Room1", 2, &callback)) {
+                throw std::runtime_error("Failed to create a room!");
+            }
 
             gFlagJoin = true;
             gCvJoin.notify_one();
 
-            while (0 == host->receive()) 
+            while (0 == lobby.receive()) 
             { }
             std::this_thread::sleep_for(std::chrono::seconds(2));
 
-            host->broadcast("TestMessage1", false);
+            lobby.broadcast("TestMessage1", false);
             std::cout << "Server sent broadcast\n";
 
             {
@@ -113,8 +116,8 @@ public:
                 std::cout << info.getName() + " by " + info.getHostName() + "   players: " + std::to_string(info.getPlayersNumber()) + "/" + std::to_string(info.getPlayersLimit()) + "\n";
             }
 
-            host->startSession();
-            while (0 == host->receive()) 
+            lobby.startSession();
+            while (0 == lobby.receive()) 
             { }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -144,7 +147,7 @@ public:
                 std::unique_lock<std::mutex> lock(mMutex);
                 gCvFinish.wait(lock, []() {return gFlagFinish.load(); });
             }
-            host->closeRoom();
+            lobby.closeRoom();
         }
     }
 };

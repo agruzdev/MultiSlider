@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "LobbyCallback.h"
+#include "RoomInfo.h"
 
 namespace multislider
 {
@@ -25,7 +26,13 @@ namespace multislider
         shared_ptr<RakNet::TCPInterface> mTcp;
         shared_ptr<RakNet::SystemAddress> mServerAddress;
 
-        shared_ptr<Host>   mHostInstance;
+        RoomInfo mMyRoom;
+        std::string mPlayerName;
+        LobbyCallback* mCallback;
+        bool mIsJoined;
+        bool mIsHost;
+
+        //shared_ptr<Host>   mHostInstance;
         shared_ptr<Client> mClientInstance;
 
         Lobby(const Lobby &);
@@ -44,9 +51,10 @@ namespace multislider
          *  @param roomName name of the room
          *  @param palyersLimit maximum number of players in the room (should be >= 1)
          *  @param callback callback for host events, can't be null
+         *  @return true on success
          */
         MULTISLIDER_EXPORT
-        Host* createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback);
+        bool createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback);
 
         /**
          *  Get a list of all opened rooms on the server
@@ -62,6 +70,40 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         Client* joinRoom(const std::string & playerName, const RoomInfo & room, LobbyCallback* callback, bool & isFull);
+
+        //-------------------------------------------------------
+        // Host specific functions
+
+        /**
+         *  Close the current room
+         */
+        MULTISLIDER_EXPORT
+        void closeRoom();
+
+        /**
+         *  Start game session for all joined players
+         */
+        MULTISLIDER_EXPORT
+        void startSession();
+
+        //-------------------------------------------------------
+        // COmmon functions for both host and client
+
+        /**
+         *  Broadcast data to all players in the room
+         *  Not blocking call
+         */
+        MULTISLIDER_EXPORT
+        void broadcast(const std::string & data, bool toSelf);
+
+        /**
+         *  Check incoming broadcast messages and call callback for the each message
+         *  @return number of processed messages
+         */
+        MULTISLIDER_EXPORT
+        uint32_t receive();
+
+
     };
 
 }

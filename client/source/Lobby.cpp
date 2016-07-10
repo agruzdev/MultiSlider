@@ -37,6 +37,7 @@ namespace multislider
     //-------------------------------------------------------
 
     Lobby::Lobby(const std::string & serverIp, uint16_t serverPort)
+        : mCallback(NULL), mIsJoined(false), mIsHost(false)
     {
         mTcp.reset(RakNet::TCPInterface::GetInstance(), TcpDeleter());
         if (!mTcp->Start(8801, 64)) {
@@ -54,10 +55,20 @@ namespace multislider
     //-------------------------------------------------------
 
     Lobby::~Lobby()
-    { }
+    {
+        if (mIsJoined) {
+            try {
+                if (mIsHost) {
+                    closeRoom();
+                }
+            }
+            catch (RuntimeError &) {
+            }
+        }
+    }
     //-------------------------------------------------------
 
-    Host* Lobby::createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback)
+    bool Lobby::createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback)
     {
         if (playerName.empty()) {
             throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");
@@ -71,8 +82,27 @@ namespace multislider
         if (playersLimit < 1) {
             throw ProtocolError("Lobby[createRoom]: players limit can't be less than 1");
         }
-        mHostInstance.reset(new Host(mTcp, mServerAddress, playerName, roomName, playersLimit, callback));
-        return mHostInstance.get();
+        assert(mTcp.get() != NULL);
+        assert(*mServerAddress != UNASSIGNED_SYSTEM_ADDRESS);
+
+        Object createRoomJson;
+        createRoomJson << MESSAGE_KEY_CLASS << frontend::CREATE_ROOM;
+        createRoomJson << MESSAGE_KEY_PLAYER_NAME << playerName;
+        createRoomJson << MESSAGE_KEY_ROOM_NAME << roomName;
+        createRoomJson << MESSAGE_KEY_PLAYERS_LIMIT << playersLimit;
+        std::string createRoomMessage = createRoomJson.write(JSON);
+
+        mTcp->Send(createRoomMessage.c_str(), createRoomMessage.size(), *mServerAddress, false);
+        shared_ptr<Packet> responce = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
+        if (!mMyRoom.deserialize(std::string(pointer_cast<const char*>(responce->data), responce->length))) {
+            return false;
+        }
+        mPlayerName = playerName;
+        mCallback = callback;
+        mCallback->onJoined(this, mMyRoom, mPlayerName);
+        mIsJoined = true;
+        mIsHost = true;
+        return true;
     }
     //-------------------------------------------------------
 
@@ -129,4 +159,82 @@ namespace multislider
             return NULL;
         }
     }
+    //-------------------------------------------------------
+
+    void Lobby::closeRoom()
+    {
+        if (!(mIsJoined && mIsHost)) {
+            throw ProtocolError("Lobby[closeRoom]: Can't close room. I'm not the host!");
+        }
+        Object closeRoomJson;
+        closeRoomJson << MESSAGE_KEY_CLASS << frontend::CLOSE_ROOM;
+        std::string closeRoomMessage = closeRoomJson.write(JSON);
+        mTcp->Send(closeRoomMessage.c_str(), closeRoomMessage.size(), *mServerAddress, false);
+        if (!responsed(awaitResponse(mTcp, DEFAULT_TIMEOUT_MS), RESPONSE_SUCC)) {
+            throw ServerError("Host[closeRoom]: failed to close the current room!");
+        }
+        mCallback->onLeft(this, mMyRoom, mPlayerName, 0);
+        mIsJoined = false;
+    }
+    //-------------------------------------------------------
+
+    void Lobby::startSession()
+    {
+        Object startSessionJson;
+        startSessionJson << MESSAGE_KEY_CLASS << frontend::START_SESSION;
+        std::string startSessionMessage = startSessionJson.write(JSON);
+        mTcp->Send(startSessionMessage.c_str(), startSessionMessage.size(), *mServerAddress, false);
+    }
+    //-------------------------------------------------------
+
+    void Lobby::broadcast(const std::string & data, bool toSelf)
+    {
+        if (!mIsJoined) {
+            throw ProtocolError("Lobby[broadcast]: I'm not in a room!");
+        }
+        Object broadcastJson;
+        broadcastJson << MESSAGE_KEY_CLASS << frontend::BROADCAST;
+        broadcastJson << MESSAGE_KEY_ROOM << jsonxx::Null();
+        broadcastJson << MESSAGE_KEY_DATA << data;
+        broadcastJson << MESSAGE_KEY_TO_SELF << toSelf;
+        std::string broadcastMessage = broadcastJson.write(JSON);
+        mTcp->Send(broadcastMessage.c_str(), broadcastMessage.size(), *mServerAddress, false);
+    }
+    //-------------------------------------------------------
+
+    uint32_t Lobby::receive()
+    {
+        if (!mIsJoined) {
+            throw ProtocolError("Lobby[broadcast]: I'm not in a room!");
+        }
+        uint32_t counter = 0;
+        for (;;) {
+            shared_ptr<Packet> packet = awaitResponse(mTcp);
+            if (packet == NULL) {
+                break;
+            }
+            Object messageJson;
+            messageJson.parse(std::string(pointer_cast<char*>(packet->data), packet->length));
+            std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS));
+            if (isMessageClass(messageClass, frontend::BROADCAST)) {
+                std::string message = messageJson.get<std::string>(constants::MESSAGE_KEY_DATA, "");
+                if (mMyRoom.deserialize(messageJson.get<Object>(constants::MESSAGE_KEY_ROOM, Object()))) {
+                    mCallback->onBroadcast(NULL, mMyRoom, mPlayerName, message);
+                }
+            }
+            else if (isMessageClass(messageClass, frontend::SESSION_STARTED)) {
+                SessionPtr session(new Session(
+                    messageJson.get<jsonxx::String>(MESSAGE_KEY_IP, ""),
+                    narrow_cast<uint16_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_PORT, 0.0)),
+                    mPlayerName,
+                    messageJson.get<jsonxx::String>(MESSAGE_KEY_NAME, ""),
+                    narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 0.0))), details::SessionDeleter());
+                mCallback->onSessionStart(NULL, mMyRoom, mPlayerName, session);
+            }
+            ++counter;
+        }
+        return counter;
+    }
+    //-------------------------------------------------------
+
 }
