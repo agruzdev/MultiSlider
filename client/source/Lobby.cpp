@@ -8,11 +8,10 @@
 #include "TCPInterface.h"
 
 #include "Lobby.h"
-#include "Host.h"
-#include "Client.h"
 #include "Constants.h"
 #include "Utility.h"
 #include "Exception.h"
+#include "Session.h"
 
 #include "jsonxx.h"
 

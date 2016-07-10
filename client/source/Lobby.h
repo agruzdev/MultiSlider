@@ -41,9 +41,6 @@ namespace multislider
         bool mIsJoined;
         bool mIsHost;
 
-        //shared_ptr<Host>   mHostInstance;
-        //shared_ptr<Client> mClientInstance;
-
         Lobby(const Lobby &);
         Lobby & operator=(const Lobby &);
 
@@ -122,7 +119,24 @@ namespace multislider
         MULTISLIDER_EXPORT
         uint32_t receive();
 
+        //-------------------------------------------------------
 
+        /**
+         *  Return true if player is joined a room
+         */
+        bool isJoined() const
+        {
+            return mIsJoined;
+        }
+
+        /**
+         *  Return true if player is host in the current room
+         *  Is valid only if isJoined() returned true
+         */
+        bool isHost() const
+        {
+            return mIsHost;
+        }
     };
 
 }

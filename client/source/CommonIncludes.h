@@ -39,8 +39,6 @@ namespace multislider
     class RoomInfo;
     class Lobby;
     class Session;
-    class Host;
-    class Client;
 
     typedef shared_ptr<Session> SessionPtr;
 }

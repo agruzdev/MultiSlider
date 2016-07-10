@@ -12,8 +12,6 @@
  * Include all necessary headers
  */
 #include "Lobby.h"
-#include "Host.h"
-#include "Client.h"
 #include "Session.h"
 #include "Exception.h"
 

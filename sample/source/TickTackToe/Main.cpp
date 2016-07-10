@@ -5,8 +5,7 @@
 #include <iostream>
 #include <future>
 #include <thread>
-
-#include <windows.h>
+#include <memory>
 
 using namespace multislider;
 
@@ -20,8 +19,7 @@ static const std::string CMD_START    = "start";
 class Controller
     : public Lobby::Callback, public SessionCallback
 {
-    Host*      mHost    = nullptr;
-    Client*    mClient  = nullptr;
+    std::unique_ptr<Lobby> mLobby = nullptr;
     SessionPtr mSession = nullptr;
 
     bool mHostReady   = false;
@@ -64,14 +62,13 @@ class Controller
 public:
     void run(std::string ip, uint16_t port)
     {
-        Lobby lobby(ip, port);
+        mLobby = std::make_unique<Lobby>(ip, port);
         std::string username;
         std::cout << "Please introduce yourself: ";
         std::cin >> username;
 
         std::string _tmp;
         std::getline(std::cin, _tmp); // Quickfix
-
 
         std::string roomname;
 
@@ -89,7 +86,7 @@ public:
             std::cout << std::endl;
 
             // Rooms info
-            auto rooms = lobby.getRooms();
+            auto rooms = mLobby->getRooms();
             std::cout << "Available rooms:" << std::endl;
             size_t idx = 0;
             for (const auto & info : rooms) {
@@ -119,8 +116,7 @@ public:
             }
             else if (cmd.size() == 2 && cmd[0] == CMD_CREATE) {
                 roomname = cmd[1];
-                mHost = lobby.createRoom(username, roomname, 2, this);
-                if (nullptr != mHost) {
+                if(Lobby::SUCCESS == mLobby->createRoom(username, roomname, 2, this)) {
                     break;
                 }
                 else {
@@ -131,13 +127,12 @@ public:
             else if (cmd.size() == 2 && cmd[0] == CMD_JOIN) {
                 int roomIdx = std::stoi(cmd[1]);
                 if (roomIdx >= 0 && roomIdx < static_cast<int>(rooms.size())) {
-                    bool full = false;
                     roomname = rooms[roomIdx].getName();
-                    mClient = lobby.joinRoom(username, rooms[roomIdx], this, full);
-                    if (nullptr != mClient) {
+                    auto status = mLobby->joinRoom(username, rooms[roomIdx], this);
+                    if (Lobby::SUCCESS == status) {
                         break;
                     }
-                    else  if (full) {
+                    else  if (Lobby::ROOM_IS_FULL == status) {
                         std::cout << "Sorry! This room is already full" << std::endl;
                         pause(1000);
                     }
@@ -156,17 +151,20 @@ public:
 
         //-------------------------------------------------------
         // Setup loop
-        assert(mHost != nullptr || mClient != nullptr);
-        setupScreen(roomname, mHost != nullptr);
+        assert(mLobby->isJoined());
+        setupScreen(roomname);
 
         //-------------------------------------------------------
         // Game loop
 
         assert(mSession != nullptr);
-        gameScreen(roomname, mHost != nullptr);
+        gameScreen(roomname, mLobby->isHost());
+
+        //-------------------------------------------------------
+        mLobby.reset();
     }
 
-    void setupScreen(const std::string & roomname, bool isHost)
+    void setupScreen(const std::string & roomname)
     {
         auto inputHandler = std::async(std::launch::async, [this]() {
             while(!mSetupFinish) {
@@ -174,19 +172,12 @@ public:
                 std::getline(std::cin, line);
                 auto cmd = splitCommand(line);
                 if (cmd.size() == 2 && cmd[0] == CMD_PLAY_SYM) {
-                    if ((mHost != nullptr) && (cmd[1] == "X" || cmd[1] == "O")) {
-                        if (mHost != nullptr) {
-                            mHost->broadcast(cmd[1], true);
-                        }
+                    if (mLobby->isHost() && (cmd[1] == "X" || cmd[1] == "O")) {
+                        mLobby->broadcast(cmd[1], true);
                     }
                 }
                 else if (cmd.size() == 1 && cmd[0] == CMD_START) {
-                    if (mHost != nullptr) {
-                        mHost->broadcast("HR", true);
-                    }
-                    else {
-                        mClient->broadcast("CR", true);
-                    }
+                    mLobby->broadcast((mLobby->isHost() ? "HR" : "CR"), true);
                     std::cout << "Waiting for all players..." << std::endl;
                     break;
                 }
@@ -196,12 +187,7 @@ public:
             }
         });
         while (!mSetupFinish) {
-            if (mHost != nullptr) {
-                mHost->receive();
-            }
-            else {
-                mClient->receive();
-            }
+            mLobby->receive();
             pause(100);
         }
         inputHandler.wait();
@@ -342,14 +328,12 @@ public:
 
     void onJoined(Lobby* lobby, const RoomInfo & room, const std::string & playerName) override
     {
-        (void)room;
-        const bool isHost = (playerName == room.getHostName());
-        drawRoomScreen(room, isHost);
+        drawRoomScreen(room, lobby->isHost());
     }
 
     void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & playerName, const std::string & message) override
     {
-        const bool isHost = (playerName == room.getHostName());
+        const bool isHost = lobby->isHost();
         if (!message.empty()) {
             if (message.size() == 1) {
                 mHostPlaysCrosses = (message[0] == 'X');
@@ -366,20 +350,16 @@ public:
         drawRoomScreen(room, isHost);
         if (isHost) {
             if (mHostReady && mClientReady) {
-                mHost->startSession();
+                lobby->startSession();
             }
         }
     }
 
     void onLeft(Lobby* lobby, const RoomInfo & room, const std::string & playerName, uint8_t flags) override
-    {
-        //std::cout << std::string("Room \"") + room.getName() + "\" is closed!\n";
-        //mFinish = true;
-    }
+    { }
 
     void onSessionStart(Lobby* lobby, const RoomInfo & room, const std::string & playerName, SessionPtr session) override
     {
-        //std::cout << std::string("Room \"") + room.getName() + "\" session is started!\n";
         mSession = session;
         mSession->startup(this, 5 * 1000);
         mSetupFinish = true;
@@ -391,7 +371,7 @@ public:
     void onStart(const std::string & sessionName, const std::string & playerName) override
     {
         std::cout << std::string("SessionCallback[") + playerName + "]: Started session " + sessionName + "\n";
-        if (mHost != nullptr) {
+        if (mLobby->isHost()) {
             mSession->broadcast("", makeMessage("         ", 0), true);
         }
     }
@@ -402,10 +382,10 @@ public:
         uint32_t turn;
         std::tie(field, turn) = parseMessage(sharedData);
 
-        const bool isHost   = (mHost != nullptr);
+        const bool isHost   = mLobby->isHost();
         const bool hostTurn = (turn % 2 == 0);
-        const bool myTurn   = (isHost && hostTurn) || (!mHost && !hostTurn);
-        const char mySymbol = ((isHost && mHostPlaysCrosses) || (!mHost && !mHostPlaysCrosses)) ? 'X' : 'O';
+        const bool myTurn   = (isHost && hostTurn) || (!isHost && !hostTurn);
+        const char mySymbol = ((isHost && mHostPlaysCrosses) || (!isHost && !mHostPlaysCrosses)) ? 'X' : 'O';
 
         // Check win
         const char winSym = checkWin(field);
@@ -451,9 +431,7 @@ public:
     }
 
     void onSync(const std::string & sessionName, const std::string & playerName, uint32_t syncId) override
-    {
-        //std::cout << std::string("SessionCallback[") + playerName + "]: Got sync " + std::to_string(syncId) + "\n";
-    }
+    { }
 };
 
 int main(int argc, char** argv)
