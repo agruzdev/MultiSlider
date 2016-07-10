@@ -30,9 +30,6 @@ class Controller
     bool mGameFinish  = false;
 
     bool mHostPlaysCrosses = true;
-
-    uint32_t mTurn = 0;
-
     //-------------------------------------------------------
 
     void clear()
@@ -59,41 +56,6 @@ class Controller
             pos = idx + 1;
         }
         return tokens;
-    }
-
-public:
-    void run(std::string ip, uint16_t port)
-    {
-        mLobby = std::make_unique<Lobby>(ip, port);
-        std::string username;
-        do {
-            std::cout << "Please introduce yourself: ";
-            std::cin >> mUserName;
-        } while (mUserName.empty());
-
-        std::string _tmp;
-        std::getline(std::cin, _tmp); // Quickfix
-
-        //-------------------------------------------------------
-        //-------------------------------------------------------
-        // Lobby screen
-        //-------------------------------------------------------
-        assert(mLobby != nullptr);
-        lobbyScreen();
-
-        //-------------------------------------------------------
-        // Setup loop
-        assert(mLobby->isJoined());
-        setupScreen();
-
-        //-------------------------------------------------------
-        // Game loop
-
-        assert(mSession != nullptr);
-        gameScreen();
-
-        //-------------------------------------------------------
-        mLobby.reset();
     }
 
     void lobbyScreen()
@@ -343,7 +305,7 @@ public:
             if (message.size() == 1) {
                 mHostPlaysCrosses = (message[0] == 'X');
             }
-            else if(message.size() == 2 && message[1] == 'R') {
+            else if (message.size() == 2 && message[1] == 'R') {
                 if (message[0] == 'H') {
                     mHostReady = true;
                 }
@@ -359,9 +321,6 @@ public:
             }
         }
     }
-
-    void onLeft(Lobby* lobby, const RoomInfo & room, const std::string & playerName, uint8_t flags) override
-    { }
 
     void onSessionStart(Lobby* lobby, const RoomInfo & room, const std::string & playerName, SessionPtr session) override
     {
@@ -387,9 +346,9 @@ public:
         uint32_t turn;
         std::tie(field, turn) = parseMessage(sharedData);
 
-        const bool isHost   = mLobby->isHost();
+        const bool isHost = mLobby->isHost();
         const bool hostTurn = (turn % 2 == 0);
-        const bool myTurn   = (isHost && hostTurn) || (!isHost && !hostTurn);
+        const bool myTurn = (isHost && hostTurn) || (!isHost && !hostTurn);
         const char mySymbol = ((isHost && mHostPlaysCrosses) || (!isHost && !mHostPlaysCrosses)) ? 'X' : 'O';
 
         // Check win
@@ -435,8 +394,38 @@ public:
         }
     }
 
-    void onSync(const std::string & sessionName, const std::string & playerName, uint32_t syncId) override
-    { }
+public:
+    void run(std::string ip, uint16_t port)
+    {
+        mLobby = std::make_unique<Lobby>(ip, port);
+        std::string username;
+        do {
+            std::cout << "Please introduce yourself: ";
+            std::cin >> mUserName;
+        } while (mUserName.empty());
+
+        std::string _tmp;
+        std::getline(std::cin, _tmp); // Quickfix
+
+        //-------------------------------------------------------
+        // Lobby screen
+        assert(mLobby != nullptr);
+        lobbyScreen();
+
+        //-------------------------------------------------------
+        // Setup loop
+        assert(mLobby->isJoined());
+        setupScreen();
+
+        //-------------------------------------------------------
+        // Game loop
+
+        assert(mSession != nullptr);
+        gameScreen();
+
+        //-------------------------------------------------------
+        mLobby.reset();
+    }
 };
 
 int main(int argc, char** argv)
