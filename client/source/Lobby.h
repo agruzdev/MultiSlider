@@ -20,6 +20,15 @@ namespace multislider
     {
     public:
         typedef LobbyCallback Callback;
+
+        enum Status
+        {
+            SUCCESS,        ///< Returned on success operation
+            FAIL,           ///< Returned on failed operation; no specific fail reason
+            ROOM_IS_FULL,   ///< Trying to join a full room
+            ROOM_EXISTS     ///< Trying to create a room with existing name
+        };
+
         //-------------------------------------------------------
 
     private:
@@ -33,7 +42,7 @@ namespace multislider
         bool mIsHost;
 
         //shared_ptr<Host>   mHostInstance;
-        shared_ptr<Client> mClientInstance;
+        //shared_ptr<Client> mClientInstance;
 
         Lobby(const Lobby &);
         Lobby & operator=(const Lobby &);
@@ -54,7 +63,7 @@ namespace multislider
          *  @return true on success
          */
         MULTISLIDER_EXPORT
-        bool createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback);
+        Status createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback);
 
         /**
          *  Get a list of all opened rooms on the server
@@ -69,7 +78,7 @@ namespace multislider
          *  @param callback callback for client events, can't be null
          */
         MULTISLIDER_EXPORT
-        Client* joinRoom(const std::string & playerName, const RoomInfo & room, LobbyCallback* callback, bool & isFull);
+        Status joinRoom(const std::string & playerName, const RoomInfo & room, LobbyCallback* callback);
 
         //-------------------------------------------------------
         // Host specific functions
@@ -87,7 +96,17 @@ namespace multislider
         void startSession();
 
         //-------------------------------------------------------
-        // COmmon functions for both host and client
+        // Client specific functions
+
+        /**
+         *  Leave the current room
+         *  After leaving Client instance can't be reused for another room
+         */
+        MULTISLIDER_EXPORT
+        void leaveRoom();
+
+        //-------------------------------------------------------
+        // Common functions for both host and client
 
         /**
          *  Broadcast data to all players in the room

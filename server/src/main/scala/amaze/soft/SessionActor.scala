@@ -45,7 +45,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
   import SessionActor.State._
   import SessionActor._
 
-  private val m_logger = LoggerFactory.getLogger(Frontend.getClass.getName)
+  private val m_logger = LoggerFactory.getLogger(SessionActor.getClass.getName)
   m_logger.info("Session \"" + m_name + "\" is created!")
 
   val m_stats: scala.collection.mutable.HashMap[String, PlayerStatistics] =

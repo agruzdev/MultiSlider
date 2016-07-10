@@ -92,7 +92,7 @@ public:
         {
             Lobby lobby(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
             //Host* host = lobby.createRoom("Player1", "Room1", 2, &callback);
-            if (!lobby.createRoom("Player1", "Room1", 2, &callback)) {
+            if (Lobby::SUCCESS != lobby.createRoom("Player1", "Room1", 2, &callback)) {
                 throw std::runtime_error("Failed to create a room!");
             }
 
@@ -152,35 +152,6 @@ public:
     }
 };
 
-#if 0
-class ClientCallbackSample
-    : public ClientCallback
-{
-public:
-
-    void onJoined(Client* client, const std::string & playerName, const RoomInfo & room) override
-    {
-        std::cout << std::string("[") + playerName + "]: I joined \"" + room.getName() + "\"\n";
-    }
-
-    void onLeft(Client* client, const std::string & playerName, const RoomInfo & room) override
-    {
-        std::cout << std::string("[") + playerName + "]: I left \"" + room.getName() + "\"\n";
-    }
-
-    void onBroadcast(Client* client, const std::string & playerName, const RoomInfo & room, const std::string & message) override
-    {
-        std::cout << std::string("[") + playerName + "]: I got broadcast message \"" + message + "\"\n";
-    }
-
-    void onSessionStart(Client* client, const std::string & playerName, const RoomInfo & room, SessionPtr session) override
-    {
-        std::cout << std::string("[") + playerName + "]: I got SessionStarted message!\n";
-        gClientSession = session;
-    }
-};
-#endif
-
 class ClientSample
 {
     std::mutex mMutex;
@@ -199,20 +170,21 @@ public:
                 std::cout << info.getName() + " by " + info.getHostName() + "   players: " + std::to_string(info.getPlayersNumber()) + "/" + std::to_string(info.getPlayersLimit()) + "\n";
             }
             if (!rooms.empty()) {
-                bool full = false;
-                Client* client = lobby.joinRoom("Player2", rooms[0], &callback, full);
+                if (Lobby::SUCCESS != lobby.joinRoom("Player2", rooms[0], &callback)) {
+                    throw std::runtime_error("Failed to join the room!");
+                }
 
-                while (0 == client->receive())
+                while (0 == lobby.receive())
                 { }
 
                 gFlagSession = true;
                 gCvSession.notify_one();
 
-                while (0 == client->receive())
+                while (0 == lobby.receive())
                 { }
 
                 std::this_thread::sleep_for(std::chrono::seconds(1));
-                client->leaveRoom();
+                lobby.leaveRoom();
             }
 
             if (gClientSession != nullptr) {

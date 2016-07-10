@@ -61,6 +61,9 @@ namespace multislider
                 if (mIsHost) {
                     closeRoom();
                 }
+                else {
+                    leaveRoom();
+                }
             }
             catch (RuntimeError &) {
             }
@@ -68,7 +71,7 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    bool Lobby::createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback)
+    Lobby::Status Lobby::createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback)
     {
         if (playerName.empty()) {
             throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");
@@ -95,14 +98,14 @@ namespace multislider
         mTcp->Send(createRoomMessage.c_str(), createRoomMessage.size(), *mServerAddress, false);
         shared_ptr<Packet> responce = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
         if (!mMyRoom.deserialize(std::string(pointer_cast<const char*>(responce->data), responce->length))) {
-            return false;
+            return FAIL;
         }
         mPlayerName = playerName;
         mCallback = callback;
         mCallback->onJoined(this, mMyRoom, mPlayerName);
         mIsJoined = true;
         mIsHost = true;
-        return true;
+        return SUCCESS;
     }
     //-------------------------------------------------------
 
@@ -124,40 +127,67 @@ namespace multislider
         std::vector<RoomInfo> rooms;
         rooms.resize(roomsArray.size());
         for (size_t i = 0; i < roomsArray.size(); ++i) {
-            //Object jsonRoom = roomsArray.get<Object>(i);
-            //rooms[i].roomName = jsonRoom.get<std::string>(MESSAGE_KEY_NAME, "<Unknown>");
-            //rooms[i].hostName = jsonRoom.get<std::string>(MESSAGE_KEY_HOST, "<Unknown>");
-            //rooms[i].playersLimit  = narrow_cast<uint32_t>(jsonRoom.get<jsonxx::Number>(MESSAGE_KEY_PLAYERS_LIMIT, 0));
-            //rooms[i].playersNumber = narrow_cast<uint32_t>(jsonRoom.get<jsonxx::Number>(MESSAGE_KEY_PLAYERS_NUMBER, 0));
             rooms[i].deserialize(roomsArray.get<Object>(i));
         }
         return rooms;
     }
     //-------------------------------------------------------
 
-    Client* Lobby::joinRoom(const std::string & playerName, const RoomInfo & room, LobbyCallback* callback, bool & isFull)
+    Lobby::Status Lobby::joinRoom(const std::string & playerName, const RoomInfo & room, LobbyCallback* callback)
     {
         if (playerName.empty()) {
-            throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");
+            throw ProtocolError("Lobby[joinRoom]: PlayerName can't be empty!");
         }
         if (room.getName().empty() || room.getHostName().empty()) {
-            throw ProtocolError("Lobby[createRoom]: room info is invalid!");
+            throw ProtocolError("Lobby[joinRoom]: Room info is invalid!");
         }
         if (callback == NULL) {
-            throw ProtocolError("Lobby[createRoom]: callback can't be null!");
+            throw ProtocolError("Lobby[joinRoom]: Callback can't be null!");
         }
-        mClientInstance.reset(new Client(mTcp, mServerAddress, playerName, room, callback));
-        isFull = false;
-        switch (mClientInstance->join(room.getName())) {
-        case 0:
-            return mClientInstance.get();
-        case 2:
-            isFull = true;
-        case 1:
-        default:
-            mClientInstance.reset();
-            return NULL;
+        if (mIsJoined) {
+            throw ProtocolError("Lobby[joinRoom]: Already joined!");
         }
+
+        assert(mTcp.get() != NULL);
+        assert(*mServerAddress != UNASSIGNED_SYSTEM_ADDRESS);
+
+        Object joinRoomJson;
+        joinRoomJson << MESSAGE_KEY_CLASS << frontend::JOIN_ROOM;
+        joinRoomJson << MESSAGE_KEY_PLAYER_NAME << playerName;
+        joinRoomJson << MESSAGE_KEY_ROOM_NAME << room.getName();
+        std::string joinRoomMessage = joinRoomJson.write(JSON);
+        mTcp->Send(joinRoomMessage.c_str(), joinRoomMessage.size(), *mServerAddress, false);
+        shared_ptr<Packet> packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
+        if (responsed(packet, constants::RESPONSE_ROOM_IS_FULL)) {
+            return ROOM_IS_FULL;
+        }
+        if (!mMyRoom.deserialize(std::string(pointer_cast<const char*>(packet->data), packet->length))) {
+            return FAIL;
+        }
+
+        mPlayerName = playerName;
+        mCallback = callback;
+        mCallback->onJoined(this, mMyRoom, mPlayerName);
+        mIsJoined = true;
+        mIsHost = false;
+        return SUCCESS;
+    }
+    //-------------------------------------------------------
+
+    void Lobby::leaveRoom()
+    {
+        if (!(mIsJoined && !mIsHost)) {
+            throw ProtocolError("Lobby[closeRoom]: Can't close room. I'm not the host!");
+        }
+        Object leaveRoomJson;
+        leaveRoomJson << MESSAGE_KEY_CLASS << frontend::LEAVE_ROOM;
+        std::string leaveRoomMessage = leaveRoomJson.write(JSON);
+        mTcp->Send(leaveRoomMessage.c_str(), leaveRoomMessage.size(), *mServerAddress, false);
+        if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_SUCC)) {
+            throw ServerError("Client[Client]: Failed to leave a room");
+        }
+        mCallback->onLeft(this, mMyRoom, mPlayerName, 0);
+        mIsJoined = false;
     }
     //-------------------------------------------------------
 
@@ -219,7 +249,7 @@ namespace multislider
             if (isMessageClass(messageClass, frontend::BROADCAST)) {
                 std::string message = messageJson.get<std::string>(constants::MESSAGE_KEY_DATA, "");
                 if (mMyRoom.deserialize(messageJson.get<Object>(constants::MESSAGE_KEY_ROOM, Object()))) {
-                    mCallback->onBroadcast(NULL, mMyRoom, mPlayerName, message);
+                    mCallback->onBroadcast(this, mMyRoom, mPlayerName, message);
                 }
             }
             else if (isMessageClass(messageClass, frontend::SESSION_STARTED)) {
@@ -229,7 +259,7 @@ namespace multislider
                     mPlayerName,
                     messageJson.get<jsonxx::String>(MESSAGE_KEY_NAME, ""),
                     narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 0.0))), details::SessionDeleter());
-                mCallback->onSessionStart(NULL, mMyRoom, mPlayerName, session);
+                mCallback->onSessionStart(this, mMyRoom, mPlayerName, session);
             }
             ++counter;
         }
