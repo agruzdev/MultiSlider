@@ -47,9 +47,13 @@ namespace multislider
         bool mIsHost;
 
         mutable std::vector<uint8_t> mReceiveBuffer;
+        //-------------------------------------------------------
+
+        jsonxx::Object makeEnvelop(const jsonxx::Object & obj) const;
 
         Lobby(const Lobby &);
         Lobby & operator=(const Lobby &);
+        //-------------------------------------------------------
 
     public:
         MULTISLIDER_EXPORT

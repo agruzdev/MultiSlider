@@ -43,6 +43,8 @@ namespace multislider
 
         namespace frontend
         {
+            static const char ENVELOP[] = "FrontendMessage$Envelop";
+
             static const char CREATE_ROOM[]   = "FrontendMessage$CreateRoom";
             static const char GET_ROOMS[]     = "FrontendMessage$GetRooms";
             static const char CLOSE_ROOM[]    = "FrontendMessage$CloseRoom";

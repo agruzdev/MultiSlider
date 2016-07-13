@@ -1,7 +1,5 @@
 package amaze.soft
 
-import amaze.soft.LobbyActor.RoomInfo
-
 /**
  * Created by Alexey on 21.05.2016.
  * The MIT License (MIT)
@@ -10,6 +8,13 @@ import amaze.soft.LobbyActor.RoomInfo
 
 object FrontendMessage {
   trait JsonMessage
+
+  /**
+   * Session message wrapper
+   * @param roomName name of destination room
+   * @param data serialized message
+   */
+  case class Envelop(roomName: String, data: String) extends JsonMessage
 
   /**
    * Client sends the message in order to create a new room

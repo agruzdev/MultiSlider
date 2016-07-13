@@ -6,7 +6,6 @@ import akka.actor._
 import akka.io.{IO, Tcp, Udp}
 import akka.util.ByteString
 import amaze.soft.FrontendMessage.{GetRooms, JsonMessage}
-import amaze.soft.LobbyActor.RoomInfo
 import net.liftweb.json
 import net.liftweb.json.{DefaultFormats, ShortTypeHints}
 import org.slf4j.LoggerFactory
@@ -70,13 +69,15 @@ class Frontend extends Actor {
       val client = sender()
       if(status) {
         m_logger.info("Lobbies number = " + m_lobbyActorsCounter)
-        val handler = context.actorOf(Props(classOf[LobbyActor], client))
+        //val handler = context.actorOf(Props(classOf[LobbyActor], client))
+        val handler = context.actorOf(Props(classOf[Client]))
         client ! Tcp.Register(handler)
         client ! Tcp.Write(ByteString(Constants.RESPONCE_GREETINGS))
       } else {
         client ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK_IS_FULL))
         client ! Tcp.Close
       }
+
 
     case LobbyClosed() =>
       m_counterLock.synchronized {
@@ -98,8 +99,9 @@ class Frontend extends Actor {
           case GetRooms() =>
             m_logger.info("Got a GetRooms message!")
             sender() ! Udp.Send(ByteString(json.Serialization.write(Depot.getLobbies.map({
-              case (_, info) => RoomInfo(info, null)
+              case (_, lobby) => lobby.info.noPlayers
             }).toList)), remote)
+
           case _ =>
             m_logger.error("Unknown message!")
         }

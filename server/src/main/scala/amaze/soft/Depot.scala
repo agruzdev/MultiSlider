@@ -3,7 +3,6 @@ package amaze.soft
 import java.util
 
 import akka.actor.{ActorRef, ActorSystem}
-import amaze.soft.LobbyActor.RoomStats
 import org.slf4j.LoggerFactory
 
 /**
@@ -12,12 +11,26 @@ import org.slf4j.LoggerFactory
  * Copyright (c) 2016 Alexey Gruzdev
  */
 object Depot {
-  private val logger = LoggerFactory.getLogger(Depot.getClass.getName)
-  private val lock: Object = new Object
-  private val lobbies: util.TreeMap[String, RoomStats] = new util.TreeMap()
+
+  case class LobbyStats(handler: ActorRef, info: RoomInfo)
+
+  object Status extends Enumeration {
+    type Status = Value
+    val SUCC, SUCK, ROOM_EXISTS = Value
+  }
+  import Status._
+
+  private val m_logger = LoggerFactory.getLogger(Depot.getClass.getName)
+  private val m_lock: Object = new Object
+  //private val lobbies: util.TreeMap[String, RoomStats] = new util.TreeMap()
+  // lobbyName -> Info
+  private val m_lobbies: util.TreeMap[String, LobbyStats] = new util.TreeMap()
+
+  // Max number of lobbies can be created
+  val LOBBIES_MAX_NUMBER = 1024
 
   val actorsSystem = ActorSystem("MultiSliderActors")
-  logger.info("Actors system is created!")
+  m_logger.info("Actors system is created!")
 
   var frontend: ActorRef = null
   var backend:  ActorRef = null
@@ -25,7 +38,7 @@ object Depot {
   var ip_address = ""
   var port_frontend = 0
   var port_backend = 0
-
+/*
   def registerLobby(roomName: String, info: RoomStats) : Boolean = {
     var status = false
     logger.info("Register lobby \"" + roomName + "\" created by \"" + info.host.name + "\"")
@@ -41,23 +54,44 @@ object Depot {
     logger.info("All lobbies = " + lobbies)
     status
   }
+*/
+
+  def registerLobby(handler: ActorRef, info: RoomInfo) : Status = {
+    m_logger.info("Register lobby \"" + info.name + "\" created by \"" + info.host + "\"")
+    m_lock.synchronized {
+      if (m_lobbies.containsKey(info.name)) {
+        return ROOM_EXISTS
+      }
+      if(m_lobbies.size() >= LOBBIES_MAX_NUMBER){
+        return SUCK
+      }
+      m_lobbies.put(info.name, LobbyStats(handler, info))
+    }
+    SUCC
+  }
 
   def unregisterLobby(roomName: String) = {
-    logger.info("Remove lobby \"" + roomName + "\"")
-    lock.synchronized {
-      lobbies.remove(roomName)
+    m_logger.info("Remove lobby \"" + roomName + "\"")
+    m_lock.synchronized {
+      m_lobbies.remove(roomName)
     }
-    logger.info("All lobbies = " + lobbies)
+    m_logger.info("All lobbies = " + m_lobbies)
   }
 
-  def updateRoomInfo(info: RoomStats) = {
-    logger.info("Update lobby \"" + info.name + "\"")
-    lock.synchronized {
-      lobbies.put(info.name, info)
+  def updateRoomInfo(roomName: String, info: RoomInfo) : Boolean = {
+    m_logger.info("Update lobby \"" + roomName + "\"")
+    m_lock.synchronized {
+      val old = m_lobbies.get(roomName)
+      if(old != null) {
+        m_lobbies.put(roomName, LobbyStats(old.asInstanceOf[LobbyStats].handler, info))
+      } else {
+        false
+      }
     }
+    true
   }
 
-  def getLobbies = lobbies
+  def getLobbies = m_lobbies
 
 
   def getAddressFront = {

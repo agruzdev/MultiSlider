@@ -76,6 +76,17 @@ namespace multislider
     }
     //-------------------------------------------------------
 
+    jsonxx::Object Lobby::makeEnvelop(const jsonxx::Object & obj) const
+    {
+        assert(!mMyRoom.getName().empty());
+        Object envelop;
+        envelop << MESSAGE_KEY_CLASS << frontend::ENVELOP;
+        envelop << MESSAGE_KEY_ROOM_NAME << mMyRoom.getName();
+        envelop << MESSAGE_KEY_DATA << obj.write(JSON);
+        return envelop;
+    }
+    //-------------------------------------------------------
+
     Lobby::Status Lobby::createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback)
     {
         if (playerName.empty()) {
@@ -204,11 +215,11 @@ namespace multislider
         }
         Object leaveRoomJson;
         leaveRoomJson << MESSAGE_KEY_CLASS << frontend::LEAVE_ROOM;
-        std::string leaveRoomMessage = leaveRoomJson.write(JSON);
+        std::string leaveRoomMessage = makeEnvelop(leaveRoomJson).write(JSON);
         mTcp->Send(leaveRoomMessage.c_str(), leaveRoomMessage.size(), *mServerAddress, false);
-        if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_SUCC)) {
-            throw ServerError("Client[Client]: Failed to leave a room");
-        }
+        //if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_SUCC)) {
+        //    throw ServerError("Client[Client]: Failed to leave a room");
+        //}
         mCallback->onLeft(this, mMyRoom, mPlayerName, 0);
         mIsJoined = false;
     }
@@ -235,7 +246,7 @@ namespace multislider
     {
         Object startSessionJson;
         startSessionJson << MESSAGE_KEY_CLASS << frontend::START_SESSION;
-        std::string startSessionMessage = startSessionJson.write(JSON);
+        std::string startSessionMessage = makeEnvelop(startSessionJson).write(JSON);
         mTcp->Send(startSessionMessage.c_str(), startSessionMessage.size(), *mServerAddress, false);
     }
     //-------------------------------------------------------
@@ -250,7 +261,7 @@ namespace multislider
         broadcastJson << MESSAGE_KEY_ROOM << jsonxx::Null();
         broadcastJson << MESSAGE_KEY_DATA << data;
         broadcastJson << MESSAGE_KEY_TO_SELF << toSelf;
-        std::string broadcastMessage = broadcastJson.write(JSON);
+        std::string broadcastMessage = makeEnvelop(broadcastJson).write(JSON);
         mTcp->Send(broadcastMessage.c_str(), broadcastMessage.size(), *mServerAddress, false);
     }
     //-------------------------------------------------------

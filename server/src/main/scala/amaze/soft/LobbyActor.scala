@@ -23,12 +23,12 @@ object LobbyActor
 {
   // Internal structure describing room
   case class RoomStats(name: String, host: PlayerInfo, playersLimit: Int, var playersNumber: Int)
-  // Simple room descriptor for clients
-  case class RoomInfo(name: String, host: String, playersLimit: Int, playersNumber: Int, players: List[String])
-  object RoomInfo
-  {
-    def apply(roomStats: RoomStats, players: List[String]) = new RoomInfo(roomStats.name, roomStats.host.name, roomStats.playersLimit, roomStats.playersNumber, players)
-  }
+
+
+  //object RoomInfo
+  //{
+  //  def apply(roomStats: RoomStats, players: List[String]) = new RoomInfo(roomStats.name, roomStats.host.name, roomStats.playersLimit, roomStats.playersNumber, players)
+  //}
 
   // States of lobby
   object State extends Enumeration {
@@ -92,6 +92,7 @@ class LobbyActor(
         logger.info(msg.toString)
         msg match {
           //---------------------------------------------------------------------
+            /*
           case CreateRoom(player, roomName, playersLimit) =>
             logger.info("Got a CreateRoom message!")
             m_myself = PlayerInfo(player, self)
@@ -103,6 +104,7 @@ class LobbyActor(
             } else {
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
+            */
           //---------------------------------------------------------------------
           case CloseRoom() =>
             logger.info("Got a CloseRoom message!")
@@ -116,7 +118,7 @@ class LobbyActor(
             } else {
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
-
+/*
           //---------------------------------------------------------------------
           case JoinRoom(player, roomName) =>
             logger.info("Got a JoinRoom message!")
@@ -143,12 +145,14 @@ class LobbyActor(
             } else {
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
             }
+            */
           //---------------------------------------------------------------------
           case LeaveRoom() =>
             logger.info("Got a LeaveRoom message!")
             sender() ! Tcp.Write(ByteString({ if(leaveRoomImpl()) Constants.RESPONSE_SUCC else Constants.RESPONSE_SUCK }))
           //---------------------------------------------------------------------
-          case EjectPlayer(playerName) =>
+            /*
+            case EjectPlayer(playerName) =>
             logger.info("Got a EjectPlayer message!")
             if(m_state == Host) {
               val entry = m_players.find { case (actor, info) => info.name == playerName }
@@ -159,7 +163,7 @@ class LobbyActor(
               }
             } else {
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
-            }
+            }*/
           //---------------------------------------------------------------------
           case update @ Update(_, _: String, _: Boolean) =>
             logger.info("Got a UpdateBroadcast message!")
@@ -202,11 +206,11 @@ class LobbyActor(
     //---------------------------------------------------------------------
     // Internal messages between actors
     case AddPlayer(player) =>
-      sender() ! addPlayerImpl(player)
+      //sender() ! addPlayerImpl(player)
       logger.info("All players = " + m_players)
 
     case RemovePlayer(player) =>
-      sender() ! removePlayerImpl(player)
+      //sender() ! removePlayerImpl(player)
       logger.info("All players = " + m_players)
 
     case GetPlayers() =>
@@ -217,7 +221,7 @@ class LobbyActor(
         m_remote_user ! Tcp.Write(ByteString(Constants.MESSAGE_EJECTED))
         m_state = Virgin
       }
-
+/*
     case UpdateBroadcast(updateSender: ActorRef, updateMessage: Update) =>
       val updateMessageWithRoom = Update(RoomInfo(m_room, m_players.map{ case (_, info) => info.name }.toList), updateMessage.data, updateMessage.toSelf)
       if(m_state == Host) {
@@ -226,7 +230,7 @@ class LobbyActor(
       if(updateMessage.toSelf || self != updateSender) {
         m_remote_user ! Tcp.Write(ByteString( json.Serialization.write( if(m_state == Host) updateMessageWithRoom else updateMessage )))
       }
-
+*/
     case SessionStarted(ip, port, name, sessionId) =>
       logger.info("Got a SessionStarted message!")
       // forward to remote client
@@ -243,9 +247,9 @@ class LobbyActor(
   override def postStop() = {
     m_state match {
       case Host =>
-        m_players foreach {
-          case (actor, player) => if (actor != self) ejectPlayerImpl(player)
-        }
+        //m_players foreach {
+        //  case (actor, player) => if (actor != self) ejectPlayerImpl(player)
+        //}
         Depot.unregisterLobby(m_room.name)
       case Joined => leaveRoomImpl()
       case Virgin => ()
@@ -274,7 +278,7 @@ class LobbyActor(
     }
     false
   }
-
+/*
   /**
    * Method of a Host
    * Add a player to the current room
@@ -327,6 +331,7 @@ class LobbyActor(
     }
     false
   }
+  */
 }
 
 
