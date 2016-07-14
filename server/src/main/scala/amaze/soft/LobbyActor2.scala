@@ -25,6 +25,7 @@ object LobbyActor2 {
   case class Join(playerName: String)
   case class Close()
   case class Disconnected()
+  case class Shutdown()
 
   private val m_logger = LoggerFactory.getLogger(this.getClass.getName)
 }
@@ -49,18 +50,26 @@ class LobbyActor2() extends Actor {
     player.actor ! Tcp.Write(ByteString(json.Serialization.write(Ejected(flags))))
   }
 
+  private def shutdown() = {
+    context stop self
+  }
+
   override def receive = {
     case Init(hostName, roomName, playersLimit) =>
       m_name = roomName
       m_playersLimit = playersLimit
       m_players.append(PlayerInfo2(sender(), hostName, ready = false))
       val room = makeRoomInfo()
-      if(Depot.Status.SUCC == Depot.registerLobby(self, room)) {
-        sender() ! Tcp.Write(ByteString(json.Serialization.write(room)))
-        context become running
-      } else {
-        sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
-        shutdown()
+      Depot.registerLobby(self, room) match {
+        case Depot.Status.SUCC =>
+          sender() ! Tcp.Write(ByteString(json.Serialization.write(room)))
+          context become running
+        case Depot.Status.ROOM_EXISTS =>
+          sender() ! Tcp.Write(ByteString(Constants.RESPONSE_ROOM_EXISTS))
+          context become zombie
+        case _ =>
+          sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
+          context become zombie
       }
 
     case _ =>
@@ -168,11 +177,11 @@ class LobbyActor2() extends Actor {
   }
 
   def zombie : Receive = {
+    case Disconnected() =>
+      shutdown()
+
     case _ =>
-      m_logger.error("Unknown message")
+      m_logger.warn("Ignoring message")
   }
 
-  def shutdown() = {
-    context stop self
-  }
 }

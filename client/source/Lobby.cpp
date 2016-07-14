@@ -114,6 +114,9 @@ namespace multislider
         mTcp->Send(createRoomMessage.c_str(), createRoomMessage.size(), *mServerAddress, false);
         shared_ptr<Packet> responce = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
         if (!mMyRoom.deserialize(std::string(pointer_cast<const char*>(responce->data), responce->length))) {
+            if (responsed(responce, constants::RESPONSE_ROOM_EXISTS)) {
+                return ROOM_EXISTS;
+            }
             return FAIL;
         }
         mPlayerName = playerName;

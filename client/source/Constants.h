@@ -19,6 +19,7 @@ namespace multislider
         static const char RESPONSE_SUCC[]  = "SUCC";
         static const char RESPONSE_SUCK[]  = "SUCK";
         static const char RESPONSE_ROOM_IS_FULL[] = "FULL";
+        static const char RESPONSE_ROOM_EXISTS[]  = "ROOM";
         static const char RESPONSE_NAME_EXISTS[]  = "NAME";
 
         static const char MESSAGE_KEY_CLASS[]        = "jsonClass";
