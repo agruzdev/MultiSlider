@@ -27,7 +27,7 @@ object Depot {
   private val m_lobbies: util.TreeMap[String, LobbyStats] = new util.TreeMap()
 
   // Max number of lobbies can be created
-  val LOBBIES_MAX_NUMBER = 1024
+  val LOBBIES_MAX_NUMBER = 256
 
   val actorsSystem = ActorSystem("MultiSliderActors")
   m_logger.info("Actors system is created!")
@@ -38,23 +38,7 @@ object Depot {
   var ip_address = ""
   var port_frontend = 0
   var port_backend = 0
-/*
-  def registerLobby(roomName: String, info: RoomStats) : Boolean = {
-    var status = false
-    logger.info("Register lobby \"" + roomName + "\" created by \"" + info.host.name + "\"")
-    if(info.playersNumber > info.playersLimit) {
-      return false
-    }
-    lock.synchronized {
-      if (!lobbies.containsKey(roomName)) {
-        lobbies.put(roomName, info)
-        status = true
-      }
-    }
-    logger.info("All lobbies = " + lobbies)
-    status
-  }
-*/
+
 
   def registerLobby(handler: ActorRef, info: RoomInfo) : Status = {
     m_logger.info("Register lobby \"" + info.name + "\" created by \"" + info.host + "\"")

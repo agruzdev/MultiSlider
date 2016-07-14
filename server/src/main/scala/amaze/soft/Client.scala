@@ -92,6 +92,7 @@ class Client extends Actor {
     if(m_handler != null){
       m_handler forward LobbyActor2.Disconnected()
     }
+    Depot.frontend ! Frontend.ClientDisconnected()
     context stop self
   }
 

@@ -19,10 +19,10 @@ import scala.collection.JavaConversions._
  */
 
 object Frontend extends App {
-  case class LobbyClosed()
+  case class ClientDisconnected()
 
-  private val MAX_LOBBIES_NUMBER = 256
-  private var m_lobbyActorsCounter = 0
+  private val MAX_CLIENTS_NUMBER = 1024
+  private var m_clientsCounter = 0
   private val m_counterLock: Object = new Object
 
   private val m_logger = LoggerFactory.getLogger(Frontend.getClass.getName)
@@ -61,15 +61,14 @@ class Frontend extends Actor {
 
       var status = false
       m_counterLock.synchronized {
-        if (m_lobbyActorsCounter < MAX_LOBBIES_NUMBER) {
-          m_lobbyActorsCounter += 1
+        if (m_clientsCounter < MAX_CLIENTS_NUMBER) {
+          m_clientsCounter += 1
           status = true
         }
       }
       val client = sender()
       if(status) {
-        m_logger.info("Lobbies number = " + m_lobbyActorsCounter)
-        //val handler = context.actorOf(Props(classOf[LobbyActor], client))
+        m_logger.info("Clients number = " + m_clientsCounter)
         val handler = context.actorOf(Props(classOf[Client]))
         client ! Tcp.Register(handler)
         client ! Tcp.Write(ByteString(Constants.RESPONCE_GREETINGS))
@@ -79,11 +78,11 @@ class Frontend extends Actor {
       }
 
 
-    case LobbyClosed() =>
+    case ClientDisconnected() =>
       m_counterLock.synchronized {
-        m_lobbyActorsCounter = math.max(0, m_lobbyActorsCounter - 1)
+        m_clientsCounter = math.max(0, m_clientsCounter - 1)
       }
-      m_logger.info("Lobbies number = " + m_lobbyActorsCounter)
+      m_logger.info("Clients number = " + m_clientsCounter)
 
 
     case Udp.Bound(local) =>
