@@ -14,7 +14,7 @@
 {"jsonClass":"FrontendMessage$StartSession"}
 
 {"jsonClass":"FrontendMessage$Envelop","roomName":"woof","data":"DATAHERE!"}
-{"jsonClass":"FrontendMessage$Envelop","roomName":"woof","data":"{/"jsonClass/":/"FrontendMessage$JoinRoom/",/"playerName/":/"cate/",/"roomName/":/"woof/"}"}
+{"jsonClass":"FrontendMessage$Envelop","roomName":"woof","data":"{\"jsonClass\":\"FrontendMessage$JoinRoom\",\"playerName\":\"cate\",\"roomName\":\"woof\"}"}
 
 //------------------------------------------
 

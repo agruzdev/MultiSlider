@@ -16,8 +16,11 @@ namespace multislider
     class LobbyCallback
     {
     public:
-        static const uint8_t FLAG_IS_EJECTED;              ///< Is set if this player was ejected from the room
-        static const uint8_t FLAG_ROOM_CLOSED_BY_HOST;     ///< Is set if player was ejected because the room was closed by host
+        static const uint8_t FLAG_IS_EJECTED;               ///< The player was ejected from the room
+        static const uint8_t FLAG_JOINED;                   ///< Somebody joined the room
+        static const uint8_t FLAG_LEFT;                     ///< Somebody left the room
+        static const uint8_t FLAG_NEW_HOST;                 ///< Room has a new host
+        static const uint8_t FLAG_ROOM_CLOSED_BY_HOST;      ///< The player was ejected because the room was closed by host
 
         virtual ~LobbyCallback() 
         { }
@@ -38,7 +41,7 @@ namespace multislider
         /**
          *  Is called for each broadcast message
          */
-        virtual void onBroadcast(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*playerName*/, const std::string & /*message*/)
+        virtual void onBroadcast(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*playerName*/, const std::string & /*message*/, uint8_t /*flags*/)
         { }
 
         /**

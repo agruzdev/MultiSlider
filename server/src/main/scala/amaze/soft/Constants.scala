@@ -24,11 +24,10 @@ object Constants {
 
   val MESSAGE_ENCODING = "UTF-8"
 
-  // Predefined messages in Update
-  val UPDATE_JOINED  = "JOIN"
-  val UPDATE_EJECTED = "EJECT"
-
-  // Flags for ejected event
+  // Flags for Update and Left events
   val FLAG_EJECTED        = 1
-  val FLAG_CLOSED_BY_HOST = 2
+  val FLAG_JOINED         = 1 << 1
+  val FLAG_LEFT           = 1 << 2
+  val FLAG_NEW_HOST       = 1 << 3
+  val FLAG_CLOSED_BY_HOST = 1 << 4
 }

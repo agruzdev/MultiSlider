@@ -63,9 +63,9 @@ public:
         std::cout << std::string("[") + playerName + "]: I left the room \"" + room.getName() + "\"!\n";
     }
 
-    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & playerName, const std::string & message) override
+    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & playerName, const std::string & message, uint8_t flags) override
     {
-        std::cout << std::string("[") + playerName + "]: got broadcast message \"" + message + "\"\n";
+        std::cout << std::string("[") + playerName + "]: got broadcast message \"" + message + "\" [flags = " + std::to_string(flags) + "]\n";
     }
 
     void onSessionStart(Lobby* lobby, const RoomInfo & room, const std::string & playerName, SessionPtr session) override

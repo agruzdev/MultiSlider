@@ -298,7 +298,7 @@ class Controller
         drawRoomScreen(room, lobby->isHost());
     }
 
-    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & playerName, const std::string & message) override
+    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & playerName, const std::string & message, uint8_t flags) override
     {
         const bool isHost = lobby->isHost();
         if (!message.empty()) {

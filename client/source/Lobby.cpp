@@ -39,6 +39,13 @@ namespace multislider
     using namespace constants;
     //-------------------------------------------------------
 
+    const uint8_t LobbyCallback::FLAG_IS_EJECTED            = 1;
+    const uint8_t LobbyCallback::FLAG_JOINED                = 1 << 1;
+    const uint8_t LobbyCallback::FLAG_LEFT                  = 1 << 2;
+    const uint8_t LobbyCallback::FLAG_NEW_HOST              = 1 << 3;
+    const uint8_t LobbyCallback::FLAG_ROOM_CLOSED_BY_HOST   = 1 << 4;
+    //-------------------------------------------------------
+
     Lobby::Lobby(const std::string & serverIp, uint16_t serverPort)
         : mServerIp(serverIp), mServerPort(serverPort), mCallback(NULL), mIsJoined(false), mIsHost(false)
     {
@@ -63,12 +70,7 @@ namespace multislider
     {
         if (mIsJoined) {
             try {
-                if (mIsHost) {
-                    closeRoom();
-                }
-                else {
-                    leaveRoom();
-                }
+                leaveRoom();
             }
             catch (RuntimeError &) {
             }
@@ -285,6 +287,7 @@ namespace multislider
         broadcastJson << MESSAGE_KEY_ROOM << jsonxx::Null();
         broadcastJson << MESSAGE_KEY_DATA << data;
         broadcastJson << MESSAGE_KEY_TO_SELF << toSelf;
+        broadcastJson << MESSAGE_KEY_FLAGS << 0;
         std::string broadcastMessage = makeEnvelop(broadcastJson).write(JSON);
         mTcp->Send(broadcastMessage.c_str(), broadcastMessage.size(), *mServerAddress, false);
     }
@@ -307,7 +310,7 @@ namespace multislider
             if (isMessageClass(messageClass, frontend::BROADCAST)) {
                 std::string message = messageJson.get<std::string>(constants::MESSAGE_KEY_DATA, "");
                 if (mMyRoom.deserialize(messageJson.get<Object>(constants::MESSAGE_KEY_ROOM, Object()))) {
-                    mCallback->onBroadcast(this, mMyRoom, mPlayerName, message);
+                    mCallback->onBroadcast(this, mMyRoom, mPlayerName, message, narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));
                 }
             }
             else if (isMessageClass(messageClass, frontend::SESSION_STARTED)) {

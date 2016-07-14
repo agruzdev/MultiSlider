@@ -38,19 +38,22 @@ class LobbyActor2() extends Actor {
   var m_players = new ListBuffer[PlayerInfo2]
   var m_playersLimit = 0
 
+  m_logger.info("Started actor " + self.toString())
+
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
     classOf[CloseRoom], classOf[JoinRoom], classOf[LeaveRoom],
     classOf[EjectPlayer], classOf[StartSession], classOf[SessionStarted], classOf[Update])))
 
-  private def makeRoomInfo() = new RoomInfo(m_name, m_players.head.name, m_playersLimit, m_players.length, m_players.map{_.name}.toList)
-
   private def getHost = m_players.head
+
+  private def makeRoomInfo() = new RoomInfo(m_name, getHost.name, m_playersLimit, m_players.length, m_players.map{_.name}.toList)
 
   private def ejectPlayer(player: PlayerInfo2, flags: Int) = {
     player.actor ! Tcp.Write(ByteString(json.Serialization.write(Ejected(flags))))
   }
 
   private def shutdown() = {
+    m_logger.info("Stopped actor " + self.toString())
     context stop self
   }
 
@@ -82,7 +85,7 @@ class LobbyActor2() extends Actor {
         val msg = json.parse(jsonRaw).extract[JsonMessage]
         m_logger.info(msg.toString)
         msg match {
-          case updateMessage @ Update(_, _, _) =>
+          case updateMessage: Update =>
             self forward updateMessage
 
           case StartSession() =>
@@ -105,7 +108,7 @@ class LobbyActor2() extends Actor {
               if(player.isDefined){
                 ejectPlayer(player.get, Constants.FLAG_EJECTED)
                 m_players -= player.get
-                self forward FrontendMessage.Update(makeRoomInfo(), Constants.UPDATE_EJECTED, toSelf = true)
+                self forward FrontendMessage.Update(makeRoomInfo(), "", toSelf = true, Constants.FLAG_LEFT)
               }
             }
 
@@ -123,11 +126,11 @@ class LobbyActor2() extends Actor {
           sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
       }
 
-    case FrontendMessage.Update(_, data, toSelf) =>
+    case Update(_, data, toSelf, flags) =>
       m_logger.info("Got a Update message!")
       m_players.foreach{player =>
         if(toSelf || player.actor != sender()){
-          player.actor ! Tcp.Write(ByteString(json.Serialization.write(Update(makeRoomInfo(), data, toSelf))))
+          player.actor ! Tcp.Write(ByteString(json.Serialization.write(Update(makeRoomInfo(), data, toSelf, flags))))
         }
       }
 
@@ -142,7 +145,7 @@ class LobbyActor2() extends Actor {
           Depot.updateRoomInfo(m_name, room)
           sender() ! Tcp.Write(ByteString(json.Serialization.write(room)))
           // Notify all other players
-          self forward FrontendMessage.Update(room, Constants.UPDATE_JOINED, toSelf = false)
+          self forward FrontendMessage.Update(room, "", toSelf = false, Constants.FLAG_JOINED)
         } else {
           sender() ! Tcp.Write(ByteString(Constants.RESPONSE_NAME_EXISTS))
         }
@@ -152,12 +155,20 @@ class LobbyActor2() extends Actor {
 
     case Disconnected() =>
       m_logger.info("Got a Disconnected message!")
-      val player = m_players.find(_.actor == sender())
+      val player  = m_players.find(_.actor == sender())
+      var newHost = false
       if(player.isDefined){
+        newHost = player.get == getHost
         m_players -= player.get
       }
       if(m_players.nonEmpty) {
         Depot.updateRoomInfo(m_name, makeRoomInfo())
+        // Notify all other players
+        self forward FrontendMessage.Update(makeRoomInfo(), "", toSelf = false,
+          Constants.FLAG_LEFT | (if (newHost) Constants.FLAG_NEW_HOST else 0))
+        if(newHost){
+          m_logger.info("New host! name = " + getHost.name)
+        }
       } else {
         Depot.unregisterLobby(m_name)
         shutdown()
