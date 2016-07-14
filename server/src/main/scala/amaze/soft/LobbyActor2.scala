@@ -43,6 +43,12 @@ class LobbyActor2() extends Actor {
 
   private def makeRoomInfo() = new RoomInfo(m_name, m_players.head.name, m_playersLimit, m_players.length, m_players.map{_.name}.toList)
 
+  private def getHost = m_players.head
+
+  private def ejectPlayer(player: PlayerInfo2, flags: Int) = {
+    player.actor ! Tcp.Write(ByteString(json.Serialization.write(Ejected(flags))))
+  }
+
   override def receive = {
     case Init(hostName, roomName, playersLimit) =>
       m_name = roomName
@@ -84,7 +90,15 @@ class LobbyActor2() extends Actor {
 
           case EjectPlayer(playerName) =>
             m_logger.info("Got a EjectPlayer message!")
-            m_logger.error("Not implemented!")
+            val host = getHost
+            if((host.actor == sender()) && (host.name != playerName)){
+              val player = m_players.find(_.name == playerName)
+              if(player.isDefined){
+                ejectPlayer(player.get, Constants.FLAG_EJECTED)
+                m_players -= player.get
+                self forward FrontendMessage.Update(makeRoomInfo(), Constants.UPDATE_EJECTED, toSelf = true)
+              }
+            }
 
           case LeaveRoom() =>
             m_logger.info("Got a LeaveRoom message!")
@@ -116,7 +130,7 @@ class LobbyActor2() extends Actor {
         Depot.updateRoomInfo(m_name, room)
         sender() ! Tcp.Write(ByteString(json.Serialization.write(room)))
         // Notify all other players
-        self forward FrontendMessage.Update(room, "", toSelf = false)
+        self forward FrontendMessage.Update(room, Constants.UPDATE_JOINED, toSelf = false)
       } else {
         sender() ! Tcp.Write(ByteString(Constants.RESPONSE_ROOM_IS_FULL))
       }
@@ -136,6 +150,9 @@ class LobbyActor2() extends Actor {
 
     case Close() =>
       m_logger.info("Got a Close message!")
+      m_players.foreach{ player =>
+        ejectPlayer(player, Constants.FLAG_EJECTED | Constants.FLAG_CLOSED_BY_HOST)
+      }
       Depot.unregisterLobby(m_name)
       sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
       shutdown()

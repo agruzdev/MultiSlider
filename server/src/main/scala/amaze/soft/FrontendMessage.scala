@@ -66,4 +66,9 @@ object FrontendMessage {
    * Sent when session is created
    */
   case class SessionStarted(ip: String, port: Int, name: String, id: Int) extends JsonMessage
+
+  /**
+   * Sent when client was ejected
+   */
+  case class Ejected(flags: Int) extends JsonMessage
 }

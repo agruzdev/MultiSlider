@@ -92,6 +92,12 @@ namespace multislider
         // Host specific functions
 
         /**
+         *  Eject player from the room
+         */
+        MULTISLIDER_EXPORT
+        void eject(const std::string & playerName);
+
+        /**
          *  Close the current room
          */
         MULTISLIDER_EXPORT

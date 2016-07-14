@@ -21,4 +21,12 @@ object Constants {
   val BACKEND_NAME = "MultiSlider:Backend"
 
   val MESSAGE_ENCODING = "UTF-8"
+
+  // Predefined messages in Update
+  val UPDATE_JOINED  = "JOIN"
+  val UPDATE_EJECTED = "EJECT"
+
+  // Flags for ejected event
+  val FLAG_EJECTED        = 1
+  val FLAG_CLOSED_BY_HOST = 2
 }

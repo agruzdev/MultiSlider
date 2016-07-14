@@ -32,6 +32,7 @@ namespace multislider
         static const char MESSAGE_KEY_PORT[]         = "port";
         static const char MESSAGE_KEY_HOST[]         = "host";
         static const char MESSAGE_KEY_NAME[]         = "name";
+        static const char MESSAGE_KEY_FLAGS[]        = "flags";
         static const char MESSAGE_KEY_ID[]           = "id";
         static const char MESSAGE_KEY_SESSION_ID[]   = "sessionId";
         static const char MESSAGE_KEY_TIMESTAMP[]    = "timestamp";
@@ -47,12 +48,15 @@ namespace multislider
 
             static const char CREATE_ROOM[]   = "FrontendMessage$CreateRoom";
             static const char GET_ROOMS[]     = "FrontendMessage$GetRooms";
+
             static const char CLOSE_ROOM[]    = "FrontendMessage$CloseRoom";
+            static const char EJECT_PLAYER[]  = "FrontendMessage$EjectPlayer";
 
             static const char JOIN_ROOM[]     = "FrontendMessage$JoinRoom";
             static const char LEAVE_ROOM[]    = "FrontendMessage$LeaveRoom";
 
             static const char BROADCAST[]       = "FrontendMessage$Update";
+            static const char EJECTED[]         = "FrontendMessage$Ejected";
             static const char START_SESSION[]   = "FrontendMessage$StartSession";
             static const char SESSION_STARTED[] = "FrontendMessage$SessionStarted";
         }

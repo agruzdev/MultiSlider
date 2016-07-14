@@ -225,6 +225,19 @@ namespace multislider
     }
     //-------------------------------------------------------
 
+    void Lobby::eject(const std::string & playerName)
+    {
+        if (!(mIsJoined && mIsHost)) {
+            throw ProtocolError("Lobby[eject]: Can't eject a player. I'm not the host!");
+        }
+        Object ejectPlayerJson;
+        ejectPlayerJson << MESSAGE_KEY_CLASS << frontend::EJECT_PLAYER;
+        ejectPlayerJson << MESSAGE_KEY_PLAYER_NAME << playerName;
+        std::string ejectPlayerMessage = makeEnvelop(ejectPlayerJson).write(JSON);
+        mTcp->Send(ejectPlayerMessage.c_str(), ejectPlayerMessage.size(), *mServerAddress, false);
+    }
+    //-------------------------------------------------------
+
     void Lobby::closeRoom()
     {
         if (!(mIsJoined && mIsHost)) {
@@ -272,7 +285,7 @@ namespace multislider
             throw ProtocolError("Lobby[broadcast]: I'm not in a room!");
         }
         uint32_t counter = 0;
-        for (;;) {
+        while (mIsJoined) {
             shared_ptr<Packet> packet = awaitResponse(mTcp);
             if (packet == NULL) {
                 break;
@@ -294,6 +307,10 @@ namespace multislider
                     messageJson.get<jsonxx::String>(MESSAGE_KEY_NAME, ""),
                     narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 0.0))), details::SessionDeleter());
                 mCallback->onSessionStart(this, mMyRoom, mPlayerName, session);
+            }
+            else if (isMessageClass(messageClass, frontend::EJECTED)) {
+                mCallback->onLeft(this, mMyRoom, mPlayerName, narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));
+                mIsJoined = false;
             }
             ++counter;
         }

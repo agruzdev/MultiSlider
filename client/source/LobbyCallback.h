@@ -16,6 +16,9 @@ namespace multislider
     class LobbyCallback
     {
     public:
+        static const uint8_t FLAG_IS_EJECTED;              ///< Is set if this player was ejected from the room
+        static const uint8_t FLAG_ROOM_CLOSED_BY_HOST;     ///< Is set if player was ejected because the room was closed by host
+
         virtual ~LobbyCallback() 
         { }
 
