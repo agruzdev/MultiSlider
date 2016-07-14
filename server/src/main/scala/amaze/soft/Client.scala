@@ -35,10 +35,10 @@ class Client extends Actor {
         val msg = json.parse(data.decodeString(Constants.MESSAGE_ENCODING)).extract[JsonMessage]
         m_logger.info(msg.toString)
         msg match {
-          case CreateRoom(playerName, roomName, playersLimit) =>
+          case CreateRoom(playerName, roomName, description, playersLimit, playersReserved, userParam) =>
             m_logger.info("Got a CreateRoom message!")
             m_handler = Depot.actorsSystem.actorOf(Props(classOf[LobbyActor2]))
-            m_handler forward LobbyActor2.Init(playerName, roomName, playersLimit)
+            m_handler forward LobbyActor2.Init(playerName, roomName, description, playersLimit, playersReserved, userParam)
 
           case join @ JoinRoom(playerName, roomName) =>
             m_logger.info("Got a JoinRoom message!")

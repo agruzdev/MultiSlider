@@ -74,13 +74,13 @@ class Controller
             std::cout << "Available rooms:" << std::endl;
             size_t idx = 0;
             for (const auto & info : rooms) {
-                std::cout << "  [" << idx++ << "]  " << info.getName() << "\t  by " << info.getHostName() << "\t        " << info.getPlayersNumber() << " / " << info.getPlayersLimit() << std::endl;
+                std::cout << "  [" << idx++ << "]  " << info.getName() << "\t  by " << info.getHostName() << "\t  " << info.getPlayersNumber() << " / " << info.getPlayersLimit() << "\t    " << info.getDescription() << std::endl;
             }
             std::cout << std::endl;
 
             //Footer
             std::cout << "Options:" << std::endl;
-            std::cout << "  " << CMD_CREATE << " <roomName> - to create a new room" << std::endl;
+            std::cout << "  " << CMD_CREATE << " <roomName> [<description>] - to create a new room" << std::endl;
             std::cout << "  " << CMD_JOIN << " <number> - to join a room with number <number>" << std::endl;
             std::cout << "  " << CMD_UPDATE << " - to update rooms list" << std::endl;
             std::cout << "  " << CMD_EXIT << " - to leave" << std::endl;
@@ -98,8 +98,8 @@ class Controller
                 pause(1000);
                 return;
             }
-            else if (cmd.size() == 2 && cmd[0] == CMD_CREATE && cmd[1].size() > 0) {
-                if (Lobby::SUCCESS == mLobby->createRoom(mUserName, cmd[1], 2, this)) {
+            else if ((cmd.size() == 2 || cmd.size() == 3) && cmd[0] == CMD_CREATE && cmd[1].size() > 0) {
+                if (Lobby::SUCCESS == mLobby->createRoom(mUserName, cmd[1], (cmd.size() == 3 ? cmd[2] : std::string()), 2, 0, this)) {
                     break;
                 }
                 else {

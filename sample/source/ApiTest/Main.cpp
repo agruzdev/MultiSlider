@@ -92,7 +92,7 @@ public:
         {
             Lobby lobby(SERVER_ADDRESS, SERVER_FRONTEND_PORT);
             //Host* host = lobby.createRoom("Player1", "Room1", 2, &callback);
-            if (Lobby::SUCCESS != lobby.createRoom("Player1", "Room1", 2, &callback)) {
+            if (Lobby::SUCCESS != lobby.createRoom("Player1", "Room1", "TestRoom", 2, 0, &callback)) {
                 throw std::runtime_error("Failed to create a room!");
             }
 

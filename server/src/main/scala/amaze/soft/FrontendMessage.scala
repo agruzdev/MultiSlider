@@ -20,8 +20,12 @@ object FrontendMessage {
    * Client sends the message in order to create a new room
    * @param playerName player name who creates the room, he will be host
    * @param roomName the new room's name
+   * @param description room description
+   * @param playersLimit max players amount
+   * @param playersReserved amount of reserved players slots
+   * @param userParam arbitrary user data
    */
-  case class CreateRoom(playerName: String, roomName: String, playersLimit: Int) extends JsonMessage
+  case class CreateRoom(playerName: String, roomName: String, description: String, playersLimit: Int, playersReserved: Int, userParam: String) extends JsonMessage
 
   /**
    * Close a previously created room

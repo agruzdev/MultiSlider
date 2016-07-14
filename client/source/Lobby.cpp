@@ -89,7 +89,7 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    Lobby::Status Lobby::createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback)
+    Lobby::Status Lobby::createRoom(const std::string & playerName, const std::string & roomName, const std::string & description, uint32_t playersLimit, uint32_t playersReserved, const std::string & userParameter, LobbyCallback* callback)
     {
         if (playerName.empty()) {
             throw ProtocolError("Lobby[createRoom]: playerName can't be empty!");
@@ -103,6 +103,9 @@ namespace multislider
         if (playersLimit < 1) {
             throw ProtocolError("Lobby[createRoom]: players limit can't be less than 1");
         }
+        if (playersReserved > playersLimit - 1) {
+            throw ProtocolError("Lobby[createRoom]: players reserved number can't be greater or equal to player limit");
+        }
         assert(mTcp.get() != NULL);
         assert(*mServerAddress != UNASSIGNED_SYSTEM_ADDRESS);
 
@@ -110,7 +113,10 @@ namespace multislider
         createRoomJson << MESSAGE_KEY_CLASS << frontend::CREATE_ROOM;
         createRoomJson << MESSAGE_KEY_PLAYER_NAME << playerName;
         createRoomJson << MESSAGE_KEY_ROOM_NAME << roomName;
+        createRoomJson << MESSAGE_KEY_ROOM_DESC << description;
         createRoomJson << MESSAGE_KEY_PLAYERS_LIMIT << playersLimit;
+        createRoomJson << MESSAGE_KEY_PLAYERS_RESERVED << playersReserved;
+        createRoomJson << MESSAGE_KEY_USER_PARAM << userParameter;
         std::string createRoomMessage = createRoomJson.write(JSON);
 
         mTcp->Send(createRoomMessage.c_str(), createRoomMessage.size(), *mServerAddress, false);
@@ -127,6 +133,12 @@ namespace multislider
         mIsJoined = true;
         mIsHost = true;
         return SUCCESS;
+    }
+    //-------------------------------------------------------
+
+    Lobby::Status Lobby::createRoom(const std::string & playerName, const std::string & roomName, const std::string & description, uint32_t playersLimit, uint32_t playersReserved, LobbyCallback* callback)
+    {
+        return createRoom(playerName, roomName, description, playersLimit, playersReserved, std::string(), callback);
     }
     //-------------------------------------------------------
 

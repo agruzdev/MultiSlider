@@ -21,7 +21,7 @@ import scala.concurrent.Await
 
 object LobbyActor2 {
   case class PlayerInfo2(actor: ActorRef, name: String, ready: Boolean)
-  case class Init(hostName: String, roomName: String, playersLimit: Int)
+  case class Init(hostName: String, roomName: String, description: String, playersLimit: Int, playersReserved: Int, userParam: String)
   case class Join(playerName: String)
   case class Close()
   case class Disconnected()
@@ -35,8 +35,11 @@ class LobbyActor2() extends Actor {
   import LobbyActor2._
 
   var m_name: String = null
+  var m_description: String = null
   var m_players = new ListBuffer[PlayerInfo2]
   var m_playersLimit = 0
+  var m_playersReserved = 0
+  var m_userParam: String = null
 
   m_logger.info("Started actor " + self.toString())
 
@@ -46,7 +49,7 @@ class LobbyActor2() extends Actor {
 
   private def getHost = m_players.head
 
-  private def makeRoomInfo() = new RoomInfo(m_name, getHost.name, m_playersLimit, m_players.length, m_players.map{_.name}.toList)
+  private def makeRoomInfo() = new RoomInfo(m_name, getHost.name, m_description, m_playersLimit, m_playersReserved, m_players.length, m_players.map{_.name}.toList, m_userParam)
 
   private def ejectPlayer(player: PlayerInfo2, flags: Int) = {
     player.actor ! Tcp.Write(ByteString(json.Serialization.write(Ejected(flags))))
@@ -58,10 +61,13 @@ class LobbyActor2() extends Actor {
   }
 
   override def receive = {
-    case Init(hostName, roomName, playersLimit) =>
+    case Init(hostName, roomName, description, playersLimit, playersReserved, userParam) =>
       m_name = roomName
+      m_description = description
       m_playersLimit = playersLimit
+      m_playersReserved = playersReserved
       m_players.append(PlayerInfo2(sender(), hostName, ready = false))
+      m_userParam = userParam
       val room = makeRoomInfo()
       Depot.registerLobby(self, room) match {
         case Depot.Status.SUCC =>
@@ -136,7 +142,7 @@ class LobbyActor2() extends Actor {
 
     case Join(playerName) =>
       m_logger.info("Got a Join message!")
-      if(m_players.length < m_playersLimit){
+      if(m_players.length < m_playersLimit - m_playersReserved){
         // Check that name is unique
         if(!m_players.exists(_.name == playerName)) {
           // Add the new player

@@ -6,8 +6,22 @@ package amaze.soft
  * Copyright (c) 2016 Alexey Gruzdev
  */
 
-// Simple room descriptor for clients
-case class RoomInfo(name: String, var host: String, playersLimit: Int, var playersNumber: Int, var players: List[String])
+/**
+ * Room descriptor for clients
+ * @param name Name of the room
+ * @param host Player name of the host
+ * @param description Room description
+ * @param playersLimit Maximum number of players in the room
+ * @param playersReserved Amount of reserved players slots
+ * @param playersNumber Current number of players, from 0 till playersLimit - playersReserved
+ * @param players List of player names
+ * @param userParam Arbitrary user parameter of the room
+ */
+case class RoomInfo(name: String, var host: String,
+                    description: String,
+                    playersLimit: Int, playersReserved : Int, var playersNumber: Int,
+                    var players: List[String],
+                    userParam: String)
 {
-  def noPlayers = RoomInfo(name, host, playersLimit, playersNumber, null)
+  def noPlayers = RoomInfo(name, host, description, playersLimit, playersReserved, playersNumber, null, userParam)
 }

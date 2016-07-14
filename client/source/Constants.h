@@ -26,6 +26,7 @@ namespace multislider
         static const char MESSAGE_KEY_PLAYER_NAME[]  = "playerName";
         static const char MESSAGE_KEY_ROOM[]         = "room";
         static const char MESSAGE_KEY_ROOM_NAME[]    = "roomName";
+        static const char MESSAGE_KEY_ROOM_DESC[]    = "description";
         static const char MESSAGE_KEY_DATA[]         = "data";
         static const char MESSAGE_KEY_SHARED_DATA[]  = "sharedData";
         static const char MESSAGE_KEY_TO_SELF[]      = "toSelf";
@@ -41,8 +42,11 @@ namespace multislider
         static const char MESSAGE_KEY_DELAY[]        = "delay";
         static const char MESSAGE_KEY_SYNC_ID[]      = "syncId";
         static const char MESSAGE_KEY_FORCE_BROADCAST[] = "forceBroadcast";
-        static const char MESSAGE_KEY_PLAYERS_LIMIT[]  = "playersLimit";
-        static const char MESSAGE_KEY_PLAYERS_NUMBER[] = "playersNumber";
+        static const char MESSAGE_KEY_PLAYERS[]         = "players";
+        static const char MESSAGE_KEY_PLAYERS_LIMIT[]    = "playersLimit";
+        static const char MESSAGE_KEY_PLAYERS_NUMBER[]   = "playersNumber";
+        static const char MESSAGE_KEY_PLAYERS_RESERVED[] = "playersReserved";
+        static const char MESSAGE_KEY_USER_PARAM[] = "userParam";
 
         namespace frontend
         {

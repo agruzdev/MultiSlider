@@ -67,12 +67,27 @@ namespace multislider
          *  Create new room on the server
          *  @param playerName name of the current player. It will be assigned as host of the created room
          *  @param roomName name of the room
-         *  @param palyersLimit maximum number of players in the room (should be >= 1)
+         *  @param description description of the room
+         *  @param playersLimit maximum number of players in the room (should be >= 1)
+         *  @param playersReserved number of reserved players slots in the room (0 <= playersReserved < playersLimit)
          *  @param callback callback for host events, can't be null
-         *  @return true on success
          */
         MULTISLIDER_EXPORT
-        Status createRoom(const std::string & playerName, const std::string & roomName, uint32_t playersLimit, LobbyCallback* callback);
+        Status createRoom(const std::string & playerName, const std::string & roomName, const std::string & description, uint32_t playersLimit, uint32_t playersReserved, LobbyCallback* callback);
+
+        /**
+         *  Create new room on the server
+         *  @param playerName name of the current player. It will be assigned as host of the created room
+         *  @param roomName name of the room
+         *  @param description description of the room
+         *  @param playersLimit maximum number of players in the room (should be >= 1)
+         *  @param playersReserved number of reserved players slots in the room (0 <= playersReserved < playersLimit)
+         *  @param callback callback for host events, can't be null
+         *  @param userParameter arbitrary user data
+         */
+        MULTISLIDER_EXPORT
+        Status createRoom(const std::string & playerName, const std::string & roomName, const std::string & description, uint32_t playersLimit, uint32_t playersReserved, const std::string & userParameter, LobbyCallback* callback);
+         
 
         /**
          *  Get a list of all opened rooms on the server
