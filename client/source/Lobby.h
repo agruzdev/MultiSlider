@@ -27,6 +27,7 @@ namespace multislider
             SUCCESS,        ///< Returned on success operation
             FAIL,           ///< Returned on failed operation; no specific fail reason
             ROOM_IS_FULL,   ///< Trying to join a full room
+            NAME_EXISTS,    ///< Player with such name is already in the room
             ROOM_EXISTS     ///< Trying to create a room with existing name
         };
 

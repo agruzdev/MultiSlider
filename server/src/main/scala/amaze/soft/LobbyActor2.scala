@@ -73,7 +73,7 @@ class LobbyActor2() extends Actor {
         val msg = json.parse(jsonRaw).extract[JsonMessage]
         m_logger.info(msg.toString)
         msg match {
-          case updateMessage @ Update(_, data, toSelf) =>
+          case updateMessage @ Update(_, _, _) =>
             self forward updateMessage
 
           case StartSession() =>
@@ -125,12 +125,18 @@ class LobbyActor2() extends Actor {
     case Join(playerName) =>
       m_logger.info("Got a Join message!")
       if(m_players.length < m_playersLimit){
-        m_players += PlayerInfo2(sender(), playerName, ready = false)
-        val room = makeRoomInfo()
-        Depot.updateRoomInfo(m_name, room)
-        sender() ! Tcp.Write(ByteString(json.Serialization.write(room)))
-        // Notify all other players
-        self forward FrontendMessage.Update(room, Constants.UPDATE_JOINED, toSelf = false)
+        // Check that name is unique
+        if(!m_players.exists(_.name == playerName)) {
+          // Add the new player
+          m_players += PlayerInfo2(sender(), playerName, ready = false)
+          val room = makeRoomInfo()
+          Depot.updateRoomInfo(m_name, room)
+          sender() ! Tcp.Write(ByteString(json.Serialization.write(room)))
+          // Notify all other players
+          self forward FrontendMessage.Update(room, Constants.UPDATE_JOINED, toSelf = false)
+        } else {
+          sender() ! Tcp.Write(ByteString(Constants.RESPONSE_NAME_EXISTS))
+        }
       } else {
         sender() ! Tcp.Write(ByteString(Constants.RESPONSE_ROOM_IS_FULL))
       }

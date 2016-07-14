@@ -191,14 +191,22 @@ namespace multislider
         joinRoomJson << MESSAGE_KEY_ROOM_NAME << room.getName();
         std::string joinRoomMessage = joinRoomJson.write(JSON);
         mTcp->Send(joinRoomMessage.c_str(), joinRoomMessage.size(), *mServerAddress, false);
+
+        // Await sync responce 
         shared_ptr<Packet> packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
-        if (responsed(packet, constants::RESPONSE_ROOM_IS_FULL)) {
-            return ROOM_IS_FULL;
-        }
+        
+        // Check responce
         if (!mMyRoom.deserialize(std::string(pointer_cast<const char*>(packet->data), packet->length))) {
+            if (responsed(packet, constants::RESPONSE_ROOM_IS_FULL)) {
+                return ROOM_IS_FULL;
+            }
+            if (responsed(packet, constants::RESPONSE_NAME_EXISTS)) {
+                return NAME_EXISTS;
+            }
             return FAIL;
         }
 
+        // Ok
         mPlayerName = playerName;
         mCallback = callback;
         mCallback->onJoined(this, mMyRoom, mPlayerName);
