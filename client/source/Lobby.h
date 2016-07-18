@@ -126,7 +126,7 @@ namespace multislider
         void startSession();
 
         //-------------------------------------------------------
-        // Client specific functions
+        // Common functions for both host and client
 
         /**
          *  Leave the current room
@@ -134,9 +134,6 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         void leaveRoom();
-
-        //-------------------------------------------------------
-        // Common functions for both host and client
 
         /**
          *  Broadcast data to all players in the room
