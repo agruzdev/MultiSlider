@@ -17,7 +17,7 @@ namespace multislider
 {
     using namespace constants;
 
-    void RoomInfo::swap(RoomInfo & other)
+    void RoomInfo::swap(RoomInfo & other) throw()
     {
         if (this != &other) {
             using std::swap;
