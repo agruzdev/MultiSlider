@@ -18,6 +18,7 @@ std::condition_variable gCvFinish;
 std::condition_variable gCvSession;
 
 static const char SERVER_ADDRESS[] = "127.0.0.1";
+//static const char SERVER_ADDRESS[] = "95.213.199.37";
 static const uint16_t SERVER_FRONTEND_PORT = 8800;
 static const uint16_t SERVER_BACKEND_PORT  = 8700;
 
@@ -43,6 +44,11 @@ public:
     void onSync(const std::string & sessionName, const std::string & playerName, uint32_t syncId) override
     {
         std::cout << std::string("SessionCallback[") + playerName + "]: Got sync " + std::to_string(syncId) + "\n";
+    }
+
+    void onQuit(const std::string & sessionName, const std::string & playerName, bool byTimeout) throw () override
+    {
+        std::cout << std::string("SessionCallback[") + playerName + "]: quited session " + sessionName + " (by timeout =" + std::to_string(byTimeout) + ")\n";
     }
 };
 
@@ -148,6 +154,9 @@ public:
                 gCvFinish.wait(lock, []() {return gFlagFinish.load(); });
             }
             lobby.closeRoom();
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            lobby.receive();
         }
     }
 };

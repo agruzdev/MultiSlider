@@ -1,6 +1,6 @@
 // All commands should be encoded in UTF-8
 
-{"jsonClass":"FrontendMessage$CreateRoom","playerName":"doge","roomName":"woof","playersLimit":4}
+{"jsonClass":"FrontendMessage$CreateRoom","playerName":"doge","roomName":"woof","description":"test","playersLimit":4,"playersReserved":0,"userParam":""}
 {"jsonClass":"FrontendMessage$CloseRoom"}
 {"jsonClass":"FrontendMessage$GetRooms"}
 
@@ -15,6 +15,8 @@
 
 {"jsonClass":"FrontendMessage$Envelop","roomName":"woof","data":"DATAHERE!"}
 {"jsonClass":"FrontendMessage$Envelop","roomName":"woof","data":"{\"jsonClass\":\"FrontendMessage$JoinRoom\",\"playerName\":\"cate\",\"roomName\":\"woof\"}"}
+
+{"jsonClass":"FrontendMessage$Envelop","roomName":"woof","data":"{\"jsonClass\":\"FrontendMessage$StartSession\"}"}
 
 //------------------------------------------
 

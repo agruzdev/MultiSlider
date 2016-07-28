@@ -42,6 +42,11 @@ object BackendMessage {
   // Messages from server to client
 
   /**
+   * KeepAlive
+   */
+  case class KeepAlive(playerName: String) extends JsonMessage
+
+  /**
    * Indicates that all players are joined and session can be started
    */
   case class Start() extends JsonMessage

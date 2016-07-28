@@ -272,11 +272,11 @@ namespace multislider
         closeRoomJson << MESSAGE_KEY_CLASS << frontend::CLOSE_ROOM;
         std::string closeRoomMessage = closeRoomJson.write(JSON);
         mTcp->Send(closeRoomMessage.c_str(), closeRoomMessage.size(), *mServerAddress, false);
-        if (!responsed(awaitResponse(mTcp, DEFAULT_TIMEOUT_MS), RESPONSE_SUCC)) {
-            throw ServerError("Host[closeRoom]: failed to close the current room!");
-        }
-        mCallback->onLeft(this, mMyRoom, mPlayerName, 0);
-        mIsJoined = false;
+        //if (!responsed(awaitResponse(mTcp, DEFAULT_TIMEOUT_MS), RESPONSE_SUCC)) {
+        //    throw ServerError("Host[closeRoom]: failed to close the current room!");
+        //}
+        //mCallback->onLeft(this, mMyRoom, mPlayerName, 0);
+        //mIsJoined = false;
     }
     //-------------------------------------------------------
 

@@ -45,7 +45,7 @@ class LobbyActor2() extends Actor {
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
     classOf[CloseRoom], classOf[JoinRoom], classOf[LeaveRoom],
-    classOf[EjectPlayer], classOf[StartSession], classOf[SessionStarted], classOf[Update])))
+    classOf[EjectPlayer], classOf[StartSession], classOf[SessionStarted], classOf[Update], classOf[Ejected])))
 
   private def getHost = m_players.head
 
@@ -186,7 +186,7 @@ class LobbyActor2() extends Actor {
         ejectPlayer(player, Constants.FLAG_EJECTED | Constants.FLAG_CLOSED_BY_HOST)
       }
       Depot.unregisterLobby(m_name)
-      sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
+      //sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
       shutdown()
 
     case unknown: Any =>

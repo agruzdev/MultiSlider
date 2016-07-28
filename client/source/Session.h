@@ -44,6 +44,12 @@ namespace multislider
          *  Is called as soon as synchronization message is got
          */
         virtual void onSync(const std::string & /*sessionName*/, const std::string & /*playerName*/, uint32_t /*syncId*/) { }
+
+        /**
+         *  Is called as soon as the player quit the session
+         *  @param byTimeout is true is the player was disconnected by timeout
+         */
+        virtual void onQuit(const std::string & /*sessionName*/, const std::string & /*playerName*/, bool /*byTimeout*/) throw () { }
     }; 
 
     class Session
@@ -55,6 +61,7 @@ namespace multislider
         const std::string mSessionName;
         const uint32_t mSessionId;
         SessionCallback* mCallback;
+        uint64_t mLastPing;
         bool mStarted;
 
         std::vector<uint8_t> mReceiveBuffer;
@@ -100,6 +107,7 @@ namespace multislider
 
         /**
         *  Broadcast user data to all players
+        *  Is treated as implicit KeepAlive
         *  @param data user data to send to the server
         *  @param sharedData data shared by all users, is overwritten by all users
         *  @param forced if true then session stated will be send to all players, otherwise they will get it only after own update
@@ -120,6 +128,21 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         uint32_t receive();
+
+        /**
+         *  Send KeepAlive message to server to prevent it from closing connection
+         *  Broadcast messages are treated as KeepAlive as well.
+         *  Using explicit KeepAlive is necessary only if the broadcast can't be sent enough frequently
+         */
+        MULTISLIDER_EXPORT
+        void keepAlive();
+
+        //-------------------------------------------------------
+        /**
+         *  Get connection timeout 
+         */
+        MULTISLIDER_EXPORT
+        static uint64_t getConnectionTimeout();
     };
 
 

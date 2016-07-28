@@ -13,6 +13,7 @@
 #include "UdpInterface.h"
 
 #include <jsonxx.h>
+#include <GetTime.h> // From RakNet
 
 using namespace RakNet;
 using namespace jsonxx;
@@ -35,21 +36,11 @@ namespace multislider
     //-------------------------------------------------------
 
     Session::Session(std::string ip, uint16_t port, const std::string & playerName, const std::string & sessionName, uint32_t sessionId)
-        : mServerIp(ip), mServerPort(port), mPlayerName(playerName), mSessionName(sessionName), mSessionId(sessionId), mStarted(false)
+        : mServerIp(ip), mServerPort(port), mPlayerName(playerName), mSessionName(sessionName), mSessionId(sessionId), mLastPing(0), mStarted(false)
     {
         assert(!mServerIp.empty());
         assert(!mPlayerName.empty());
         assert(!mSessionName.empty());
-#if 0
-        if (!msEnetInited) {
-            if (!enet_initialize()) {
-                // ToDo: Inited by RakNet. Fix after getting rid of RakNet?
-                //throw RuntimeError("Session[Session]: Failed to init ENet");
-            }
-            enet_time_set(0);
-            msEnetInited = true;
-        }
-#endif
         mReceiveBuffer.resize(RECEIVE_BIFFER_SIZE);
     }
     //-------------------------------------------------------
@@ -61,6 +52,7 @@ namespace multislider
             quitJson << MESSAGE_KEY_CLASS << backend::QUIT;
             quitJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
             sendUpdDatagram(makeEnvelop(quitJson).write(JSON));
+            //mCallback->onQuit(mSessionName, mPlayerName, false);
         }
     }
     //-------------------------------------------------------
@@ -77,47 +69,15 @@ namespace multislider
 
     void Session::sendUpdDatagram(const std::string & message) const
     {
-#if 0
-        ENetAddress address;
-        enet_address_set_host(&address, mServerIp.c_str());
-        address.port = mServerPort;
-
-        ENetBuffer buffer;
-        buffer.data = const_cast<void*>(pointer_cast<const void*>(message.c_str()));
-        buffer.dataLength = message.size();
-        if (!enet_socket_send(mSocket->enetSocket, &address, &buffer, 1)) {
-            throw RuntimeError("Session[Startup]: Failed to send UDP datagram");
-        }
-#else
         if (!UdpInterface::Instance().sendUpdDatagram(*mSocket, mServerIp, mServerPort, message)) {
             throw RuntimeError("Session[Startup]: Failed to send UDP datagram");
         }
-#endif
     }
     //-------------------------------------------------------
 
     size_t Session::awaitUdpDatagram(uint64_t timeoutMilliseconds, uint32_t attemptsTimeoutMilliseconds /* = 100 */) 
     {
-#if 0
-        ENetAddress address;
-        ENetBuffer buffer;
-        buffer.data = &mReceiveBuffer[0];
-        buffer.dataLength = mReceiveBuffer.size();
-        uint64_t time = 0;
-        int len = 0;
-        while ((time < timeoutMilliseconds) && (0 == (len = enet_socket_receive(mSocket->enetSocket, &address, &buffer, 1)))) {
-            RakSleep(attemptsTimeoutMilliseconds);
-            time += attemptsTimeoutMilliseconds;
-        }
-        if (len < 0) {
-            return 0;
-        }
-        else {
-            return static_cast<size_t>(len);
-        }
-#else
         return UdpInterface::Instance().awaitUdpDatagram(*mSocket, mReceiveBuffer, timeoutMilliseconds, attemptsTimeoutMilliseconds);
-#endif
     }
     //-------------------------------------------------------
 
@@ -165,6 +125,7 @@ namespace multislider
                 if (isMessageClass(messageClass, backend::START)) {
                     mStarted = true;
                     mCallback->onStart(mSessionName, mPlayerName);
+                    mLastPing = RakNet::GetTime();
                     return;
                 }
             }
@@ -178,6 +139,7 @@ namespace multislider
             if (isMessageClass(messageClass, backend::START)) {
                 mStarted = true;
                 mCallback->onStart(mSessionName, mPlayerName);
+                mLastPing = RakNet::GetTime();
                 return;
             }
         }
@@ -222,6 +184,18 @@ namespace multislider
     }
     //-------------------------------------------------------
 
+    void Session::keepAlive()
+    {
+        if (!mStarted) {
+            throw ProtocolError("Session[keepAlive]: Session was not started!");
+        }
+        Object keepAliveJson;
+        keepAliveJson << MESSAGE_KEY_CLASS << backend::KEEP_ALIVE;
+        keepAliveJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
+        sendUpdDatagram(makeEnvelop(keepAliveJson).write(JSON));
+    }
+    //-------------------------------------------------------
+
     uint32_t Session::receive()
     {
         uint32_t counter = 0;
@@ -249,11 +223,25 @@ namespace multislider
             else if (isMessageClass(messageClass, backend::SYNC)) {
                 mCallback->onSync(mSessionName, mPlayerName, narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SYNC_ID)));
             }
+            else if (isMessageClass(messageClass, backend::KEEP_ALIVE)) {
+                mLastPing = RakNet::GetTimeMS();
+                --counter; // KeepAlive messages are 'invisible'
+            }
             else {
                 throw RuntimeError("Session[receive]: Unknown datagram type!");
             }
         }
+        // Check timeout
+        if ((RakNet::GetTimeMS() - mLastPing) > KEEP_ALIVE_LIMIT) {
+            mCallback->onQuit(mSessionName, mPlayerName, true);
+        }
         return counter;
+    }
+    //-------------------------------------------------------
+
+    uint64_t Session::getConnectionTimeout()
+    {
+        return KEEP_ALIVE_LIMIT;
     }
 }
 

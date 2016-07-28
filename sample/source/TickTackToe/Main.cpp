@@ -30,6 +30,8 @@ class Controller
     bool mGameFinish  = false;
 
     bool mHostPlaysCrosses = true;
+
+    std::future<void> mAliveKeeper;
     //-------------------------------------------------------
 
     void clear()
@@ -338,6 +340,12 @@ class Controller
         if (mLobby->isHost()) {
             mSession->broadcast("", makeMessage("         ", 0), true);
         }
+        mAliveKeeper = std::async(std::launch::async, [this]() {
+            while (!mGameFinish) {
+                mSession->keepAlive();
+                std::this_thread::sleep_for(std::chrono::milliseconds(Session::getConnectionTimeout() / 10));
+            }
+        });
     }
 
     void onUpdate(const std::string & sessionName, const std::string & playerName, const SessionData & data, const std::string & sharedData) override
@@ -422,6 +430,10 @@ public:
 
         assert(mSession != nullptr);
         gameScreen();
+
+        if (mAliveKeeper.valid()) {
+            mAliveKeeper.wait();
+        }
 
         //-------------------------------------------------------
         mLobby.reset();

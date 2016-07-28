@@ -76,6 +76,7 @@ namespace multislider
             static const char UPDATE[] = "BackendMessage$Update";
             static const char SYNC_REQUEST[] = "BackendMessage$RequestSync";
             static const char QUIT[]   = "BackendMessage$Quit";
+            static const char KEEP_ALIVE[] = "BackendMessage$KeepAlive";
 
             // Incoming
             static const char START[] = "BackendMessage$Start";
@@ -84,6 +85,7 @@ namespace multislider
         }
 
         static const uint64_t DEFAULT_TIMEOUT_MS = 10000; // 10 seconds
+        static const uint64_t KEEP_ALIVE_LIMIT   = 10000; // 10 seconds
     }
 }
 
