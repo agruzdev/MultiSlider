@@ -171,6 +171,13 @@ namespace multislider
         MULTISLIDER_EXPORT
         void keepAlive();
 
+        /**
+         *  Get last ping value
+         *  @return ping value in milliseconds
+         */
+        MULTISLIDER_EXPORT
+        uint64_t getLastPing() const;
+
         //-------------------------------------------------------
         /**
          *  Get connection timeout 

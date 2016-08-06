@@ -148,7 +148,7 @@ namespace multislider
                 if (isMessageClass(messageClass, backend::START)) {
                     mStarted = true;
                     mCallback->onStart(mSessionName, mPlayerName);
-                    mLastPing = RakNet::GetTime();
+                    mLastPing = RakNet::GetTimeMS();
                     return;
                 }
             }
@@ -162,7 +162,7 @@ namespace multislider
             if (isMessageClass(messageClass, backend::START)) {
                 mStarted = true;
                 mCallback->onStart(mSessionName, mPlayerName);
-                mLastPing = RakNet::GetTime();
+                mLastPing = RakNet::GetTimeMS();
                 return;
             }
         }
@@ -335,6 +335,7 @@ namespace multislider
         }
         return false;
     }
+    //-------------------------------------------------------
 
     void Session::removeAcknowledged(uint32_t ackIdx) {
         size_t idx = 0;
@@ -347,6 +348,13 @@ namespace multislider
             mOutputQueue.erase(mOutputQueue.begin() + idx);
         }
     }
+    //-------------------------------------------------------
+
+    uint64_t Session::getLastPing() const
+    {
+        return mLastPing;
+    }
+
     //-------------------------------------------------------
 
     uint64_t Session::getConnectionTimeout()
