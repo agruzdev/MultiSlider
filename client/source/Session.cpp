@@ -247,7 +247,7 @@ namespace multislider
             ++counter;
             Object messageJson;
             messageJson.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), dataLength));
-            std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS));
+            std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
             if (isMessageClass(messageClass, backend::START)) {
                 mCallback->onStart(mSessionName, mPlayerName);
             }
