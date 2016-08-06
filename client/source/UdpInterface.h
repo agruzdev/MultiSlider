@@ -91,11 +91,17 @@ namespace multislider
             buffer.data = &receiveBuffer[0];
             buffer.dataLength = receiveBuffer.size();
             uint64_t time = 0;
+
             int len = 0;
-            while ((time < timeoutMilliseconds) && (0 == (len = enet_socket_receive(socket, &address, &buffer, 1)))) {
+            while (time < timeoutMilliseconds) {
+                len = enet_socket_receive(socket, &address, &buffer, 1);
+                if (len != 0) {
+                    break;
+                }
                 RakSleep(attemptsTimeoutMilliseconds);
                 time += attemptsTimeoutMilliseconds;
             }
+
             if (len < 0) {
                 return 0;
             }
