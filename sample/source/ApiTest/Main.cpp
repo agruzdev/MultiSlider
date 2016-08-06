@@ -41,9 +41,14 @@ public:
         std::cout << msg;
     }
 
-    void onSync(const std::string & sessionName, const std::string & playerName, uint32_t syncId) override
+    void onSync(const std::string & sessionName, const std::string & playerName, uint32_t syncId, bool wasLost) override
     {
-        std::cout << std::string("SessionCallback[") + playerName + "]: Got sync " + std::to_string(syncId) + "\n";
+        if (!wasLost) {
+            std::cout << std::string("SessionCallback[") + playerName + "]: Got sync " + std::to_string(syncId) + "\n";
+        }
+        else {
+            std::cout << std::string("SessionCallback[") + playerName + "]: Sync " + std::to_string(syncId) + " was lost\n";
+        }
     }
 
     void onQuit(const std::string & sessionName, const std::string & playerName, bool byTimeout) throw () override
@@ -141,7 +146,7 @@ public:
 
                 std::this_thread::sleep_for(std::chrono::seconds(1));
 
-                gHostSession->sync(7, 1);
+                gHostSession->sync(7, 1, true);
 
                 uint32_t counter = 0;
                 while (counter < 2) {

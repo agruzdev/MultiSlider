@@ -46,7 +46,8 @@ namespace multislider
         static const char MESSAGE_KEY_PLAYERS_LIMIT[]    = "playersLimit";
         static const char MESSAGE_KEY_PLAYERS_NUMBER[]   = "playersNumber";
         static const char MESSAGE_KEY_PLAYERS_RESERVED[] = "playersReserved";
-        static const char MESSAGE_KEY_USER_PARAM[] = "userParam";
+        static const char MESSAGE_KEY_USER_PARAM[]      = "userParam";
+        static const char MESSAGE_KEY_SEQ_INDEX[]       = "seqIdx";
 
         namespace frontend
         {
@@ -82,10 +83,12 @@ namespace multislider
             static const char START[] = "BackendMessage$Start";
             static const char STATE[] = "BackendMessage$SessionState";
             static const char SYNC[]  = "BackendMessage$Sync";
+            static const char ACK[]   = "BackendMessage$Ack";
         }
 
         static const uint64_t DEFAULT_TIMEOUT_MS = 10000; // 10 seconds
         static const uint64_t KEEP_ALIVE_LIMIT   = 10000; // 10 seconds
+        static const uint64_t RESEND_INTERVAL    =  1000; // 1 second
     }
 }
 

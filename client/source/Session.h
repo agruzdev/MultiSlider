@@ -8,8 +8,8 @@
 #ifndef _MULTI_SLIDER_SESSION_H_
 #define _MULTI_SLIDER_SESSION_H_
 
-#include <vector>
 #include <map>
+#include <vector>
 
 #include "CommonIncludes.h"
 #include "LibInterface.h"
@@ -42,8 +42,9 @@ namespace multislider
 
         /**
          *  Is called as soon as synchronization message is got
+         *  @param wasLost set true if Sync message wasn't delivered
          */
-        virtual void onSync(const std::string & /*sessionName*/, const std::string & /*playerName*/, uint32_t /*syncId*/) { }
+        virtual void onSync(const std::string & /*sessionName*/, const std::string & /*playerName*/, uint32_t /*syncId*/, bool /*wasLost*/) { }
 
         /**
          *  Is called as soon as the player quit the session
@@ -51,6 +52,8 @@ namespace multislider
          */
         virtual void onQuit(const std::string & /*sessionName*/, const std::string & /*playerName*/, bool /*byTimeout*/) throw () { }
     }; 
+
+    struct MsgInfo;
 
     class Session
     {
@@ -65,6 +68,15 @@ namespace multislider
         bool mStarted;
 
         std::vector<uint8_t> mReceiveBuffer;
+
+        /*
+         * Support reliable connection
+         */
+        uint32_t mLocalSeqIdx;
+        uint32_t mRemoteSeqIdx;
+        uint32_t mPreviousIdxBits;
+        std::vector<shared_ptr<MsgInfo>> mOutputQueue;
+
         //-------------------------------------------------------
         
 
@@ -72,7 +84,19 @@ namespace multislider
 
         void sendUpdDatagram(const std::string & message) const;
 
-        /**
+        /*
+         *  Generate next seq idx
+         *  Wrap on overflow
+         */
+        uint32_t getNextSeqIdx();
+
+        // Returns false if message should be discarded, true - if processed
+        bool checkAcknowledgement(uint32_t ackIdx);
+
+        // Removes acknowledged package from an output buffer
+        void removeAcknowledged(uint32_t ackIdx);
+
+        /*
          *  Returns datagram length
          */
         size_t awaitUdpDatagram(uint64_t timeoutMilliseconds, uint32_t attemptsTimeoutMilliseconds = 100);
@@ -122,6 +146,16 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         void sync(uint32_t syncId, uint64_t delay);
+
+        /**
+         *  Send synchronization message to all players
+         *  @param syncId arbitrary id of the synchronization
+         *  @param delay delay time before sending synchronization message to all players [in milliseconds]
+         *  @param relaible is true then make sure message will reach the server
+         *  @return false if output buffer is full
+         */
+        MULTISLIDER_EXPORT
+        bool sync(uint32_t syncId, uint64_t delay, bool relaible);
 
         /**
          *  Receive and handle incoming messages

@@ -19,6 +19,9 @@ object SessionActor
   val KEEP_ALIVE_INTERVAL = 1000 millisecond
   val KEEP_ALIVE_LIMIT = 10 * KEEP_ALIVE_INTERVAL
 
+  val ACK_HISTORY_SIZE = 32
+  val IDX_WRAP_MODULE = 1024
+
   /**
    * Client data envelop with back address
    */
@@ -28,6 +31,8 @@ object SessionActor
    * Dynamic information for each player
    */
   case class PlayerStatistics(address: InetSocketAddress, updateTimestamp: Long, privateData: String, var lastPingTime: Long)
+
+  case class MessagesSequenceInfo(localSeqIdx: Int, remoteSeqIdx: Int, remoteIdxBits: Long)
 
   /**
    * Data broadcasted for each player
@@ -57,6 +62,8 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
     scala.collection.mutable.HashMap(players.map(name => {name -> null}).toSeq:_*)
 
   var m_shared_stats = PlayerStatistics(null, 0, "", 0)
+
+  var m_seqStats: scala.collection.mutable.HashMap[String, MessagesSequenceInfo] = scala.collection.mutable.HashMap()
 
   var m_state = Waiting
 
@@ -97,6 +104,32 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
     }
   }
 
+  private def checkAcknowlegment(ackIdx: Int, player: String): Boolean = {
+    val opt = m_seqStats.get(player)
+    if(opt.isDefined) {
+      val info = opt.get
+      if(info.remoteSeqIdx == ackIdx){
+        return false
+      }
+      if((ackIdx > info.remoteSeqIdx) && (ackIdx - info.remoteSeqIdx < ACK_HISTORY_SIZE)){
+         m_seqStats.update(player, MessagesSequenceInfo(info.localSeqIdx, ackIdx, info.remoteIdxBits << (ackIdx - info.remoteSeqIdx)))
+         return true
+      }
+      if((IDX_WRAP_MODULE + ackIdx > info.remoteSeqIdx) && (IDX_WRAP_MODULE + ackIdx - info.remoteSeqIdx < ACK_HISTORY_SIZE)){
+        m_seqStats.update(player, MessagesSequenceInfo(info.localSeqIdx, ackIdx, info.remoteIdxBits << (IDX_WRAP_MODULE + ackIdx - info.remoteSeqIdx)))
+        return true
+      }
+      if((ackIdx > info.remoteSeqIdx) && (ackIdx - info.remoteSeqIdx < ACK_HISTORY_SIZE)) {
+        val ackBit = 0x1 << (ackIdx - info.remoteSeqIdx - 1)
+        if (0 == (info.remoteIdxBits & ackBit)) {
+          m_seqStats.update(player, MessagesSequenceInfo(info.localSeqIdx, info.remoteSeqIdx, info.remoteIdxBits | ackBit))
+          return true
+        }
+      }
+    }
+    false
+  }
+
   override def receive = {
     case SignedEnvelop(socket, address, data) =>
       m_logger.info("Got an Envelop message")
@@ -111,6 +144,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                 m_logger.info("Got a Ready message")
                 if (m_stats.contains(playerName)) {
                   m_stats.update(playerName, PlayerStatistics(address, 0, "", System.currentTimeMillis()))
+                  m_seqStats.update(playerName, MessagesSequenceInfo(1, 0, 0))
                   // if no nulls then all players have joined
                   if(!m_stats.values.exists(_ == null)){
                     m_state = Running
@@ -167,11 +201,25 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                     player.get.lastPingTime = System.currentTimeMillis()
                   }
 
-                case RequestSync(_, delay, syncId) =>
+                case RequestSync(playerName, delay, syncId, seqIdx) =>
                   m_logger.info("Got a RequestSync message")
-                  Depot.actorsSystem.scheduler.scheduleOnce(delay milliseconds) {
-                    m_stats.values.foreach( player => if(player != null) socket ! Udp.Send(ByteString(json.Serialization.write(Sync(syncId))), player.address))
-                  } (Depot.actorsSystem.dispatcher)
+                  val scheduleSync = (msgIdx: Int) => {
+                    Depot.actorsSystem.scheduler.scheduleOnce(delay milliseconds) {
+                      m_stats.values.foreach(player => if (player != null) socket ! Udp.Send(ByteString(json.Serialization.write(Sync(syncId, msgIdx))), player.address))
+                    }(Depot.actorsSystem.dispatcher)
+                  }
+                  if (seqIdx < IDX_WRAP_MODULE) {
+                    if(checkAcknowlegment(seqIdx, playerName)) {
+                      // Reliable
+                      val info = m_seqStats.get(playerName).get
+                      m_seqStats.update(playerName, MessagesSequenceInfo(if(info.localSeqIdx < IDX_WRAP_MODULE - 1) info.localSeqIdx + 1 else 0, info.remoteSeqIdx, info.remoteIdxBits))
+                      scheduleSync(info.localSeqIdx)
+                      sender() ! Ack(seqIdx)
+                    } else {
+                      // Simple
+                      scheduleSync(IDX_WRAP_MODULE + 1)
+                    }
+                  }
 
                 case Quit(playerName) =>
                   m_logger.info("Got a Quit message")

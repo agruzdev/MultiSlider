@@ -22,8 +22,22 @@ namespace multislider
 {
     using namespace constants;
 
+    struct MsgInfo
+    {
+        uint32_t seqIdx;
+        uint64_t sentTime;
+        std::string msgData;
+
+        MsgInfo(uint32_t seqIdx, uint64_t sentTime, const std::string & msgData)
+            : seqIdx(seqIdx), sentTime(sentTime), msgData(msgData)
+        { }
+    };
+
+
     //-------------------------------------------------------
     static const size_t RECEIVE_BIFFER_SIZE = 4096;
+    static const size_t MESSSAGES_BUFFER_SIZE = 32;
+    static const size_t IDX_WRAP_MODULO = 1024;
 
     //bool Session::msEnetInited = false;
 
@@ -36,7 +50,8 @@ namespace multislider
     //-------------------------------------------------------
 
     Session::Session(std::string ip, uint16_t port, const std::string & playerName, const std::string & sessionName, uint32_t sessionId)
-        : mServerIp(ip), mServerPort(port), mPlayerName(playerName), mSessionName(sessionName), mSessionId(sessionId), mLastPing(0), mStarted(false)
+        : mServerIp(ip), mServerPort(port), mPlayerName(playerName), mSessionName(sessionName), mSessionId(sessionId), mLastPing(0), mStarted(false),
+          mLocalSeqIdx(1), mRemoteSeqIdx(0), mPreviousIdxBits(0)
     {
         assert(!mServerIp.empty());
         assert(!mPlayerName.empty());
@@ -54,6 +69,14 @@ namespace multislider
             sendUpdDatagram(makeEnvelop(quitJson).write(JSON));
             //mCallback->onQuit(mSessionName, mPlayerName, false);
         }
+    }
+    //-------------------------------------------------------
+
+    uint32_t Session::getNextSeqIdx()
+    {
+        const uint32_t idx = mLocalSeqIdx;
+        mLocalSeqIdx = (mLocalSeqIdx < IDX_WRAP_MODULO - 1) ? mLocalSeqIdx + 1 : 0;
+        return idx;
     }
     //-------------------------------------------------------
 
@@ -170,7 +193,7 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Session::sync(uint32_t syncId, uint64_t delay)
+    bool Session::sync(uint32_t syncId, uint64_t delay, bool reliable)
     {
         if (!mStarted) {
             throw ProtocolError("Session[broadcast]: Session was not started!");
@@ -180,7 +203,27 @@ namespace multislider
         syncJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
         syncJson << MESSAGE_KEY_DELAY << delay;
         syncJson << MESSAGE_KEY_SYNC_ID << syncId;
-        sendUpdDatagram(makeEnvelop(syncJson).write(JSON));
+        if (reliable) {
+            if (mOutputQueue.size() >= MESSSAGES_BUFFER_SIZE) {
+                return false;
+            }
+            uint32_t seqIdx = getNextSeqIdx();
+            syncJson << MESSAGE_KEY_SEQ_INDEX << seqIdx;
+            std::string syncMessage = makeEnvelop(syncJson).write(JSON);
+            mOutputQueue.push_back(shared_ptr<MsgInfo>(new MsgInfo(seqIdx, RakNet::GetTimeMS(), syncMessage)));
+            sendUpdDatagram(syncMessage);
+        }
+        else {
+            syncJson << MESSAGE_KEY_SEQ_INDEX << (IDX_WRAP_MODULO + 1);
+            sendUpdDatagram(makeEnvelop(syncJson).write(JSON));
+        }
+        return true;
+    }
+    //-------------------------------------------------------
+
+    void Session::sync(uint32_t syncId, uint64_t delay)
+    {
+        sync(syncId, delay, false);
     }
     //-------------------------------------------------------
 
@@ -200,7 +243,7 @@ namespace multislider
     {
         uint32_t counter = 0;
         size_t dataLength = 0; 
-        while((dataLength = awaitUdpDatagram(1)) > 0) {
+        while(mStarted && (dataLength = awaitUdpDatagram(1, 1)) > 0) {
             ++counter;
             Object messageJson;
             messageJson.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), dataLength));
@@ -221,21 +264,88 @@ namespace multislider
                 mCallback->onUpdate(mSessionName, mPlayerName, sessionData, messageJson.get<jsonxx::String>(MESSAGE_KEY_SHARED_DATA, ""));
             }
             else if (isMessageClass(messageClass, backend::SYNC)) {
-                mCallback->onSync(mSessionName, mPlayerName, narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SYNC_ID)));
+                const uint32_t seqIdx = narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SEQ_INDEX, 0));
+                if (seqIdx >= IDX_WRAP_MODULO || checkAcknowledgement(seqIdx)) {
+                    mCallback->onSync(mSessionName, mPlayerName, narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SYNC_ID)), false);
+                }
             }
             else if (isMessageClass(messageClass, backend::KEEP_ALIVE)) {
                 mLastPing = RakNet::GetTimeMS();
                 --counter; // KeepAlive messages are 'invisible'
             }
+            else if (isMessageClass(messageClass, backend::ACK)) {
+                const uint32_t ackIdx = narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SEQ_INDEX, 0));
+                checkAcknowledgement(ackIdx);
+            }
             else {
                 throw RuntimeError("Session[receive]: Unknown datagram type!");
             }
         }
-        // Check timeout
-        if ((RakNet::GetTimeMS() - mLastPing) > KEEP_ALIVE_LIMIT) {
-            mCallback->onQuit(mSessionName, mPlayerName, true);
+        if (mStarted) {
+            // Check timeout
+            if ((RakNet::GetTimeMS() - mLastPing) > KEEP_ALIVE_LIMIT) {
+                mCallback->onQuit(mSessionName, mPlayerName, true);
+                mStarted = false;
+            }
+        }
+        if (mStarted) {
+            // Resend messages if necessary
+            const uint64_t currentTime = RakNet::GetTimeMS();
+            for (size_t idx = 0; idx < mOutputQueue.size(); ++idx) {
+                shared_ptr<MsgInfo>& msg = mOutputQueue[idx];
+                if (currentTime - msg->sentTime > RESEND_INTERVAL) {
+                    sendUpdDatagram(msg->msgData);
+                    msg->sentTime = currentTime;
+                }
+            }
         }
         return counter;
+    }
+    //-------------------------------------------------------
+
+    bool Session::checkAcknowledgement(uint32_t ackIdx)
+    {
+        // Same message like before
+        if (ackIdx == mRemoteSeqIdx) {
+            return false;
+        }
+        // Ack is before previous message
+        if ((ackIdx > mRemoteSeqIdx) && (ackIdx - mRemoteSeqIdx < MESSSAGES_BUFFER_SIZE)) {
+            removeAcknowledged(ackIdx);
+            mPreviousIdxBits <<= (ackIdx - mRemoteSeqIdx);
+            mRemoteSeqIdx = ackIdx;
+            return true;
+        }
+        // Ack is before previous message as well but wrapped by modulo 
+        if ((IDX_WRAP_MODULO + ackIdx > mRemoteSeqIdx) && (IDX_WRAP_MODULO + ackIdx - mRemoteSeqIdx) < MESSSAGES_BUFFER_SIZE) {
+            removeAcknowledged(ackIdx);
+            mPreviousIdxBits <<= (IDX_WRAP_MODULO + ackIdx - mRemoteSeqIdx);
+            mRemoteSeqIdx = ackIdx;
+            return true;
+        }
+        // Ack is before previous message
+        if ((ackIdx > mRemoteSeqIdx) && ackIdx - mRemoteSeqIdx < MESSSAGES_BUFFER_SIZE) {
+            const uint32_t ackBit = 0x1 << (ackIdx - mRemoteSeqIdx - 1);
+            if (0 == (mPreviousIdxBits & ackBit)) {
+                // First time message
+                removeAcknowledged(ackIdx);
+                mPreviousIdxBits = mPreviousIdxBits | ackBit;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void Session::removeAcknowledged(uint32_t ackIdx) {
+        size_t idx = 0;
+        for (; idx < mOutputQueue.size(); ++idx) {
+            if (mOutputQueue[idx]->seqIdx == ackIdx) {
+                break;
+            }
+        }
+        if (idx < mOutputQueue.size()) {
+            mOutputQueue.erase(mOutputQueue.begin() + idx);
+        }
     }
     //-------------------------------------------------------
 

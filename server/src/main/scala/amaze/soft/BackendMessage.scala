@@ -31,7 +31,7 @@ object BackendMessage {
    * Request server to send sync message to all players
    * @param delay sync message delay in milliseconds
    */
-  case class RequestSync(playerName: String, delay: Long, syncId: Int) extends JsonMessage
+  case class RequestSync(playerName: String, delay: Long, syncId: Int, seqIdx: Int) extends JsonMessage
 
   /**
    * Quit game session. After the last player quites the session will be destroyed
@@ -59,5 +59,10 @@ object BackendMessage {
   /**
    * Sync message
    */
-  case class Sync(syncId: Int) extends JsonMessage
+  case class Sync(syncId: Int, seqIdx: Int) extends JsonMessage
+
+  /**
+   * Acknowledge for a message
+   */
+  case class Ack(seqIdx: Int) extends JsonMessage
 }
