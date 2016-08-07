@@ -14,6 +14,9 @@ namespace multislider
 {
     namespace constants
     {
+        static const uint32_t VERSION_MAJOR    = 0;
+        static const uint32_t VERSION_MINOR    = 2;
+        static const uint32_t VERSION_REVISION = 1;
 
         static const char RESPONSE_GREET[] = "HALO";
         static const char RESPONSE_SUCC[]  = "SUCC";
@@ -41,18 +44,23 @@ namespace multislider
         static const char MESSAGE_KEY_TIMESTAMP[]    = "timestamp";
         static const char MESSAGE_KEY_DELAY[]        = "delay";
         static const char MESSAGE_KEY_SYNC_ID[]      = "syncId";
-        static const char MESSAGE_KEY_FORCE_BROADCAST[] = "forceBroadcast";
-        static const char MESSAGE_KEY_PLAYERS[]         = "players";
+        static const char MESSAGE_KEY_FORCE_BROADCAST[]  = "forceBroadcast";
+        static const char MESSAGE_KEY_PLAYERS[]          = "players";
         static const char MESSAGE_KEY_PLAYERS_LIMIT[]    = "playersLimit";
         static const char MESSAGE_KEY_PLAYERS_NUMBER[]   = "playersNumber";
         static const char MESSAGE_KEY_PLAYERS_RESERVED[] = "playersReserved";
-        static const char MESSAGE_KEY_USER_PARAM[]      = "userParam";
-        static const char MESSAGE_KEY_SEQ_INDEX[]       = "seqIdx";
+        static const char MESSAGE_KEY_USER_PARAM[]       = "userParam";
+        static const char MESSAGE_KEY_SEQ_INDEX[]        = "seqIdx";
+        static const char MESSAGE_KEY_SERVER_NAME[]      = "serverName";
+        static const char MESSAGE_KEY_VERSION_MAJOR[]    = "verMajor";
+        static const char MESSAGE_KEY_VERSION_MINOR[]    = "verMinor";
+        static const char MESSAGE_KEY_VERSION_REVISION[] = "verRevision";
 
         namespace frontend
         {
             static const char ENVELOP[] = "FrontendMessage$Envelop";
 
+            // Outcoming
             static const char CREATE_ROOM[]   = "FrontendMessage$CreateRoom";
             static const char GET_ROOMS[]     = "FrontendMessage$GetRooms";
 
@@ -62,10 +70,13 @@ namespace multislider
             static const char JOIN_ROOM[]     = "FrontendMessage$JoinRoom";
             static const char LEAVE_ROOM[]    = "FrontendMessage$LeaveRoom";
 
+            // Incoming
             static const char BROADCAST[]       = "FrontendMessage$Update";
             static const char EJECTED[]         = "FrontendMessage$Ejected";
             static const char START_SESSION[]   = "FrontendMessage$StartSession";
             static const char SESSION_STARTED[] = "FrontendMessage$SessionStarted";
+
+            static const char GREETING[]      = "FrontendMessage$Greeting";
         }
 
         namespace backend

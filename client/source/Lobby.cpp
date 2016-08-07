@@ -58,9 +58,25 @@ namespace multislider
         if (*mServerAddress == UNASSIGNED_SYSTEM_ADDRESS) {
             throw NetworkError("Lobby[Lobby]: Failed to connect to server");
         }
-        if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_GREET)) {
+
+        shared_ptr<Packet> packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
+        if (packet == NULL) {
+            throw ProtocolError("Lobby[Lobby]: No responce from the server");
+        }
+        Object messageJson;
+        messageJson.parse(std::string(pointer_cast<char*>(packet->data), packet->length));
+        std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
+        if (isMessageClass(messageClass, frontend::GREETING)) {
+            const uint32_t verMajor = narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(constants::MESSAGE_KEY_VERSION_MAJOR, 0));
+            const uint32_t verMinor = narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(constants::MESSAGE_KEY_VERSION_MINOR, 0));
+            if ((verMajor != constants::VERSION_MAJOR) || (verMinor != constants::VERSION_MINOR)) {
+                throw ProtocolError("Lobby[Lobby]: Server version mismatch!");
+            }
+        }
+        else {
             throw ProtocolError("Lobby[Lobby]: Unrecognized greeting");
         }
+
         mUpdSocket.reset(new UdpSocket);
         mReceiveBuffer.resize(RECEIVE_BIFFER_SIZE);
     }
@@ -318,7 +334,7 @@ namespace multislider
             }
             Object messageJson;
             messageJson.parse(std::string(pointer_cast<char*>(packet->data), packet->length));
-            std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS));
+            std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
             if (isMessageClass(messageClass, frontend::BROADCAST)) {
                 std::string message = messageJson.get<std::string>(constants::MESSAGE_KEY_DATA, "");
                 if (mMyRoom.deserialize(messageJson.get<Object>(constants::MESSAGE_KEY_ROOM, Object()))) {
@@ -337,6 +353,9 @@ namespace multislider
             else if (isMessageClass(messageClass, frontend::EJECTED)) {
                 mCallback->onLeft(this, mMyRoom, mPlayerName, narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));
                 mIsJoined = false;
+            }
+            else {
+                throw ProtocolError("Lobby[receive]: Unknown message type");
             }
             ++counter;
         }

@@ -65,6 +65,13 @@ object FrontendMessage {
    */
   case class StartSession() extends JsonMessage
 
+  //---------------------------------------------------------
+  // Outgoing messages
+
+  /**
+   * Greeting message with server information
+   */
+  case class Greeting(serverName: String, verMajor: Int, verMinor: Int, verRevision: Int) extends JsonMessage
 
   /**
    * Sent when session is created

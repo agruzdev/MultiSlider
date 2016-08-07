@@ -5,7 +5,7 @@ import java.net.InetSocketAddress
 import akka.actor._
 import akka.io.{IO, Tcp, Udp}
 import akka.util.ByteString
-import amaze.soft.FrontendMessage.{GetRooms, JsonMessage}
+import amaze.soft.FrontendMessage.{Greeting, GetRooms, JsonMessage}
 import net.liftweb.json
 import net.liftweb.json.{DefaultFormats, ShortTypeHints}
 import org.slf4j.LoggerFactory
@@ -40,7 +40,7 @@ object Frontend extends App {
 class Frontend extends Actor {
   import Frontend._
 
-  private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(classOf[GetRooms])))
+  private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(classOf[GetRooms], classOf[Greeting])))
 
   m_logger.info("Frontend is created!")
   IO(Tcp)(Depot.actorsSystem) ! Tcp.Bind(self, new InetSocketAddress(Depot.ip_address, Depot.port_frontend))
@@ -71,7 +71,8 @@ class Frontend extends Actor {
         m_logger.info("Clients number = " + m_clientsCounter)
         val handler = context.actorOf(Props(classOf[Client]))
         client ! Tcp.Register(handler)
-        client ! Tcp.Write(ByteString(Constants.RESPONCE_GREETINGS))
+        client ! Tcp.Write(ByteString(json.Serialization.write(
+          Greeting(Constants.DEFAULT_NAME, Constants.VERSION_MAJOR, Constants.VERSION_MINOR, Constants.VERSION_REVISION))))
       } else {
         client ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK_IS_FULL))
         client ! Tcp.Close

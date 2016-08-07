@@ -8,6 +8,13 @@ import scala.concurrent.duration._
  * Copyright (c) 2016 Alexey Gruzdev
  */
 object Constants {
+
+  val DEFAULT_NAME = "MultiSlider"
+
+  val VERSION_MAJOR = 0
+  val VERSION_MINOR = 2
+  val VERSION_REVISION = 1
+
   val RESPONCE_GREETINGS = "HALO"
   val RESPONSE_SUCC = "SUCC"
   val RESPONSE_SUCK = "SUCK"
