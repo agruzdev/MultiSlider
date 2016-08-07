@@ -64,6 +64,7 @@ namespace multislider
         const std::string mSessionName;
         const uint32_t mSessionId;
         SessionCallback* mCallback;
+        uint64_t mLastTimestamp;
         uint64_t mLastPing;
         bool mStarted;
 
@@ -95,6 +96,9 @@ namespace multislider
 
         // Removes acknowledged package from an output buffer
         void removeAcknowledged(uint32_t ackIdx);
+
+        // Update current ping
+        void updatePing();
 
         /*
          *  Returns datagram length

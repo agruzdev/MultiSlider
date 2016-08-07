@@ -212,9 +212,13 @@ public:
                 }
                 std::this_thread::sleep_for(std::chrono::seconds(1));
 
+                std::cout << "ping = " + std::to_string(gClientSession->getLastPing()) + "\n";
+
                 gClientSession->broadcast("ForcedData", true);
                 while (0 == gClientSession->receive()) 
                 { }
+
+                std::cout << "ping = " + std::to_string(gClientSession->getLastPing()) + "\n";
             }
             gFlagFinish = true;
             gCvFinish.notify_one();

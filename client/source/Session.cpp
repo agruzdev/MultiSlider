@@ -50,7 +50,7 @@ namespace multislider
     //-------------------------------------------------------
 
     Session::Session(std::string ip, uint16_t port, const std::string & playerName, const std::string & sessionName, uint32_t sessionId)
-        : mServerIp(ip), mServerPort(port), mPlayerName(playerName), mSessionName(sessionName), mSessionId(sessionId), mLastPing(0), mStarted(false),
+        : mServerIp(ip), mServerPort(port), mPlayerName(playerName), mSessionName(sessionName), mSessionId(sessionId), mLastPing(0), mLastTimestamp(0), mStarted(false),
           mLocalSeqIdx(1), mRemoteSeqIdx(0), mPreviousIdxBits(0)
     {
         assert(!mServerIp.empty());
@@ -104,6 +104,14 @@ namespace multislider
     }
     //-------------------------------------------------------
 
+    void Session::updatePing()
+    {
+        uint64_t currTime = RakNet::GetTimeMS();
+        mLastPing = currTime - mLastTimestamp;
+        mLastTimestamp = currTime;
+    }
+    //-------------------------------------------------------
+
     void Session::startup(SessionCallback* callback, uint64_t timeout)
     {
         if (callback == NULL) {
@@ -148,7 +156,7 @@ namespace multislider
                 if (isMessageClass(messageClass, backend::START)) {
                     mStarted = true;
                     mCallback->onStart(mSessionName, mPlayerName);
-                    mLastPing = RakNet::GetTimeMS();
+                    updatePing();
                     return;
                 }
             }
@@ -162,7 +170,7 @@ namespace multislider
             if (isMessageClass(messageClass, backend::START)) {
                 mStarted = true;
                 mCallback->onStart(mSessionName, mPlayerName);
-                mLastPing = RakNet::GetTimeMS();
+                updatePing();
                 return;
             }
         }
@@ -249,9 +257,11 @@ namespace multislider
             messageJson.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), dataLength));
             std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
             if (isMessageClass(messageClass, backend::START)) {
+                updatePing();
                 mCallback->onStart(mSessionName, mPlayerName);
             }
             else if (isMessageClass(messageClass, backend::STATE)) {
+                updatePing();
                 Array sessionDataJson;
                 std::string dataJson = messageJson.get<std::string>(MESSAGE_KEY_DATA);
                 sessionDataJson.parse(dataJson);
@@ -266,16 +276,19 @@ namespace multislider
             else if (isMessageClass(messageClass, backend::SYNC)) {
                 const uint32_t seqIdx = narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SEQ_INDEX, 0));
                 if (seqIdx >= IDX_WRAP_MODULO || checkAcknowledgement(seqIdx)) {
+                    updatePing();
                     mCallback->onSync(mSessionName, mPlayerName, narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SYNC_ID)), false);
                 }
             }
             else if (isMessageClass(messageClass, backend::KEEP_ALIVE)) {
-                mLastPing = RakNet::GetTimeMS();
+                updatePing();
                 --counter; // KeepAlive messages are 'invisible'
             }
             else if (isMessageClass(messageClass, backend::ACK)) {
                 const uint32_t ackIdx = narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SEQ_INDEX, 0));
-                checkAcknowledgement(ackIdx);
+                if (checkAcknowledgement(ackIdx)) {
+                    updatePing();
+                }
             }
             else {
                 throw RuntimeError("Session[receive]: Unknown datagram type!");
@@ -283,7 +296,7 @@ namespace multislider
         }
         if (mStarted) {
             // Check timeout
-            if ((RakNet::GetTimeMS() - mLastPing) > KEEP_ALIVE_LIMIT) {
+            if ((RakNet::GetTimeMS() - mLastTimestamp) > KEEP_ALIVE_LIMIT) {
                 mCallback->onQuit(mSessionName, mPlayerName, true);
                 mStarted = false;
             }
