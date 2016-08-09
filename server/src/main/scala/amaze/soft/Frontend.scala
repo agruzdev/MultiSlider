@@ -5,7 +5,7 @@ import java.net.InetSocketAddress
 import akka.actor._
 import akka.io.{IO, Tcp, Udp}
 import akka.util.ByteString
-import amaze.soft.FrontendMessage.{Greeting, GetRooms, JsonMessage}
+import amaze.soft.FrontendMessage.{GetRooms, Greeting, JsonMessage}
 import net.liftweb.json
 import net.liftweb.json.{DefaultFormats, ShortTypeHints}
 import org.slf4j.LoggerFactory
@@ -34,6 +34,11 @@ object Frontend extends App {
 
   Depot.frontend = Depot.actorsSystem.actorOf(Props[Frontend], Constants.FRONTEND_NAME)
   Depot.backend  = Depot.actorsSystem.actorOf(Props(classOf[Backend], Depot.ip_address, Depot.port_backend), Constants.BACKEND_NAME)
+
+  Depot.dogapi = Depot.actorsSystem.actorOf(Props[DogApi], Constants.DOG_API_NAME)
+  //val address = Address("akka.tcp", Depot.actorsSystem.name, Constants.DOG_API_NAME, 8600)
+  //Depot.dogapi = Depot.actorsSystem.actorOf(Props[DogApi].withDeploy(Deploy(scope = RemoteScope(address))), Constants.DOG_API_NAME)
+  //m_logger.info("API = " + Depot.dogapi.path)
 }
 
 

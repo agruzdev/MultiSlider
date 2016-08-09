@@ -28,6 +28,7 @@ object Constants {
 
   val FRONTEND_NAME = "MultiSlider:Frontend"
   val BACKEND_NAME = "MultiSlider:Backend"
+  val DOG_API_NAME = "MultiSlider:DogApi"
 
   val MESSAGE_ENCODING = "UTF-8"
 

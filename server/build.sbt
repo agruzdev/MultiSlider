@@ -12,7 +12,10 @@ enablePlugins(JavaAppPackaging)
 libraryDependencies += "org.scala-lang" % "scala-library" % "2.11.8"
 
 // http://mvnrepository.com/artifact/com.typesafe.akka/akka-actor_2.11
-libraryDependencies += "com.typesafe.akka" % "akka-actor_2.11" % "2.4.5"
+libraryDependencies += "com.typesafe.akka" % "akka-actor_2.11" % "2.3.6"
+
+// https://mvnrepository.com/artifact/com.typesafe.akka/akka-remote_2.11
+libraryDependencies += "com.typesafe.akka" % "akka-remote_2.11" % "2.3.6"
 
 // http://mvnrepository.com/artifact/org.slf4j/slf4j-api
 libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.16"

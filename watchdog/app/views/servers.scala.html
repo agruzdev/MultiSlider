@@ -1,0 +1,42 @@
+@import controllers.Application.ServerInfo
+
+@(servers: List[ServerInfo])
+
+@main_template("Servers", null){
+
+    <h3>
+        Servers:
+    </h3>
+    <br>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th class="col-md-3">Name</th>
+                <th class="col-md-2">API Version</th>
+                <th class="col-md-2">Status</th>
+                <th class="col-md-2"> </th>
+            </tr>
+        </thead>
+        <tbody>
+            @for(server <- servers) {
+                <tr class="active">
+                    <td><h4>@server.name</h4></td>
+                    <td><h4>@server.version</h4></td>
+                    <td>
+                        @if(server.online) {
+                            <h4><span class="label label-success">Online</span></h4>
+                        } else {
+                            <h4><span class="label label-danger">Offline</span></h4>
+                        }
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-default @if(!server.online){ disabled }">Kill</button>
+                        <button type="button" class="btn btn-default">Restart</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+}

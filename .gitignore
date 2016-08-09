@@ -1,3 +1,4 @@
+*.iml
 /server/.idea/*
 /server/project/target/*
 /server/project/project/*
@@ -5,3 +6,7 @@
 /server/multislider-log.txt
 /client/build/*
 /sample/build/*
+/watchdog/.idea
+/watchdog/logs/*
+/watchdog/target/*
+/watchdog/project/*

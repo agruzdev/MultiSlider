@@ -3,6 +3,7 @@ package amaze.soft
 import java.util
 
 import akka.actor.{ActorRef, ActorSystem}
+import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
 /**
@@ -29,11 +30,12 @@ object Depot {
   // Max number of lobbies can be created
   val LOBBIES_MAX_NUMBER = 256
 
-  val actorsSystem = ActorSystem("MultiSliderActors")
+  val actorsSystem = ActorSystem("MultiSliderActors", ConfigFactory.load("akka.conf"))
   m_logger.info("Actors system is created!")
 
   var frontend: ActorRef = null
   var backend:  ActorRef = null
+  var dogapi:   ActorRef = null
 
   var ip_address = ""
   var port_frontend = 0
