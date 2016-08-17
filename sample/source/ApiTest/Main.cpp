@@ -35,7 +35,7 @@ public:
     {
         std::string msg = std::string("SessionCallback[") + playerName + "]: Got session state (" + sessionName + ")\n";
         for (auto & entry : data) {
-            msg += entry.first + " -> " + entry.second + "\n";
+            msg += entry.first + " -> " + entry.second.data + " at time " + std::to_string(entry.second.timestamp) + "\n";
         }
         msg += std::string("_shared_ -> ") + sharedData + "\n";
         std::cout << msg;

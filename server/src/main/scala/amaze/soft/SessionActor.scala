@@ -37,7 +37,7 @@ object SessionActor
   /**
    * Data broadcasted for each player
    */
-  case class PlayerData(name: String, data: String)
+  case class PlayerData(name: String, data: String, timestamp: Long)
 
   object State extends Enumeration
   {
@@ -77,7 +77,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
     classOf[Ready], classOf[Start], classOf[Update], classOf[SessionState], classOf[Quit], classOf[RequestSync], classOf[Sync], classOf[KeepAlive])))
 
   private def gatherSessionData(): String = {
-    json.Serialization write (m_stats.map{case (name, stats) => PlayerData(name, if(stats != null) stats.privateData else "")} toList)
+    json.Serialization write (m_stats.map{case (name, stats) => PlayerData(name, if(stats != null) stats.privateData else "", stats.updateTimestamp)} toList)
   }
 
   private def checkConnection() = {

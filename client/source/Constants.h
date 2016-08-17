@@ -15,8 +15,8 @@ namespace multislider
     namespace constants
     {
         static const uint32_t VERSION_MAJOR    = 0;
-        static const uint32_t VERSION_MINOR    = 2;
-        static const uint32_t VERSION_REVISION = 2;
+        static const uint32_t VERSION_MINOR    = 3;
+        static const uint32_t VERSION_REVISION = 0;
 
         static const char RESPONSE_GREET[] = "HALO";
         static const char RESPONSE_SUCC[]  = "SUCC";
@@ -25,25 +25,25 @@ namespace multislider
         static const char RESPONSE_ROOM_EXISTS[]  = "ROOM";
         static const char RESPONSE_NAME_EXISTS[]  = "NAME";
 
-        static const char MESSAGE_KEY_CLASS[]        = "jsonClass";
-        static const char MESSAGE_KEY_PLAYER_NAME[]  = "playerName";
-        static const char MESSAGE_KEY_ROOM[]         = "room";
-        static const char MESSAGE_KEY_ROOM_NAME[]    = "roomName";
-        static const char MESSAGE_KEY_ROOM_DESC[]    = "description";
-        static const char MESSAGE_KEY_DATA[]         = "data";
-        static const char MESSAGE_KEY_SHARED_DATA[]  = "sharedData";
-        static const char MESSAGE_KEY_TO_SELF[]      = "toSelf";
-        static const char MESSAGE_KEY_ADDRESS[]      = "address";
-        static const char MESSAGE_KEY_IP[]           = "ip";
-        static const char MESSAGE_KEY_PORT[]         = "port";
-        static const char MESSAGE_KEY_HOST[]         = "host";
-        static const char MESSAGE_KEY_NAME[]         = "name";
-        static const char MESSAGE_KEY_FLAGS[]        = "flags";
-        static const char MESSAGE_KEY_ID[]           = "id";
-        static const char MESSAGE_KEY_SESSION_ID[]   = "sessionId";
-        static const char MESSAGE_KEY_TIMESTAMP[]    = "timestamp";
-        static const char MESSAGE_KEY_DELAY[]        = "delay";
-        static const char MESSAGE_KEY_SYNC_ID[]      = "syncId";
+        static const char MESSAGE_KEY_CLASS[]            = "jsonClass";
+        static const char MESSAGE_KEY_PLAYER_NAME[]      = "playerName";
+        static const char MESSAGE_KEY_ROOM[]             = "room";
+        static const char MESSAGE_KEY_ROOM_NAME[]        = "roomName";
+        static const char MESSAGE_KEY_ROOM_DESC[]        = "description";
+        static const char MESSAGE_KEY_DATA[]             = "data";
+        static const char MESSAGE_KEY_SHARED_DATA[]      = "sharedData";
+        static const char MESSAGE_KEY_TO_SELF[]          = "toSelf";
+        static const char MESSAGE_KEY_ADDRESS[]          = "address";
+        static const char MESSAGE_KEY_IP[]               = "ip";
+        static const char MESSAGE_KEY_PORT[]             = "port";
+        static const char MESSAGE_KEY_HOST[]             = "host";
+        static const char MESSAGE_KEY_NAME[]             = "name";
+        static const char MESSAGE_KEY_FLAGS[]            = "flags";
+        static const char MESSAGE_KEY_ID[]               = "id";
+        static const char MESSAGE_KEY_SESSION_ID[]       = "sessionId";
+        static const char MESSAGE_KEY_TIMESTAMP[]        = "timestamp";
+        static const char MESSAGE_KEY_DELAY[]            = "delay";
+        static const char MESSAGE_KEY_SYNC_ID[]          = "syncId";
         static const char MESSAGE_KEY_FORCE_BROADCAST[]  = "forceBroadcast";
         static const char MESSAGE_KEY_PLAYERS[]          = "players";
         static const char MESSAGE_KEY_PLAYERS_LIMIT[]    = "playersLimit";

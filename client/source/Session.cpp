@@ -35,7 +35,7 @@ namespace multislider
 
 
     //-------------------------------------------------------
-    static const size_t RECEIVE_BIFFER_SIZE = 4096;
+    static const size_t RECEIVE_BIFFER_SIZE = 4096 * 4;
     static const size_t MESSSAGES_BUFFER_SIZE = 32;
     static const size_t IDX_WRAP_MODULO = 1024;
 
@@ -269,7 +269,7 @@ namespace multislider
                 std::string shared;
                 for (size_t i = 0; i < sessionDataJson.size(); ++i) {
                     Object entry = sessionDataJson.get<Object>(i);
-                    sessionData[entry.get<std::string>(MESSAGE_KEY_NAME)] = entry.get<std::string>(MESSAGE_KEY_DATA);
+                    sessionData[entry.get<std::string>(MESSAGE_KEY_NAME)] = { entry.get<jsonxx::String>(MESSAGE_KEY_DATA), static_cast<uint64_t>(entry.get<jsonxx::Number>(MESSAGE_KEY_TIMESTAMP, 0)) };
                 }
                 mCallback->onUpdate(mSessionName, mPlayerName, sessionData, messageJson.get<jsonxx::String>(MESSAGE_KEY_SHARED_DATA, ""));
             }

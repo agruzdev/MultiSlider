@@ -23,7 +23,13 @@ namespace multislider
 {
     class UdpSocket;
 
-    typedef std::map<std::string, std::string> SessionData;
+    struct PrivateData
+    {
+        std::string data;
+        uint64_t timestamp;
+    };
+
+    typedef std::map<std::string, PrivateData> SessionData;
 
     class SessionCallback
     {
