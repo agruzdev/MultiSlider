@@ -167,6 +167,14 @@ namespace multislider
         {
             return mIsHost;
         }
+
+        /**
+         * Get name of the current player
+         */
+        const std::string & getPlayerName() const 
+        {
+            return mPlayerName;
+        }
     };
 
 }

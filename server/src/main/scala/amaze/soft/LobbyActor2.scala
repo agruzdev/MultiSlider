@@ -114,7 +114,7 @@ class LobbyActor2() extends Actor {
               if(player.isDefined){
                 ejectPlayer(player.get, Constants.FLAG_EJECTED)
                 m_players -= player.get
-                self forward FrontendMessage.Update(makeRoomInfo(), "", toSelf = true, Constants.FLAG_LEFT)
+                self forward FrontendMessage.Update(makeRoomInfo(), "", getHost.name, toSelf = true, Constants.FLAG_LEFT)
               }
             }
 
@@ -132,11 +132,11 @@ class LobbyActor2() extends Actor {
           sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))
       }
 
-    case Update(_, data, toSelf, flags) =>
+    case Update(_, data, senderName, toSelf, flags) =>
       m_logger.info("Got a Update message!")
       m_players.foreach{player =>
         if(toSelf || player.actor != sender()){
-          player.actor ! Tcp.Write(ByteString(json.Serialization.write(Update(makeRoomInfo(), data, toSelf, flags))))
+          player.actor ! Tcp.Write(ByteString(json.Serialization.write(Update(makeRoomInfo(), data, senderName, toSelf, flags))))
         }
       }
 
@@ -151,7 +151,7 @@ class LobbyActor2() extends Actor {
           Depot.updateRoomInfo(m_name, room)
           sender() ! Tcp.Write(ByteString(json.Serialization.write(room)))
           // Notify all other players
-          self forward FrontendMessage.Update(room, "", toSelf = false, Constants.FLAG_JOINED)
+          self forward FrontendMessage.Update(room, "", getHost.name, toSelf = false, Constants.FLAG_JOINED)
         } else {
           sender() ! Tcp.Write(ByteString(Constants.RESPONSE_NAME_EXISTS))
         }
@@ -170,7 +170,7 @@ class LobbyActor2() extends Actor {
       if(m_players.nonEmpty) {
         Depot.updateRoomInfo(m_name, makeRoomInfo())
         // Notify all other players
-        self forward FrontendMessage.Update(makeRoomInfo(), "", toSelf = false,
+        self forward FrontendMessage.Update(makeRoomInfo(), "", getHost.name, toSelf = false,
           Constants.FLAG_LEFT | (if (newHost) Constants.FLAG_NEW_HOST else 0))
         if(newHost){
           m_logger.info("New host! name = " + getHost.name)

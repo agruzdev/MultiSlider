@@ -34,6 +34,7 @@ namespace multislider
         static const char MESSAGE_KEY_SHARED_DATA[]      = "sharedData";
         static const char MESSAGE_KEY_TO_SELF[]          = "toSelf";
         static const char MESSAGE_KEY_ADDRESS[]          = "address";
+        static const char MESSAGE_KEY_SENDER[]           = "sender";
         static const char MESSAGE_KEY_IP[]               = "ip";
         static const char MESSAGE_KEY_PORT[]             = "port";
         static const char MESSAGE_KEY_HOST[]             = "host";

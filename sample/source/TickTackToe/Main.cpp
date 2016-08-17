@@ -295,12 +295,12 @@ class Controller
     //-------------------------------------------------------
     // Lobby callback
 
-    void onJoined(Lobby* lobby, const RoomInfo & room, const std::string & playerName) override
+    void onJoined(Lobby* lobby, const RoomInfo & room) override
     {
         drawRoomScreen(room, lobby->isHost());
     }
 
-    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & playerName, const std::string & message, uint8_t flags) override
+    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & sender, const std::string & message, uint8_t flags) override
     {
         const bool isHost = lobby->isHost();
         if (!message.empty()) {
@@ -324,7 +324,7 @@ class Controller
         }
     }
 
-    void onSessionStart(Lobby* lobby, const RoomInfo & room, const std::string & playerName, SessionPtr session) override
+    void onSessionStart(Lobby* lobby, const RoomInfo & room, SessionPtr session) override
     {
         mSession = session;
         mSession->startup(this, 5 * 1000);

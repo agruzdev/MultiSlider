@@ -29,25 +29,25 @@ namespace multislider
          *  Player has joined the room
          *  Is called immediately for host after creating room and for client after join request
          */
-        virtual void onJoined(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*playerName*/)
+        virtual void onJoined(Lobby* /*lobby*/, const RoomInfo & /*room*/)
         { }
 
         /**
          *  Player left the room
          */
-        virtual void onLeft(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*playerName*/, uint8_t /*flags*/)
+        virtual void onLeft(Lobby* /*lobby*/, const RoomInfo & /*room*/, uint8_t /*flags*/)
         { }
 
         /**
          *  Is called for each broadcast message
          */
-        virtual void onBroadcast(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*playerName*/, const std::string & /*message*/, uint8_t /*flags*/)
+        virtual void onBroadcast(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*sender*/, const std::string & /*message*/, uint8_t /*flags*/)
         { }
 
         /**
          *  Is called as soon as a host has started a session
          */
-        virtual void onSessionStart(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*playerName*/, SessionPtr /*session*/)
+        virtual void onSessionStart(Lobby* /*lobby*/, const RoomInfo & /*room*/, SessionPtr /*session*/)
         { }
     };
 

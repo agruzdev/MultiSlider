@@ -145,7 +145,7 @@ namespace multislider
         }
         mPlayerName = playerName;
         mCallback = callback;
-        mCallback->onJoined(this, mMyRoom, mPlayerName);
+        mCallback->onJoined(this, mMyRoom);
         mIsJoined = true;
         mIsHost = true;
         return SUCCESS;
@@ -242,7 +242,7 @@ namespace multislider
         // Ok
         mPlayerName = playerName;
         mCallback = callback;
-        mCallback->onJoined(this, mMyRoom, mPlayerName);
+        mCallback->onJoined(this, mMyRoom);
         mIsJoined = true;
         mIsHost = false;
         return SUCCESS;
@@ -261,7 +261,7 @@ namespace multislider
         //if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_SUCC)) {
         //    throw ServerError("Client[Client]: Failed to leave a room");
         //}
-        mCallback->onLeft(this, mMyRoom, mPlayerName, 0);
+        mCallback->onLeft(this, mMyRoom, 0);
         mIsJoined = false;
     }
     //-------------------------------------------------------
@@ -314,6 +314,7 @@ namespace multislider
         broadcastJson << MESSAGE_KEY_CLASS << frontend::BROADCAST;
         broadcastJson << MESSAGE_KEY_ROOM << jsonxx::Null();
         broadcastJson << MESSAGE_KEY_DATA << data;
+        broadcastJson << MESSAGE_KEY_SENDER << mPlayerName;
         broadcastJson << MESSAGE_KEY_TO_SELF << toSelf;
         broadcastJson << MESSAGE_KEY_FLAGS << 0;
         std::string broadcastMessage = makeEnvelop(broadcastJson).write(JSON);
@@ -338,7 +339,7 @@ namespace multislider
             if (isMessageClass(messageClass, frontend::BROADCAST)) {
                 std::string message = messageJson.get<std::string>(constants::MESSAGE_KEY_DATA, "");
                 if (mMyRoom.deserialize(messageJson.get<Object>(constants::MESSAGE_KEY_ROOM, Object()))) {
-                    mCallback->onBroadcast(this, mMyRoom, mPlayerName, message, narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));
+                    mCallback->onBroadcast(this, mMyRoom, messageJson.get<jsonxx::String>(MESSAGE_KEY_SENDER), message, narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));
                 }
             }
             else if (isMessageClass(messageClass, frontend::SESSION_STARTED)) {
@@ -348,10 +349,10 @@ namespace multislider
                     mPlayerName,
                     messageJson.get<jsonxx::String>(MESSAGE_KEY_NAME, ""),
                     narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 0.0))), details::SessionDeleter());
-                mCallback->onSessionStart(this, mMyRoom, mPlayerName, session);
+                mCallback->onSessionStart(this, mMyRoom, session);
             }
             else if (isMessageClass(messageClass, frontend::EJECTED)) {
-                mCallback->onLeft(this, mMyRoom, mPlayerName, narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));
+                mCallback->onLeft(this, mMyRoom, narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));
                 mIsJoined = false;
             }
             else {

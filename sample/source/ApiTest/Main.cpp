@@ -64,25 +64,25 @@ class CallbackSample
     : public Lobby::Callback
 {
 public:
-    void onJoined(Lobby* lobby, const RoomInfo & room, const std::string & playerName) override
+    void onJoined(Lobby* lobby, const RoomInfo & room) override
     {
-        std::cout << std::string("[") + playerName + "]: I joined the room \"" + room.getName() + "\"!\n";
+        std::cout << std::string("[") + lobby->getPlayerName() + "]: I joined the room \"" + room.getName() + "\"!\n";
     }
 
-    void onLeft(Lobby* lobby, const RoomInfo & room, const std::string & playerName, uint8_t flags) override
+    void onLeft(Lobby* lobby, const RoomInfo & room, uint8_t flags) override
     {
-        std::cout << std::string("[") + playerName + "]: I left the room \"" + room.getName() + "\"!\n";
+        std::cout << std::string("[") + lobby->getPlayerName() + "]: I left the room \"" + room.getName() + "\"!\n";
     }
 
-    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & playerName, const std::string & message, uint8_t flags) override
+    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & sender, const std::string & message, uint8_t flags) override
     {
-        std::cout << std::string("[") + playerName + "]: got broadcast message \"" + message + "\" [flags = " + std::to_string(flags) + "]\n";
+        std::cout << std::string("[") + lobby->getPlayerName() + "]: got broadcast message \"" + message + "\" [from \"" + sender + "\" flags = " + std::to_string(flags) + "]\n";
     }
 
-    void onSessionStart(Lobby* lobby, const RoomInfo & room, const std::string & playerName, SessionPtr session) override
+    void onSessionStart(Lobby* lobby, const RoomInfo & room, SessionPtr session) override
     {
-        std::cout << std::string("[") + playerName + "]: session is started!\n";
-        if (playerName == room.getHostName()) {
+        std::cout << std::string("[") + lobby->getPlayerName() + "]: session is started!\n";
+        if (lobby->getPlayerName() == room.getHostName()) {
             gHostSession = session;
         }
         else {
