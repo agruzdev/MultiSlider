@@ -31,13 +31,13 @@ public:
         std::cout << std::string("SessionCallback[") + playerName + "]: Started session " + sessionName + "\n";
     }
 
-    void onUpdate(const std::string & sessionName, const std::string & playerName, const SessionData & data, const std::string & sharedData) override
+    void onUpdate(const std::string & sessionName, const std::string & playerName, const SessionData & data, const PlayerData & sharedData) override
     {
         std::string msg = std::string("SessionCallback[") + playerName + "]: Got session state (" + sessionName + ")\n";
         for (auto & entry : data) {
             msg += entry.first + " -> " + entry.second.data + " at time " + std::to_string(entry.second.timestamp) + "\n";
         }
-        msg += std::string("_shared_ -> ") + sharedData + "\n";
+        msg += std::string("_shared_ -> ") + sharedData.data + " at time " + std::to_string(sharedData.timestamp) + "\n";
         std::cout << msg;
     }
 

@@ -348,11 +348,11 @@ class Controller
         });
     }
 
-    void onUpdate(const std::string & sessionName, const std::string & playerName, const SessionData & data, const std::string & sharedData) override
+    void onUpdate(const std::string & sessionName, const std::string & playerName, const SessionData & data, const PlayerData & sharedData) override
     {
         std::string field;
         uint32_t turn;
-        std::tie(field, turn) = parseMessage(sharedData);
+        std::tie(field, turn) = parseMessage(sharedData.data);
 
         const bool isHost = mLobby->isHost();
         const bool hostTurn = (turn % 2 == 0);

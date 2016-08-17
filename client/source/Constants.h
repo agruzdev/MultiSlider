@@ -43,6 +43,7 @@ namespace multislider
         static const char MESSAGE_KEY_ID[]               = "id";
         static const char MESSAGE_KEY_SESSION_ID[]       = "sessionId";
         static const char MESSAGE_KEY_TIMESTAMP[]        = "timestamp";
+        static const char MESSAGE_KEY_SHARED_TIMESTAMP[] = "sharedTimestamp";
         static const char MESSAGE_KEY_DELAY[]            = "delay";
         static const char MESSAGE_KEY_SYNC_ID[]          = "syncId";
         static const char MESSAGE_KEY_FORCE_BROADCAST[]  = "forceBroadcast";

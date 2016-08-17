@@ -186,9 +186,9 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                         m_shared_stats = PlayerStatistics(null, timestamp, sharedData, 0)
                       }
                       if(forceBroadcast) {
-                        m_stats.values.foreach( stat => socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData(), m_shared_stats.privateData))), stat.address))
+                        m_stats.values.foreach( stat => socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData(), m_shared_stats.privateData, m_shared_stats.updateTimestamp))), stat.address))
                       }else {
-                        socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData(), m_shared_stats.privateData))), address)
+                        socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData(), m_shared_stats.privateData, m_shared_stats.updateTimestamp))), address)
                       }
                     } else {
                       m_logger.info("[Running] Got outdated Update message")

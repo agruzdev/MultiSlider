@@ -23,13 +23,13 @@ namespace multislider
 {
     class UdpSocket;
 
-    struct PrivateData
+    struct PlayerData
     {
         std::string data;
         uint64_t timestamp;
     };
 
-    typedef std::map<std::string, PrivateData> SessionData;
+    typedef std::map<std::string, PlayerData> SessionData;
 
     class SessionCallback
     {
@@ -44,7 +44,7 @@ namespace multislider
         /**
          *  Is called as soon as server responsed broadcast message
          */
-        virtual void onUpdate(const std::string & /*sessionName*/, const std::string & /*playerName*/, const SessionData & /*data*/, const std::string & /*sharedData*/) { }
+        virtual void onUpdate(const std::string & /*sessionName*/, const std::string & /*playerName*/, const SessionData & /*data*/, const PlayerData & /*sharedData*/) { }
 
         /**
          *  Is called as soon as synchronization message is got
