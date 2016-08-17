@@ -110,6 +110,13 @@ namespace multislider
          *  Returns datagram length
          */
         size_t awaitUdpDatagram(uint64_t timeoutMilliseconds, uint32_t attemptsTimeoutMilliseconds = 100);
+
+        // No copy
+        Session(const Session&);
+
+        // No assign
+        Session& operator = (const Session&);
+
         //-------------------------------------------------------
 
     public:
