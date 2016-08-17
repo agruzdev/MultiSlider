@@ -5,7 +5,8 @@
 # Home page
 GET        /                    controllers.Application.index
 GET        /kill/:id            controllers.Application.kill(id: Int)
-GET        /run/:id            controllers.Application.run(id: Int)
+GET        /run/:id             controllers.Application.run(id: Int)
+GET        /log/:id             controllers.Application.log(id: Int)
 
 # Map static resources from the /public folder to the /assets URL path
 GET        /assets/*file        controllers.Assets.at(path="/public", file)

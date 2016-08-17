@@ -1,5 +1,7 @@
 package controllers
 
+import java.io.File
+
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
@@ -82,6 +84,11 @@ object Application extends Controller {
     }
     Redirect("/")
   }
+
+  def log(id: Int) = Action {
+    Ok.sendFile(new File("/home/wr/MultiSlider/multislider-log.txt"))
+  }
+
 
 }
 
