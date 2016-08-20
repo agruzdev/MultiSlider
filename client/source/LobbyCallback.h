@@ -28,26 +28,40 @@ namespace multislider
         /**
          *  Player has joined the room
          *  Is called immediately for host after creating room and for client after join request
+         *  @param lobby This lobby pointer
+         *  @param room This room info
          */
         virtual void onJoined(Lobby* /*lobby*/, const RoomInfo & /*room*/)
         { }
 
         /**
          *  Player left the room
+         *  @param lobby This lobby pointer
+         *  @param room This room info
+         *  @param flags May be FLAG_ROOM_CLOSED_BY_HOST or FLAG_IS_EJECTED
          */
         virtual void onLeft(Lobby* /*lobby*/, const RoomInfo & /*room*/, uint8_t /*flags*/)
         { }
 
         /**
          *  Is called for each broadcast message
+         *  @param lobby This lobby pointer
+         *  @param room This room info
+         *  @param sender Name of the player who sent this broadcast. Or name of joined/left player if flags variable contains FLAG_JOINED/FLAG_LEFT respectively
+         *  @param message User message
+         *  @param flags May be FLAG_JOINED or FLAG_LEFT, if somebody has joined or left the room 
          */
         virtual void onBroadcast(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*sender*/, const std::string & /*message*/, uint8_t /*flags*/)
         { }
 
         /**
          *  Is called as soon as a host has started a session
+         *  @param lobby This lobby pointer
+         *  @param room This room info
+         *  @param session Pointer to the newly created session
+         *  @param sessionData User data passed by host
          */
-        virtual void onSessionStart(Lobby* /*lobby*/, const RoomInfo & /*room*/, SessionPtr /*session*/, const std::string & sessionData)
+        virtual void onSessionStart(Lobby* /*lobby*/, const RoomInfo & /*room*/, SessionPtr /*session*/, const std::string & /*sessionData*/)
         { }
     };
 
