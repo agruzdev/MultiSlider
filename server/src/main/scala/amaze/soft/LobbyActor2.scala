@@ -94,13 +94,13 @@ class LobbyActor2() extends Actor {
           case updateMessage: Update =>
             self forward updateMessage
 
-          case StartSession() =>
+          case StartSession(data) =>
             m_logger.info("Got a StartSession message!")
             implicit val timeout = Timeout(Constants.FUTURE_TIMEOUT)
             val sessionId = Await.result(Depot.backend ? CreateSession(m_name, m_players.map{_.name}.toList), timeout.duration).asInstanceOf[Int]
             if (sessionId >= 0) {
               m_players.foreach { player =>
-                player.actor ! Tcp.Write(ByteString(json.Serialization.write(SessionStarted(Depot.getIpBack, Depot.getPortBack, m_name, sessionId))))
+                player.actor ! Tcp.Write(ByteString(json.Serialization.write(SessionStarted(Depot.getIpBack, Depot.getPortBack, m_name, sessionId, data))))
               }
             } else {
               sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCK))

@@ -324,7 +324,7 @@ class Controller
         }
     }
 
-    void onSessionStart(Lobby* lobby, const RoomInfo & room, SessionPtr session) override
+    void onSessionStart(Lobby* lobby, const RoomInfo & room, SessionPtr session, const std::string & sessionData) override
     {
         mSession = session;
         mSession->startup(this, 5 * 1000);

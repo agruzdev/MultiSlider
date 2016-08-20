@@ -79,9 +79,9 @@ public:
         std::cout << std::string("[") + lobby->getPlayerName() + "]: got broadcast message \"" + message + "\" [from \"" + sender + "\" flags = " + std::to_string(flags) + "]\n";
     }
 
-    void onSessionStart(Lobby* lobby, const RoomInfo & room, SessionPtr session) override
+    void onSessionStart(Lobby* lobby, const RoomInfo & room, SessionPtr session, const std::string & sessionData) override
     {
-        std::cout << std::string("[") + lobby->getPlayerName() + "]: session is started!\n";
+        std::cout << std::string("[") + lobby->getPlayerName() + "]: session is started! " + sessionData + "\n";
         if (lobby->getPlayerName() == room.getHostName()) {
             gHostSession = session;
         }
@@ -127,7 +127,7 @@ public:
                 std::cout << info.getName() + " by " + info.getHostName() + "   players: " + std::to_string(info.getPlayersNumber()) + "/" + std::to_string(info.getPlayersLimit()) + "\n";
             }
 
-            lobby.startSession();
+            lobby.startSession("<initial data here>");
             while (0 == lobby.receive()) 
             { }
 

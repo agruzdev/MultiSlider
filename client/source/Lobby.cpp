@@ -296,12 +296,19 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Lobby::startSession()
+    void Lobby::startSession(const std::string & sessionData)
     {
         Object startSessionJson;
         startSessionJson << MESSAGE_KEY_CLASS << frontend::START_SESSION;
+        startSessionJson << MESSAGE_KEY_DATA << sessionData;
         std::string startSessionMessage = makeEnvelop(startSessionJson).write(JSON);
         mTcp->Send(startSessionMessage.c_str(), startSessionMessage.size(), *mServerAddress, false);
+    }
+    //-------------------------------------------------------
+
+    void Lobby::startSession()
+    {
+        startSession(std::string());
     }
     //-------------------------------------------------------
 
@@ -349,7 +356,7 @@ namespace multislider
                     mPlayerName,
                     messageJson.get<jsonxx::String>(MESSAGE_KEY_NAME, ""),
                     narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 0.0))), details::SessionDeleter());
-                mCallback->onSessionStart(this, mMyRoom, session);
+                mCallback->onSessionStart(this, mMyRoom, session, messageJson.get<jsonxx::String>(MESSAGE_KEY_DATA, ""));
             }
             else if (isMessageClass(messageClass, frontend::EJECTED)) {
                 mCallback->onLeft(this, mMyRoom, narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));

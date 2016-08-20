@@ -47,7 +47,7 @@ namespace multislider
         /**
          *  Is called as soon as a host has started a session
          */
-        virtual void onSessionStart(Lobby* /*lobby*/, const RoomInfo & /*room*/, SessionPtr /*session*/)
+        virtual void onSessionStart(Lobby* /*lobby*/, const RoomInfo & /*room*/, SessionPtr /*session*/, const std::string & sessionData)
         { }
     };
 

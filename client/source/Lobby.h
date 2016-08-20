@@ -125,6 +125,13 @@ namespace multislider
         MULTISLIDER_EXPORT
         void startSession();
 
+        /**
+         *  Start game session for all joined players
+         *  @param sessionData user data passed to all players on session start
+         */
+        MULTISLIDER_EXPORT
+        void startSession(const std::string & sessionData);
+
         //-------------------------------------------------------
         // Common functions for both host and client
 

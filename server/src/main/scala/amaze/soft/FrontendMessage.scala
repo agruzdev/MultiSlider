@@ -63,7 +63,7 @@ object FrontendMessage {
   /**
    * Start game session for all current players
    */
-  case class StartSession() extends JsonMessage
+  case class StartSession(data: String) extends JsonMessage
 
   //---------------------------------------------------------
   // Outgoing messages
@@ -76,7 +76,7 @@ object FrontendMessage {
   /**
    * Sent when session is created
    */
-  case class SessionStarted(ip: String, port: Int, name: String, id: Int) extends JsonMessage
+  case class SessionStarted(ip: String, port: Int, name: String, id: Int, data: String) extends JsonMessage
 
   /**
    * Sent when client was ejected
