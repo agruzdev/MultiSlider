@@ -114,7 +114,7 @@ class LobbyActor2() extends Actor {
               if(player.isDefined){
                 ejectPlayer(player.get, Constants.FLAG_EJECTED)
                 m_players -= player.get
-                self forward FrontendMessage.Update(makeRoomInfo(), "", getHost.name, toSelf = true, Constants.FLAG_LEFT)
+                self forward FrontendMessage.Update(makeRoomInfo(), "", playerName, toSelf = true, Constants.FLAG_LEFT)
               }
             }
 
@@ -151,7 +151,7 @@ class LobbyActor2() extends Actor {
           Depot.updateRoomInfo(m_name, room)
           sender() ! Tcp.Write(ByteString(json.Serialization.write(room)))
           // Notify all other players
-          self forward FrontendMessage.Update(room, "", getHost.name, toSelf = false, Constants.FLAG_JOINED)
+          self forward FrontendMessage.Update(room, "", playerName, toSelf = false, Constants.FLAG_JOINED)
         } else {
           sender() ! Tcp.Write(ByteString(Constants.RESPONSE_NAME_EXISTS))
         }
@@ -162,22 +162,21 @@ class LobbyActor2() extends Actor {
     case Disconnected() =>
       m_logger.info("Got a Disconnected message!")
       val player  = m_players.find(_.actor == sender())
-      var newHost = false
-      if(player.isDefined){
-        newHost = player.get == getHost
+      if(player.isDefined) {
+        val newHost = player.get == getHost
         m_players -= player.get
-      }
-      if(m_players.nonEmpty) {
-        Depot.updateRoomInfo(m_name, makeRoomInfo())
-        // Notify all other players
-        self forward FrontendMessage.Update(makeRoomInfo(), "", getHost.name, toSelf = false,
-          Constants.FLAG_LEFT | (if (newHost) Constants.FLAG_NEW_HOST else 0))
-        if(newHost){
-          m_logger.info("New host! name = " + getHost.name)
+        if (m_players.nonEmpty) {
+          Depot.updateRoomInfo(m_name, makeRoomInfo())
+          // Notify all other players
+          self forward FrontendMessage.Update(makeRoomInfo(), "", player.get.name, toSelf = false,
+            Constants.FLAG_LEFT | (if (newHost) Constants.FLAG_NEW_HOST else 0))
+          if (newHost) {
+            m_logger.info("New host! name = " + getHost.name)
+          }
+        } else {
+          Depot.unregisterLobby(m_name)
+          shutdown()
         }
-      } else {
-        Depot.unregisterLobby(m_name)
-        shutdown()
       }
 
     case Close() =>
