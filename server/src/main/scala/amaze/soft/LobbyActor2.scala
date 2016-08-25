@@ -185,7 +185,6 @@ class LobbyActor2() extends Actor {
         ejectPlayer(player, Constants.FLAG_EJECTED | Constants.FLAG_CLOSED_BY_HOST)
       }
       Depot.unregisterLobby(m_name)
-      //sender() ! Tcp.Write(ByteString(Constants.RESPONSE_SUCC))
       shutdown()
 
     case unknown: Any =>

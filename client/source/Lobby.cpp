@@ -258,9 +258,6 @@ namespace multislider
         leaveRoomJson << MESSAGE_KEY_CLASS << frontend::LEAVE_ROOM;
         std::string leaveRoomMessage = makeEnvelop(leaveRoomJson).write(JSON);
         mTcp->Send(leaveRoomMessage.c_str(), leaveRoomMessage.size(), *mServerAddress, false);
-        //if (!responsed(awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS), constants::RESPONSE_SUCC)) {
-        //    throw ServerError("Client[Client]: Failed to leave a room");
-        //}
         mCallback->onLeft(this, mMyRoom, 0);
         mIsJoined = false;
     }
@@ -288,11 +285,6 @@ namespace multislider
         closeRoomJson << MESSAGE_KEY_CLASS << frontend::CLOSE_ROOM;
         std::string closeRoomMessage = closeRoomJson.write(JSON);
         mTcp->Send(closeRoomMessage.c_str(), closeRoomMessage.size(), *mServerAddress, false);
-        //if (!responsed(awaitResponse(mTcp, DEFAULT_TIMEOUT_MS), RESPONSE_SUCC)) {
-        //    throw ServerError("Host[closeRoom]: failed to close the current room!");
-        //}
-        //mCallback->onLeft(this, mMyRoom, mPlayerName, 0);
-        //mIsJoined = false;
     }
     //-------------------------------------------------------
 
