@@ -269,12 +269,15 @@ namespace multislider
                 std::string shared;
                 for (size_t i = 0; i < sessionDataJson.size(); ++i) {
                     Object entry = sessionDataJson.get<Object>(i);
-                    sessionData[entry.get<std::string>(MESSAGE_KEY_NAME)].data = entry.get<jsonxx::String>(MESSAGE_KEY_DATA, "");
-                    sessionData[entry.get<std::string>(MESSAGE_KEY_NAME)].timestamp = static_cast<uint64_t>(entry.get<jsonxx::Number>(MESSAGE_KEY_TIMESTAMP, 0));
+                    PlayerData & data = sessionData[entry.get<std::string>(MESSAGE_KEY_NAME)];
+                    data.data = entry.get<jsonxx::String>(MESSAGE_KEY_DATA, "");
+                    data.timestamp = static_cast<uint64_t>(entry.get<jsonxx::Number>(MESSAGE_KEY_TIMESTAMP, 0));
+                    data.alive = entry.get<jsonxx::Boolean>(MESSAGE_KEY_ALIVE, false);
                 }
                 PlayerData sharedData;
                 sharedData.data = messageJson.get<jsonxx::String>(MESSAGE_KEY_SHARED_DATA, "");
                 sharedData.timestamp = static_cast<uint64_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SHARED_TIMESTAMP, 0));
+                sharedData.alive = true;
                 mCallback->onUpdate(this, sessionData, sharedData);
             }
             else if (isMessageClass(messageClass, backend::SYNC)) {

@@ -35,7 +35,12 @@ public:
     {
         std::string msg = std::string("SessionCallback[") + session->getPlayerName() + "]: Got session state (" + session->getSessionName() + ")\n";
         for (auto & entry : data) {
-            msg += entry.first + " -> " + entry.second.data + " at time " + std::to_string(entry.second.timestamp) + "\n";
+            if (entry.second.alive) {
+                msg += entry.first + " -> " + entry.second.data + " at time " + std::to_string(entry.second.timestamp) + "\n";
+            }
+            else {
+                msg += entry.first + " -> disconnected \n";
+            }
         }
         msg += std::string("_shared_ -> ") + sharedData.data + " at time " + std::to_string(sharedData.timestamp) + "\n";
         std::cout << msg;

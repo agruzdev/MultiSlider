@@ -17,8 +17,9 @@ namespace multislider
 {
     struct PlayerData
     {
-        std::string data;
-        uint64_t timestamp;
+        std::string data;    ///< Private data of this player
+        uint64_t timestamp;  ///< Timestamp of this data
+        bool alive;          ///< Becomes false if player was disconnected
     };
 
     typedef std::map<std::string, PlayerData> SessionData;
@@ -31,24 +32,24 @@ namespace multislider
         /**
          *  Is called as soon as all players have joined the session and are ready to start
          */
-        virtual void onStart(Session* session) { }
+        virtual void onStart(Session* /*session*/) { }
 
         /**
          *  Is called as soon as server responsed broadcast message
          */
-        virtual void onUpdate(Session* session, const SessionData & /*data*/, const PlayerData & /*sharedData*/) { }
+        virtual void onUpdate(Session* /*session*/, const SessionData & /*data*/, const PlayerData & /*sharedData*/) { }
 
         /**
          *  Is called as soon as synchronization message is got
          *  @param wasLost set true if Sync message wasn't delivered
          */
-        virtual void onSync(Session* session, uint32_t /*syncId*/, bool /*wasLost*/) { }
+        virtual void onSync(Session* /*session*/, uint32_t /*syncId*/, bool /*wasLost*/) { }
 
         /**
          *  Is called as soon as the player quit the session
          *  @param byTimeout is true is the player was disconnected by timeout
          */
-        virtual void onQuit(Session* session, bool /*byTimeout*/) throw () { }
+        virtual void onQuit(Session* /*session*/, bool /*byTimeout*/) throw () { }
     }; 
 }
 

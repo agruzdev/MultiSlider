@@ -15,7 +15,7 @@ namespace multislider
     namespace constants
     {
         static const uint32_t VERSION_MAJOR    = 0;
-        static const uint32_t VERSION_MINOR    = 4;
+        static const uint32_t VERSION_MINOR    = 5;
         static const uint32_t VERSION_REVISION = 0;
 
         static const char RESPONSE_GREET[] = "HALO";
@@ -57,6 +57,7 @@ namespace multislider
         static const char MESSAGE_KEY_VERSION_MAJOR[]    = "verMajor";
         static const char MESSAGE_KEY_VERSION_MINOR[]    = "verMinor";
         static const char MESSAGE_KEY_VERSION_REVISION[] = "verRevision";
+        static const char MESSAGE_KEY_ALIVE[]            = "alive";
 
         namespace frontend
         {
