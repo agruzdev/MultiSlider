@@ -334,9 +334,8 @@ class Controller
     //-------------------------------------------------------
     // Session callback
 
-    void onStart(const std::string & sessionName, const std::string & playerName) override
+    void onStart(Session* session) override
     {
-        std::cout << std::string("SessionCallback[") + playerName + "]: Started session " + sessionName + "\n";
         if (mLobby->isHost()) {
             mSession->broadcast("", makeMessage("         ", 0), true);
         }
@@ -348,7 +347,7 @@ class Controller
         });
     }
 
-    void onUpdate(const std::string & sessionName, const std::string & playerName, const SessionData & data, const PlayerData & sharedData) override
+    void onUpdate(Session* session, const SessionData & data, const PlayerData & sharedData) override
     {
         std::string field;
         uint32_t turn;
@@ -376,7 +375,7 @@ class Controller
 
         for (;;) {
             // Draw screen
-            drawGameScreen(sessionName, field, myTurn, mySymbol, winCode);
+            drawGameScreen(session->getSessionName(), field, myTurn, mySymbol, winCode);
             // Make turn
             if (!mGameFinish && myTurn) {
                 std::string s;

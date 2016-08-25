@@ -26,14 +26,14 @@ class SessionCallbackSample
     : public SessionCallback
 {
 public:
-    void onStart(const std::string & sessionName, const std::string & playerName) override
+    void onStart(Session* session) override
     {
-        std::cout << std::string("SessionCallback[") + playerName + "]: Started session " + sessionName + "\n";
+        std::cout << std::string("SessionCallback[") + session->getPlayerName() + "]: Started session " + session->getSessionName() + "\n";
     }
 
-    void onUpdate(const std::string & sessionName, const std::string & playerName, const SessionData & data, const PlayerData & sharedData) override
+    void onUpdate(Session* session, const SessionData & data, const PlayerData & sharedData) override
     {
-        std::string msg = std::string("SessionCallback[") + playerName + "]: Got session state (" + sessionName + ")\n";
+        std::string msg = std::string("SessionCallback[") + session->getPlayerName() + "]: Got session state (" + session->getSessionName() + ")\n";
         for (auto & entry : data) {
             msg += entry.first + " -> " + entry.second.data + " at time " + std::to_string(entry.second.timestamp) + "\n";
         }
@@ -41,19 +41,19 @@ public:
         std::cout << msg;
     }
 
-    void onSync(const std::string & sessionName, const std::string & playerName, uint32_t syncId, bool wasLost) override
+    void onSync(Session* session, uint32_t syncId, bool wasLost) override
     {
         if (!wasLost) {
-            std::cout << std::string("SessionCallback[") + playerName + "]: Got sync " + std::to_string(syncId) + "\n";
+            std::cout << std::string("SessionCallback[") + session->getPlayerName() + "]: Got sync " + std::to_string(syncId) + "\n";
         }
         else {
-            std::cout << std::string("SessionCallback[") + playerName + "]: Sync " + std::to_string(syncId) + " was lost\n";
+            std::cout << std::string("SessionCallback[") + session->getPlayerName() + "]: Sync " + std::to_string(syncId) + " was lost\n";
         }
     }
 
-    void onQuit(const std::string & sessionName, const std::string & playerName, bool byTimeout) throw () override
+    void onQuit(Session* session, bool byTimeout) throw () override
     {
-        std::cout << std::string("SessionCallback[") + playerName + "]: quited session " + sessionName + " (by timeout =" + std::to_string(byTimeout) + ")\n";
+        std::cout << std::string("SessionCallback[") + session->getPlayerName() + "]: quited session " + session->getSessionName() + " (by timeout =" + std::to_string(byTimeout) + ")\n";
     }
 };
 

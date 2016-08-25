@@ -8,11 +8,9 @@
 #ifndef _MULTI_SLIDER_SESSION_H_
 #define _MULTI_SLIDER_SESSION_H_
 
-#include <map>
-#include <vector>
 
 #include "CommonIncludes.h"
-#include "LibInterface.h"
+#include "SessionCallback.h"
 
 namespace jsonxx
 {
@@ -22,43 +20,6 @@ namespace jsonxx
 namespace multislider
 {
     class UdpSocket;
-
-    struct PlayerData
-    {
-        std::string data;
-        uint64_t timestamp;
-    };
-
-    typedef std::map<std::string, PlayerData> SessionData;
-
-    class SessionCallback
-    {
-    public:
-        virtual ~SessionCallback() { }
-
-        /**
-         *  Is called as soon as all players have joined the session and are ready to start
-         */
-        virtual void onStart(const std::string & /*sessionName*/, const std::string & /*playerName*/) { }
-
-        /**
-         *  Is called as soon as server responsed broadcast message
-         */
-        virtual void onUpdate(const std::string & /*sessionName*/, const std::string & /*playerName*/, const SessionData & /*data*/, const PlayerData & /*sharedData*/) { }
-
-        /**
-         *  Is called as soon as synchronization message is got
-         *  @param wasLost set true if Sync message wasn't delivered
-         */
-        virtual void onSync(const std::string & /*sessionName*/, const std::string & /*playerName*/, uint32_t /*syncId*/, bool /*wasLost*/) { }
-
-        /**
-         *  Is called as soon as the player quit the session
-         *  @param byTimeout is true is the player was disconnected by timeout
-         */
-        virtual void onQuit(const std::string & /*sessionName*/, const std::string & /*playerName*/, bool /*byTimeout*/) throw () { }
-    }; 
-
     struct MsgInfo;
 
     class Session
@@ -115,7 +76,7 @@ namespace multislider
         Session(const Session&);
 
         // No assign
-        Session& operator = (const Session&);
+        Session& operator= (const Session&);
 
         //-------------------------------------------------------
 
@@ -194,6 +155,22 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         uint64_t getLastPing() const;
+
+        /**
+         *  Get this session name
+         */
+        const std::string & getSessionName() const
+        {
+            return mSessionName;
+        }
+
+        /**
+         *  Get this player name
+         */
+        const std::string & getPlayerName() const
+        {
+            return mPlayerName;
+        }
 
         //-------------------------------------------------------
         /**

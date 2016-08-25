@@ -67,7 +67,7 @@ namespace multislider
             quitJson << MESSAGE_KEY_CLASS << backend::QUIT;
             quitJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
             sendUpdDatagram(makeEnvelop(quitJson).write(JSON));
-            //mCallback->onQuit(mSessionName, mPlayerName, false);
+            //mCallback->onQuit(this, false);
         }
     }
     //-------------------------------------------------------
@@ -155,7 +155,7 @@ namespace multislider
             if (!messageClass.empty()) {
                 if (isMessageClass(messageClass, backend::START)) {
                     mStarted = true;
-                    mCallback->onStart(mSessionName, mPlayerName);
+                    mCallback->onStart(this);
                     updatePing();
                     return;
                 }
@@ -169,7 +169,7 @@ namespace multislider
         if (!messageClass.empty()) {
             if (isMessageClass(messageClass, backend::START)) {
                 mStarted = true;
-                mCallback->onStart(mSessionName, mPlayerName);
+                mCallback->onStart(this);
                 updatePing();
                 return;
             }
@@ -258,7 +258,7 @@ namespace multislider
             std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
             if (isMessageClass(messageClass, backend::START)) {
                 updatePing();
-                mCallback->onStart(mSessionName, mPlayerName);
+                mCallback->onStart(this);
             }
             else if (isMessageClass(messageClass, backend::STATE)) {
                 updatePing();
@@ -275,13 +275,13 @@ namespace multislider
                 PlayerData sharedData;
                 sharedData.data = messageJson.get<jsonxx::String>(MESSAGE_KEY_SHARED_DATA, "");
                 sharedData.timestamp = static_cast<uint64_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SHARED_TIMESTAMP, 0));
-                mCallback->onUpdate(mSessionName, mPlayerName, sessionData, sharedData);
+                mCallback->onUpdate(this, sessionData, sharedData);
             }
             else if (isMessageClass(messageClass, backend::SYNC)) {
                 const uint32_t seqIdx = narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SEQ_INDEX, 0));
                 if (seqIdx >= IDX_WRAP_MODULO || checkAcknowledgement(seqIdx)) {
                     updatePing();
-                    mCallback->onSync(mSessionName, mPlayerName, narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SYNC_ID)), false);
+                    mCallback->onSync(this, narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SYNC_ID)), false);
                 }
             }
             else if (isMessageClass(messageClass, backend::KEEP_ALIVE)) {
@@ -301,7 +301,7 @@ namespace multislider
         if (mStarted) {
             // Check timeout
             if ((RakNet::GetTimeMS() - mLastTimestamp) > KEEP_ALIVE_LIMIT) {
-                mCallback->onQuit(mSessionName, mPlayerName, true);
+                mCallback->onQuit(this, true);
                 mStarted = false;
             }
         }
