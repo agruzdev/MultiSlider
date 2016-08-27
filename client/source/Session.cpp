@@ -75,7 +75,7 @@ namespace multislider
             quitJson << MESSAGE_KEY_CLASS << backend::QUIT;
             quitJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
             sendUpdDatagram(makeEnvelop(quitJson).write(JSON));
-            //mCallback->onQuit(this, false);
+            mCallback->onQuit(this, false);
         }
     }
     //-------------------------------------------------------

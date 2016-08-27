@@ -157,6 +157,7 @@ public:
                 while (counter < 2) {
                     counter += gHostSession->receive();
                 }
+                gHostSession.reset();
             }
 
             {
@@ -224,6 +225,8 @@ public:
                 { }
 
                 std::cout << "ping = " + std::to_string(gClientSession->getLastPing()) + "\n";
+
+                gClientSession.reset();
             }
             gFlagFinish = true;
             gCvFinish.notify_one();
