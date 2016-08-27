@@ -5,6 +5,12 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
+#include <limits>
+
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include "Session.h"
 #include "Exception.h"
 #include "Utility.h"
@@ -38,6 +44,7 @@ namespace multislider
     static const size_t RECEIVE_BIFFER_SIZE = 4096 * 4;
     static const size_t MESSSAGES_BUFFER_SIZE = 32;
     static const size_t IDX_WRAP_MODULO = 1024;
+    static const uint64_t CLOCK_SYNC_TIMEOUT_MS = 30 * 1000;
 
     //bool Session::msEnetInited = false;
 
@@ -51,7 +58,8 @@ namespace multislider
 
     Session::Session(std::string ip, uint16_t port, const std::string & playerName, const std::string & sessionName, uint32_t sessionId)
         : mServerIp(ip), mServerPort(port), mPlayerName(playerName), mSessionName(sessionName), mSessionId(sessionId), mLastPing(0), mLastTimestamp(0), mStarted(false),
-          mLocalSeqIdx(1), mRemoteSeqIdx(0), mPreviousIdxBits(0)
+          mLocalSeqIdx(1), mRemoteSeqIdx(0), mPreviousIdxBits(0),
+          mTimeShift(0), mLastSyncTime(0), mClockSyncId(0)
     {
         assert(!mServerIp.empty());
         assert(!mPlayerName.empty());
@@ -104,11 +112,32 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Session::updatePing()
+    uint64_t Session::getTimeMS() const
     {
-        uint64_t currTime = RakNet::GetTimeMS();
-        mLastPing = currTime - mLastTimestamp;
-        mLastTimestamp = currTime;
+        return narrow_cast<uint64_t>(RakNet::GetTimeMS() + mTimeShift);
+    }
+    //-------------------------------------------------------
+
+    void Session::sendClockSync()
+    {
+        mClockSyncId = (mClockSyncId < 254) ? mClockSyncId + 1 : 0;
+        Object clockSyncJson;
+        clockSyncJson << MESSAGE_KEY_CLASS << backend::CLOCK_SYNC;
+        clockSyncJson << MESSAGE_KEY_ID << mClockSyncId;
+        clockSyncJson << MESSAGE_KEY_REQUEST_TIME << getTimeMS();
+        clockSyncJson << MESSAGE_KEY_RESPONSE_TIME << 0;
+        sendUpdDatagram(makeEnvelop(clockSyncJson).write(JSON));
+    }
+    //-------------------------------------------------------
+
+    void Session::updatePing(uint64_t timestamp)
+    {
+        if (mLastSyncTime > 0) {
+            const uint64_t currTime = getTimeMS();
+            if (timestamp > currTime) {
+                mLastPing = (mLastPing + (timestamp - currTime)) / 2;
+            }
+        }
     }
     //-------------------------------------------------------
 
@@ -156,7 +185,8 @@ namespace multislider
                 if (isMessageClass(messageClass, backend::START)) {
                     mStarted = true;
                     mCallback->onStart(this);
-                    updatePing();
+                    sendClockSync();
+                    mLastTimestamp = getTimeMS();
                     return;
                 }
             }
@@ -170,7 +200,8 @@ namespace multislider
             if (isMessageClass(messageClass, backend::START)) {
                 mStarted = true;
                 mCallback->onStart(this);
-                updatePing();
+                sendClockSync();
+                mLastTimestamp = getTimeMS();
                 return;
             }
         }
@@ -243,25 +274,24 @@ namespace multislider
         Object keepAliveJson;
         keepAliveJson << MESSAGE_KEY_CLASS << backend::KEEP_ALIVE;
         keepAliveJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
+        keepAliveJson << MESSAGE_KEY_TIMESTAMP << getTimeMS();
         sendUpdDatagram(makeEnvelop(keepAliveJson).write(JSON));
     }
     //-------------------------------------------------------
 
-    uint32_t Session::receive()
+    uint32_t Session::receive(uint32_t messagesLimit)
     {
         uint32_t counter = 0;
         size_t dataLength = 0; 
-        while(mStarted && (dataLength = awaitUdpDatagram(1, 1)) > 0) {
+        while(mStarted && counter < messagesLimit && (dataLength = awaitUdpDatagram(1, 1)) > 0) {
             ++counter;
             Object messageJson;
             messageJson.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), dataLength));
             std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
             if (isMessageClass(messageClass, backend::START)) {
-                updatePing();
                 mCallback->onStart(this);
             }
             else if (isMessageClass(messageClass, backend::STATE)) {
-                updatePing();
                 Array sessionDataJson;
                 std::string dataJson = messageJson.get<std::string>(MESSAGE_KEY_DATA);
                 sessionDataJson.parse(dataJson);
@@ -283,43 +313,65 @@ namespace multislider
             else if (isMessageClass(messageClass, backend::SYNC)) {
                 const uint32_t seqIdx = narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SEQ_INDEX, 0));
                 if (seqIdx >= IDX_WRAP_MODULO || checkAcknowledgement(seqIdx)) {
-                    updatePing();
                     mCallback->onSync(this, narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SYNC_ID)), false);
                 }
             }
             else if (isMessageClass(messageClass, backend::KEEP_ALIVE)) {
-                updatePing();
+                if (messageJson.has<jsonxx::Number>(MESSAGE_KEY_TIMESTAMP) && mLastSyncTime > 0) {
+                    updatePing(narrow_cast<uint64_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_TIMESTAMP)));
+                }
                 --counter; // KeepAlive messages are 'invisible'
             }
             else if (isMessageClass(messageClass, backend::ACK)) {
                 const uint32_t ackIdx = narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_SEQ_INDEX, 0));
-                if (checkAcknowledgement(ackIdx)) {
-                    updatePing();
+                checkAcknowledgement(ackIdx);
+            }
+            else if (isMessageClass(messageClass, backend::CLOCK_SYNC)) {
+                if (mClockSyncId == narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 255))) {
+                    if (messageJson.has<jsonxx::Number>(MESSAGE_KEY_REQUEST_TIME) && messageJson.has<jsonxx::Number>(MESSAGE_KEY_RESPONSE_TIME)) {
+                        const uint64_t currTime = getTimeMS();
+                        const uint64_t requestTime = narrow_cast<uint64_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_REQUEST_TIME));
+                        mLastSyncTime = currTime;
+                        assert(currTime > requestTime);
+                        mLastPing = (currTime - requestTime) / 2;
+                        mTimeShift += static_cast<int64_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_RESPONSE_TIME)) - static_cast<int64_t>(requestTime) - static_cast<int64_t>(mLastPing);
+                    }
                 }
             }
             else {
                 throw RuntimeError("Session[receive]: Unknown datagram type!");
             }
+            mLastTimestamp = getTimeMS();
         }
+        const uint64_t currentTime = getTimeMS();
         if (mStarted) {
             // Check timeout
-            if ((RakNet::GetTimeMS() - mLastTimestamp) > KEEP_ALIVE_LIMIT) {
+            if (currentTime > mLastTimestamp + KEEP_ALIVE_LIMIT) {
                 mCallback->onQuit(this, true);
                 mStarted = false;
             }
         }
         if (mStarted) {
             // Resend messages if necessary
-            const uint64_t currentTime = RakNet::GetTimeMS();
             for (size_t idx = 0; idx < mOutputQueue.size(); ++idx) {
-                shared_ptr<MsgInfo>& msg = mOutputQueue[idx];
-                if (currentTime - msg->sentTime > RESEND_INTERVAL) {
+                shared_ptr<MsgInfo> & msg = mOutputQueue[idx];
+                if (currentTime > msg->sentTime + RESEND_INTERVAL) {
                     sendUpdDatagram(msg->msgData);
                     msg->sentTime = currentTime;
                 }
             }
+            // Sync clock if necessary
+            if (currentTime > mLastSyncTime + CLOCK_SYNC_TIMEOUT_MS) {
+                sendClockSync();
+            }
         }
         return counter;
+    }
+    //-------------------------------------------------------
+
+    uint32_t Session::receive()
+    {
+        return receive(std::numeric_limits<uint32_t>::max());
     }
     //-------------------------------------------------------
 

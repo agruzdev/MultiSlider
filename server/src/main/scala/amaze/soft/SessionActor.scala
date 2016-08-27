@@ -74,7 +74,8 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
   m_logger.info(players.toString())
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
-    classOf[Ready], classOf[Start], classOf[Update], classOf[SessionState], classOf[Quit], classOf[RequestSync], classOf[Sync], classOf[KeepAlive])))
+    classOf[Ready], classOf[Start], classOf[Update], classOf[SessionState], classOf[Quit], classOf[RequestSync],
+    classOf[Sync], classOf[KeepAlive], classOf[Ack], classOf[ClockSync])))
 
   private def gatherSessionData(): String = {
     json.Serialization write (m_stats.map{case (name, stats) =>
@@ -156,7 +157,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                     m_stats.values.foreach({stat => socket ! Udp.Send(ByteString(json.Serialization.write(Start())), stat.address)})
                     m_keepAliveTask = Depot.actorsSystem.scheduler.schedule(KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL) {
                       checkConnection()
-                      m_stats.values.foreach({player => if(player != null) socket ! Udp.Send(ByteString(json.Serialization.write(KeepAlive(null))), player.address)})
+                      m_stats.values.foreach({player => if(player != null) socket ! Udp.Send(ByteString(json.Serialization.write(KeepAlive(null, System.currentTimeMillis()))), player.address)})
                     } (Depot.actorsSystem.dispatcher)
                   } else {
                     socket ! Udp.Send(ByteString(Constants.RESPONSE_SUCC), address)
@@ -166,7 +167,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                   socket ! Udp.Send(ByteString(Constants.RESPONSE_SUCK), address)
                 }
 
-              case KeepAlive(playerName) =>
+              case KeepAlive(playerName, _) =>
                 val player = m_stats.get(playerName)
                 if(player.isDefined){
                   player.get.lastPingTime = System.currentTimeMillis()
@@ -200,7 +201,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                     }
                   }
 
-                case KeepAlive(playerName) =>
+                case KeepAlive(playerName, _) =>
                   val player = m_stats.get(playerName)
                   if(player.isDefined){
                     player.get.lastPingTime = System.currentTimeMillis()
@@ -219,12 +220,16 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                       val info = m_seqStats.get(playerName).get
                       m_seqStats.update(playerName, MessagesSequenceInfo(if(info.localSeqIdx < IDX_WRAP_MODULE - 1) info.localSeqIdx + 1 else 0, info.remoteSeqIdx, info.remoteIdxBits))
                       scheduleSync(info.localSeqIdx)
-                      sender() ! Ack(seqIdx)
+                      socket ! Udp.Send(ByteString(json.Serialization.write(Ack(seqIdx))), address)
                     } else {
                       // Simple
                       scheduleSync(IDX_WRAP_MODULE + 1)
                     }
                   }
+
+                case ClockSync(id, requestTime, _) =>
+                  m_logger.info("Got a ClockSync message")
+                  socket ! Udp.Send(ByteString(json.Serialization.write(ClockSync(id, requestTime, System.currentTimeMillis()))), address)
 
                 case Quit(playerName) =>
                   m_logger.info("Got a Quit message")

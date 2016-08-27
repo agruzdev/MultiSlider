@@ -44,7 +44,7 @@ object BackendMessage {
   /**
    * KeepAlive
    */
-  case class KeepAlive(playerName: String) extends JsonMessage
+  case class KeepAlive(playerName: String, timestamp: Long) extends JsonMessage
 
   /**
    * Indicates that all players are joined and session can be started
@@ -65,4 +65,9 @@ object BackendMessage {
    * Acknowledge for a message
    */
   case class Ack(seqIdx: Int) extends JsonMessage
+
+  /**
+   * Sync clock request/response
+   */
+  case class ClockSync(id: Int, requestTime: Long, responseTime: Long) extends JsonMessage
 }

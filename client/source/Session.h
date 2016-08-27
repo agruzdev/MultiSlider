@@ -35,6 +35,10 @@ namespace multislider
         uint64_t mLastPing;
         bool mStarted;
 
+        int64_t  mTimeShift;
+        uint64_t mLastSyncTime;
+        uint8_t  mClockSyncId;
+
         std::vector<uint8_t> mReceiveBuffer;
 
         /*
@@ -46,7 +50,9 @@ namespace multislider
         std::vector<shared_ptr<MsgInfo>> mOutputQueue;
 
         //-------------------------------------------------------
-        
+
+        // Current synchronized time in milliseconds
+        uint64_t getTimeMS() const;
 
         jsonxx::Object makeEnvelop(const jsonxx::Object & obj) const;
 
@@ -65,7 +71,9 @@ namespace multislider
         void removeAcknowledged(uint32_t ackIdx);
 
         // Update current ping
-        void updatePing();
+        void updatePing(uint64_t timestamp);
+
+        void sendClockSync();
 
         /*
          *  Returns datagram length
@@ -140,6 +148,13 @@ namespace multislider
          */
         MULTISLIDER_EXPORT
         uint32_t receive();
+
+        /**
+         *  Receive and handle incoming messages
+         *  @param messagesLimit maximum amount of messages to process in this call
+         */
+        MULTISLIDER_EXPORT
+        uint32_t receive(uint32_t messagesLimit);
 
         /**
          *  Send KeepAlive message to server to prevent it from closing connection

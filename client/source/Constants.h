@@ -58,6 +58,8 @@ namespace multislider
         static const char MESSAGE_KEY_VERSION_MINOR[]    = "verMinor";
         static const char MESSAGE_KEY_VERSION_REVISION[] = "verRevision";
         static const char MESSAGE_KEY_ALIVE[]            = "alive";
+        static const char MESSAGE_KEY_REQUEST_TIME[]     = "requestTime";
+        static const char MESSAGE_KEY_RESPONSE_TIME[]    = "responseTime";
 
         namespace frontend
         {
@@ -85,6 +87,8 @@ namespace multislider
         namespace backend
         {
             static const char ENVELOP[] = "BackendMessage$Envelop";
+
+            static const char CLOCK_SYNC[] = "BackendMessage$ClockSync";
 
             // Outcoming
             static const char READY[]  = "BackendMessage$Ready";
