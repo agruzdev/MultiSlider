@@ -47,9 +47,10 @@ namespace multislider
 
         /**
          *  Is called as soon as the player quit the session
+         *  @param playerName name of the player who has quited the session
          *  @param byTimeout is true is the player was disconnected by timeout
          */
-        virtual void onQuit(Session* /*session*/, bool /*byTimeout*/) throw () { }
+        virtual void onQuit(Session* /*session*/, const std::string & /*playerName*/, bool /*byTimeout*/) throw() { }
     }; 
 }
 

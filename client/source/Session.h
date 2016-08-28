@@ -165,6 +165,12 @@ namespace multislider
         void keepAlive();
 
         /**
+         *  Quit the session
+         */
+        MULTISLIDER_EXPORT
+        void quit();
+
+        /**
          *  Get last ping value
          *  @return ping value in milliseconds
          */

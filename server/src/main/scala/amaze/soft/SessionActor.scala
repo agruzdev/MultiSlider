@@ -137,7 +137,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
   }
 
   override def receive = {
-    case SignedEnvelop(socket, address, data) =>
+    case SignedEnvelop(socket, senderAddress, data) =>
       m_logger.info("Got an Envelop message")
       try {
         val msg = json.parse(data).extract[JsonMessage]
@@ -149,7 +149,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
               case Ready(playerName) =>
                 m_logger.info("Got a Ready message")
                 if (m_stats.contains(playerName)) {
-                  m_stats.update(playerName, PlayerStatistics(address, 0, "", System.currentTimeMillis()))
+                  m_stats.update(playerName, PlayerStatistics(senderAddress, 0, "", System.currentTimeMillis()))
                   m_seqStats.update(playerName, MessagesSequenceInfo(1, 0, 0))
                   // if no nulls then all players have joined
                   if(!m_stats.values.exists(_ == null)){
@@ -160,11 +160,11 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                       m_stats.values.foreach({player => if(player != null) socket ! Udp.Send(ByteString(json.Serialization.write(KeepAlive(null, System.currentTimeMillis()))), player.address)})
                     } (Depot.actorsSystem.dispatcher)
                   } else {
-                    socket ! Udp.Send(ByteString(Constants.RESPONSE_SUCC), address)
+                    socket ! Udp.Send(ByteString(Constants.RESPONSE_SUCC), senderAddress)
                   }
                 }
                 else {
-                  socket ! Udp.Send(ByteString(Constants.RESPONSE_SUCK), address)
+                  socket ! Udp.Send(ByteString(Constants.RESPONSE_SUCK), senderAddress)
                 }
 
               case KeepAlive(playerName, _) =>
@@ -194,7 +194,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                       if(forceBroadcast) {
                         m_stats.values.foreach( stat => socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData(), m_shared_stats.privateData, m_shared_stats.updateTimestamp))), stat.address))
                       }else {
-                        socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData(), m_shared_stats.privateData, m_shared_stats.updateTimestamp))), address)
+                        socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData(), m_shared_stats.privateData, m_shared_stats.updateTimestamp))), senderAddress)
                       }
                     } else {
                       m_logger.info("[Running] Got outdated Update message")
@@ -220,7 +220,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                       val info = m_seqStats.get(playerName).get
                       m_seqStats.update(playerName, MessagesSequenceInfo(if(info.localSeqIdx < IDX_WRAP_MODULE - 1) info.localSeqIdx + 1 else 0, info.remoteSeqIdx, info.remoteIdxBits))
                       scheduleSync(info.localSeqIdx)
-                      socket ! Udp.Send(ByteString(json.Serialization.write(Ack(seqIdx))), address)
+                      socket ! Udp.Send(ByteString(json.Serialization.write(Ack(seqIdx))), senderAddress)
                     } else {
                       // Simple
                       scheduleSync(IDX_WRAP_MODULE + 1)
@@ -229,11 +229,14 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
 
                 case ClockSync(id, requestTime, _) =>
                   m_logger.info("Got a ClockSync message")
-                  socket ! Udp.Send(ByteString(json.Serialization.write(ClockSync(id, requestTime, System.currentTimeMillis()))), address)
+                  socket ! Udp.Send(ByteString(json.Serialization.write(ClockSync(id, requestTime, System.currentTimeMillis()))), senderAddress)
 
                 case Quit(playerName) =>
                   m_logger.info("Got a Quit message")
                   quitImpl(playerName)
+                  for(stat <- m_stats.values if (stat != null) && (stat.address != senderAddress)) {
+                    socket ! Udp.Send(ByteString(json.Serialization.write(Quit(playerName))), stat.address)
+                  }
 
                 case _ => m_logger.error("[Running] Unexpected message")
               }
@@ -248,7 +251,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
         case err: Exception =>
           m_logger.error(err.getMessage, err.getCause)
           err.printStackTrace()
-          socket ! Udp.Send(ByteString(Constants.RESPONSE_SUCK), address)
+          socket ! Udp.Send(ByteString(Constants.RESPONSE_SUCK), senderAddress)
       }
 
     case _ =>

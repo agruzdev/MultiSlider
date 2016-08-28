@@ -70,12 +70,19 @@ namespace multislider
 
     Session::~Session()
     {
+        quit();
+    }
+    //-------------------------------------------------------
+
+    void Session::quit()
+    {
         if (mStarted) {
             Object quitJson;
             quitJson << MESSAGE_KEY_CLASS << backend::QUIT;
             quitJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
             sendUpdDatagram(makeEnvelop(quitJson).write(JSON));
-            mCallback->onQuit(this, false);
+            mCallback->onQuit(this, getPlayerName(), false);
+            mStarted = false;
         }
     }
     //-------------------------------------------------------
@@ -338,6 +345,13 @@ namespace multislider
                     }
                 }
             }
+            else if (isMessageClass(messageClass, backend::QUIT)) {
+                const std::string player = messageJson.get<jsonxx::String>(MESSAGE_KEY_PLAYER_NAME);
+                mCallback->onQuit(this, player, false);
+                if (player == mPlayerName) {
+                    mStarted = false;
+                }
+            }
             else {
                 throw RuntimeError("Session[receive]: Unknown datagram type!");
             }
@@ -347,7 +361,7 @@ namespace multislider
         if (mStarted) {
             // Check timeout
             if (currentTime > mLastTimestamp + KEEP_ALIVE_LIMIT) {
-                mCallback->onQuit(this, true);
+                mCallback->onQuit(this, getPlayerName(), true);
                 mStarted = false;
             }
         }

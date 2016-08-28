@@ -56,9 +56,9 @@ public:
         }
     }
 
-    void onQuit(Session* session, bool byTimeout) throw () override
+    void onQuit(Session* session, const std::string & playerName, bool byTimeout) throw() override
     {
-        std::cout << std::string("SessionCallback[") + session->getPlayerName() + "]: quited session " + session->getSessionName() + " (by timeout =" + std::to_string(byTimeout) + ")\n";
+        std::cout << std::string("SessionCallback[") + session->getPlayerName() + "]: Player " + playerName + " has quited the session " + session->getSessionName() + " (by timeout =" + std::to_string(byTimeout) + ")\n";
     }
 };
 
