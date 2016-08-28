@@ -57,6 +57,7 @@ namespace multislider
         static const char MESSAGE_KEY_VERSION_MAJOR[]    = "verMajor";
         static const char MESSAGE_KEY_VERSION_MINOR[]    = "verMinor";
         static const char MESSAGE_KEY_VERSION_REVISION[] = "verRevision";
+        static const char MESSAGE_KEY_WEAK[]             = "weak";
         static const char MESSAGE_KEY_ALIVE[]            = "alive";
         static const char MESSAGE_KEY_REQUEST_TIME[]     = "requestTime";
         static const char MESSAGE_KEY_RESPONSE_TIME[]    = "responseTime";

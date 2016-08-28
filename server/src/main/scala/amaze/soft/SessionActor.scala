@@ -16,8 +16,9 @@ import scala.language.postfixOps
 
 object SessionActor
 {
-  val KEEP_ALIVE_INTERVAL = 1000 millisecond
+  val KEEP_ALIVE_INTERVAL = 1 second
   val KEEP_ALIVE_LIMIT = 10 * KEEP_ALIVE_INTERVAL
+  val WEAK_CONNECTION_TIMEOUT = 1 second
 
   val ACK_HISTORY_SIZE = 32
   val IDX_WRAP_MODULE = 1024
@@ -30,14 +31,14 @@ object SessionActor
   /**
    * Dynamic information for each player
    */
-  case class PlayerStatistics(address: InetSocketAddress, updateTimestamp: Long, privateData: String, var lastPingTime: Long)
+  case class PlayerStatistics(address: InetSocketAddress, var updateTimestamp: Long, var privateData: String, var lastPingTime: Long, var weakConnection: Boolean)
 
   case class MessagesSequenceInfo(localSeqIdx: Int, remoteSeqIdx: Int, remoteIdxBits: Long)
 
   /**
    * Data broadcasted for each player
    */
-  case class PlayerData(name: String, data: String, timestamp: Long, alive: Boolean)
+  case class PlayerData(name: String, data: String, timestamp: Long, weak: Boolean, alive: Boolean)
 
   object State extends Enumeration
   {
@@ -61,7 +62,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
   val m_stats: scala.collection.mutable.HashMap[String, PlayerStatistics] =
     scala.collection.mutable.HashMap(players.map(name => {name -> null}).toSeq:_*)
 
-  var m_shared_stats = PlayerStatistics(null, 0, "", 0)
+  var m_shared_stats = PlayerStatistics(null, 0, "", 0, weakConnection=false)
 
   var m_seqStats: scala.collection.mutable.HashMap[String, MessagesSequenceInfo] = scala.collection.mutable.HashMap()
 
@@ -80,18 +81,24 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
   private def gatherSessionData(): String = {
     json.Serialization write (m_stats.map{case (name, stats) =>
         if(stats != null)
-          PlayerData(name, stats.privateData, stats.updateTimestamp, alive=true)
+          PlayerData(name, stats.privateData, stats.updateTimestamp, weak=stats.weakConnection, alive=true)
         else
-          PlayerData(name, "", 0, alive=false)
+          PlayerData(name, "", 0, weak=false, alive=false)
       } toList )
   }
 
   private def checkConnection() = {
     val currTime = System.currentTimeMillis()
     m_stats foreach { case (name, player) =>
-      if(player != null && (currTime > player.lastPingTime) && (currTime - player.lastPingTime > KEEP_ALIVE_LIMIT.toMillis)){
-        m_logger.info("Connection with the player \"" + name + "\" is lost!")
-        quitImpl(name)
+      if(player != null && (currTime > player.lastPingTime)) {
+        if(currTime - player.lastPingTime > KEEP_ALIVE_LIMIT.toMillis) {
+          m_logger.info("Connection with the player \"" + name + "\" is lost!")
+          quitImpl(name)
+        }
+        else {
+          player.weakConnection = currTime - player.lastPingTime > WEAK_CONNECTION_TIMEOUT.toMillis
+          m_stats.update(name, player)
+        }
       }
     }
   }
@@ -149,7 +156,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
               case Ready(playerName) =>
                 m_logger.info("Got a Ready message")
                 if (m_stats.contains(playerName)) {
-                  m_stats.update(playerName, PlayerStatistics(senderAddress, 0, "", System.currentTimeMillis()))
+                  m_stats.update(playerName, PlayerStatistics(senderAddress, 0, "", System.currentTimeMillis(), weakConnection=false))
                   m_seqStats.update(playerName, MessagesSequenceInfo(1, 0, 0))
                   // if no nulls then all players have joined
                   if(!m_stats.values.exists(_ == null)){
@@ -186,10 +193,15 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                   m_logger.info("Got a Update message")
                   val playerStats = m_stats.get(playerName)
                   if(playerStats.isDefined){
-                    if(playerStats.get != null && playerStats.get.updateTimestamp < timestamp) {
-                      m_stats.update(playerName, PlayerStatistics(playerStats.get.address, timestamp, privateData, System.currentTimeMillis()))
+                    var player = playerStats.get
+                    if(player != null && player.updateTimestamp < timestamp) {
+                      player.updateTimestamp = timestamp
+                      player.privateData = privateData
+                      player.lastPingTime = System.currentTimeMillis()
+                      m_stats.update(playerName, player)
                       if (sharedData != null && sharedData.nonEmpty && m_shared_stats.updateTimestamp < timestamp) {
-                        m_shared_stats = PlayerStatistics(null, timestamp, sharedData, 0)
+                        m_shared_stats.updateTimestamp = timestamp
+                        m_shared_stats.privateData = sharedData
                       }
                       if(forceBroadcast) {
                         m_stats.values.foreach( stat => socket ! Udp.Send(ByteString(json.Serialization.write(SessionState(gatherSessionData(), m_shared_stats.privateData, m_shared_stats.updateTimestamp))), stat.address))

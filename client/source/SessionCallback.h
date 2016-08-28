@@ -19,6 +19,7 @@ namespace multislider
     {
         std::string data;    ///< Private data of this player
         uint64_t timestamp;  ///< Timestamp of this data
+        bool weak;           ///< Becomes true if player has weak connection
         bool alive;          ///< Becomes false if player was disconnected
     };
 

@@ -310,6 +310,7 @@ namespace multislider
                     data.data = entry.get<jsonxx::String>(MESSAGE_KEY_DATA, "");
                     data.timestamp = static_cast<uint64_t>(entry.get<jsonxx::Number>(MESSAGE_KEY_TIMESTAMP, 0));
                     data.alive = entry.get<jsonxx::Boolean>(MESSAGE_KEY_ALIVE, false);
+                    data.weak  = entry.get<jsonxx::Boolean>(MESSAGE_KEY_WEAK, false);
                 }
                 PlayerData sharedData;
                 sharedData.data = messageJson.get<jsonxx::String>(MESSAGE_KEY_SHARED_DATA, "");
