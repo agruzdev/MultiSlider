@@ -190,6 +190,14 @@ namespace multislider
         {
             return mPlayerName;
         }
+
+        /**
+         *  Get current room state
+         */
+        const RoomInfo & getRoomInfo() const
+        {
+            return mMyRoom;
+        }
     };
 
 }
