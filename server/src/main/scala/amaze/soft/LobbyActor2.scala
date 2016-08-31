@@ -44,8 +44,8 @@ class LobbyActor2() extends Actor {
   m_logger.info("Started actor " + self.toString())
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
-    classOf[CloseRoom], classOf[JoinRoom], classOf[LeaveRoom],
-    classOf[EjectPlayer], classOf[StartSession], classOf[SessionStarted], classOf[Update], classOf[Ejected])))
+    classOf[CloseRoom], classOf[JoinRoom], classOf[LeaveRoom], classOf[EjectPlayer], classOf[StartSession],
+    classOf[SessionStarted], classOf[Update], classOf[Ejected], classOf[Message])))
 
   private def getHost = m_players.head
 
@@ -93,6 +93,12 @@ class LobbyActor2() extends Actor {
         msg match {
           case updateMessage: Update =>
             self forward updateMessage
+
+          case Message(sender, _) =>
+            m_logger.info("Got a Message message!")
+            for(player <- m_players if player.name != sender) {
+              player.actor ! Tcp.Write(ByteString(jsonRaw))
+            }
 
           case StartSession(data) =>
             m_logger.info("Got a StartSession message!")

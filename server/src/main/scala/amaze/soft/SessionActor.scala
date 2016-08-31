@@ -76,7 +76,7 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
     classOf[Ready], classOf[Start], classOf[Update], classOf[SessionState], classOf[Quit], classOf[RequestSync],
-    classOf[Sync], classOf[KeepAlive], classOf[Ack], classOf[ClockSync])))
+    classOf[Sync], classOf[KeepAlive], classOf[Ack], classOf[ClockSync], classOf[Message])))
 
   private def gatherSessionData(): String = {
     json.Serialization write (m_stats.map{case (name, stats) =>
@@ -144,10 +144,10 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
   }
 
   override def receive = {
-    case SignedEnvelop(socket, senderAddress, data) =>
+    case SignedEnvelop(socket, senderAddress, rawJson) =>
       m_logger.info("Got an Envelop message")
       try {
-        val msg = json.parse(data).extract[JsonMessage]
+        val msg = json.parse(rawJson).extract[JsonMessage]
         m_logger.info(msg.toString)
         m_state match {
           //--------------------------------------------------------
@@ -211,6 +211,12 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                     } else {
                       m_logger.info("[Running] Got outdated Update message")
                     }
+                  }
+
+                case Message(sender, _) =>
+                  m_logger.info("Got a Message message")
+                  for((name, player) <- m_stats if name != sender) {
+                    socket ! Udp.Send(ByteString(rawJson), player.address)
                   }
 
                 case KeepAlive(playerName, _) =>

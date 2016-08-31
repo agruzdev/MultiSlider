@@ -15,7 +15,7 @@ namespace multislider
     namespace constants
     {
         static const uint32_t VERSION_MAJOR    = 0;
-        static const uint32_t VERSION_MINOR    = 6;
+        static const uint32_t VERSION_MINOR    = 7;
         static const uint32_t VERSION_REVISION = 0;
 
         static const char RESPONSE_GREET[] = "HALO";
@@ -77,19 +77,20 @@ namespace multislider
             static const char LEAVE_ROOM[]    = "FrontendMessage$LeaveRoom";
 
             // Incoming
-            static const char BROADCAST[]       = "FrontendMessage$Update";
             static const char EJECTED[]         = "FrontendMessage$Ejected";
             static const char START_SESSION[]   = "FrontendMessage$StartSession";
             static const char SESSION_STARTED[] = "FrontendMessage$SessionStarted";
 
             static const char GREETING[]      = "FrontendMessage$Greeting";
+
+            // Both directions
+            static const char BROADCAST[]     = "FrontendMessage$Update";
+            static const char MESSAGE[]       = "FrontendMessage$Message";
         }
 
         namespace backend
         {
             static const char ENVELOP[] = "BackendMessage$Envelop";
-
-            static const char CLOCK_SYNC[] = "BackendMessage$ClockSync";
 
             // Outcoming
             static const char READY[]  = "BackendMessage$Ready";
@@ -103,6 +104,10 @@ namespace multislider
             static const char STATE[] = "BackendMessage$SessionState";
             static const char SYNC[]  = "BackendMessage$Sync";
             static const char ACK[]   = "BackendMessage$Ack";
+
+            // Both directions
+            static const char CLOCK_SYNC[] = "BackendMessage$ClockSync";
+            static const char MESSAGE[]    = "BackendMessage$Message";
         }
 
         static const uint64_t DEFAULT_TIMEOUT_MS = 10000; // 10 seconds

@@ -144,6 +144,13 @@ namespace multislider
         bool sync(uint32_t syncId, uint64_t delay, bool relaible);
 
         /**
+         *  Send message to all players without changing session state
+         *  @param message User's message
+         */
+        MULTISLIDER_EXPORT
+        void say(const std::string & message);
+
+        /**
          *  Receive and handle incoming messages
          */
         MULTISLIDER_EXPORT

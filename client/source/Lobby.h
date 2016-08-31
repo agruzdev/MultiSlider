@@ -143,11 +143,19 @@ namespace multislider
         void leaveRoom();
 
         /**
-         *  Broadcast data to all players in the room
+         *  Broadcast data to all players in the room. 
          *  Not blocking call
          */
+        MULTISLIDER_DEPRECATED(Will be changed to room reconfiguration later. Use the method say() instead.)
         MULTISLIDER_EXPORT
         void broadcast(const std::string & data, bool toSelf);
+
+        /**
+         *  Send message to all players
+         *  @param message User's message
+         */
+        MULTISLIDER_EXPORT
+        void say(const std::string & message);
 
         /**
          *  Check incoming broadcast messages and call callback for the each message

@@ -41,6 +41,14 @@ namespace multislider
         virtual void onUpdate(Session* /*session*/, const SessionData & /*data*/, const PlayerData & /*sharedData*/) { }
 
         /**
+         *  Is called for each message from say()
+         *  @param session This session pointer
+         *  @param sender Name of the user who sent the message
+         *  @param message User's message
+         */
+        virtual void onMessage(Session* /*session*/, const std::string & /*sender*/, const std::string & /*message*/) { }
+
+        /**
          *  Is called as soon as synchronization message is got
          *  @param wasLost set true if Sync message wasn't delivered
          */

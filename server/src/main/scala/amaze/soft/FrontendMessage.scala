@@ -61,6 +61,11 @@ object FrontendMessage {
   case class Update(room: RoomInfo, data: String, sender: String, toSelf: Boolean, flags: Int) extends JsonMessage
 
   /**
+   * Message between players without any caching
+   */
+  case class Message(sender: String, data: String) extends JsonMessage
+
+  /**
    * Start game session for all current players
    */
   case class StartSession(data: String) extends JsonMessage

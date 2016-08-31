@@ -273,6 +273,19 @@ namespace multislider
     }
     //-------------------------------------------------------
 
+    void Session::say(const std::string & message)
+    {
+        if (!mStarted) {
+            throw ProtocolError("Session[broadcast]: Session was not started!");
+        }
+        Object sayJson;
+        sayJson << MESSAGE_KEY_CLASS  << backend::MESSAGE;
+        sayJson << MESSAGE_KEY_SENDER << mPlayerName;
+        sayJson << MESSAGE_KEY_DATA   << message;
+        sendUpdDatagram(makeEnvelop(sayJson).write(JSON));
+    }
+    //-------------------------------------------------------
+
     void Session::keepAlive()
     {
         if (!mStarted) {
@@ -352,6 +365,9 @@ namespace multislider
                 if (player == mPlayerName) {
                     mStarted = false;
                 }
+            }
+            else if (isMessageClass(messageClass, backend::MESSAGE)) {
+                mCallback->onMessage(this, messageJson.get<jsonxx::String>(MESSAGE_KEY_SENDER, ""), messageJson.get<jsonxx::String>(MESSAGE_KEY_DATA));
             }
             else {
                 throw RuntimeError("Session[receive]: Unknown datagram type!");

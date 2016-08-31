@@ -28,6 +28,15 @@ namespace multislider
 }
 #endif
 
+#define QUOTE_IMPL(s) #s
+#define QUOTE(s) QUOTE_IMPL(s)
+
+#if defined (_MSC_VER)
+# define MULTISLIDER_DEPRECATED(Reason) __declspec(deprecated(QUOTE(Reason)))
+#else
+# define MULTISLIDER_DEPRECATED(Reason) __attribute__ ((deprecated))
+#endif
+
 namespace RakNet
 {
     struct SystemAddress;

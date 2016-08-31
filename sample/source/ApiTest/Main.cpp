@@ -46,6 +46,11 @@ public:
         std::cout << msg;
     }
 
+    void onMessage(Session* session, const std::string & sender, const std::string & message) override
+    {
+        std::cout << std::string("SessionCallback[") + session->getPlayerName() + "]: Got message from " + sender + ": " + message + "\n";
+    }
+
     void onSync(Session* session, uint32_t syncId, bool wasLost) override
     {
         if (!wasLost) {
@@ -84,6 +89,11 @@ public:
         std::cout << std::string("[") + lobby->getPlayerName() + "]: got broadcast message \"" + message + "\" [from \"" + sender + "\" flags = " + std::to_string(flags) + "]\n";
     }
 
+    void onMessage(Lobby* lobby, const RoomInfo & room, const std::string & sender, const std::string & message) override
+    {
+        std::cout << std::string("[") + lobby->getPlayerName() + "]: Got message from " + sender + ": " + message + "\n";
+    }
+
     void onSessionStart(Lobby* lobby, const RoomInfo & room, SessionPtr session, const std::string & sessionData) override
     {
         std::cout << std::string("[") + lobby->getPlayerName() + "]: session is started! " + sessionData + "\n";
@@ -119,7 +129,8 @@ public:
             { }
             std::this_thread::sleep_for(std::chrono::seconds(2));
 
-            lobby.broadcast("TestMessage1", false);
+            //lobby.broadcast("TestMessage1", false);
+            lobby.say("TestMessage1");
             std::cout << "Server sent broadcast\n";
 
             {

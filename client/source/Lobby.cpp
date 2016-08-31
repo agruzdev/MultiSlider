@@ -321,6 +321,20 @@ namespace multislider
     }
     //-------------------------------------------------------
 
+    void Lobby::say(const std::string & message)
+    {
+        if (!mIsJoined) {
+            throw ProtocolError("Lobby[broadcast]: I'm not in a room!");
+        }
+        Object sayJson;
+        sayJson << MESSAGE_KEY_CLASS  << frontend::MESSAGE;
+        sayJson << MESSAGE_KEY_SENDER << mPlayerName;
+        sayJson << MESSAGE_KEY_DATA   << message;
+        std::string sayMessage = makeEnvelop(sayJson).write(JSON);
+        mTcp->Send(sayMessage.c_str(), sayMessage.size(), *mServerAddress, false);
+    }
+    //-------------------------------------------------------
+
     uint32_t Lobby::receive()
     {
         if (!mIsJoined) {
@@ -353,6 +367,9 @@ namespace multislider
             else if (isMessageClass(messageClass, frontend::EJECTED)) {
                 mCallback->onLeft(this, mMyRoom, narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));
                 mIsJoined = false;
+            }
+            else if (isMessageClass(messageClass, frontend::MESSAGE)) {
+                mCallback->onMessage(this, mMyRoom, messageJson.get<jsonxx::String>(MESSAGE_KEY_SENDER, ""), messageJson.get<jsonxx::String>(MESSAGE_KEY_DATA, ""));
             }
             else {
                 throw ProtocolError("Lobby[receive]: Unknown message type");

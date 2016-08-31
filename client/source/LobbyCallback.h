@@ -55,6 +55,16 @@ namespace multislider
         { }
 
         /**
+         *  Is called for each message from say()
+         *  @param lobby This lobby pointer
+         *  @param room This room info
+         *  @param sender Name of the player who sent this broadcast. Or name of joined/left player if flags variable contains FLAG_JOINED/FLAG_LEFT respectively
+         *  @param message User message
+         */
+        virtual void onMessage(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*sender*/, const std::string & /*message*/)
+        { }
+
+        /**
          *  Is called as soon as a host has started a session
          *  @param lobby This lobby pointer
          *  @param room This room info

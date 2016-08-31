@@ -28,6 +28,11 @@ object BackendMessage {
   case class Update(playerName: String, timestamp: Long, forceBroadcast: Boolean, data: String, sharedData: String) extends  JsonMessage
 
   /**
+   * Message between players without any caching
+   */
+  case class Message(sender: String, data: String) extends JsonMessage
+
+  /**
    * Request server to send sync message to all players
    * @param delay sync message delay in milliseconds
    */
