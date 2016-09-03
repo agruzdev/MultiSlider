@@ -1,15 +1,17 @@
 
-#include "../../../client/source/MultiSlider.h"
-
 #include <iostream>
 #include <mutex>
 #include <future>
 #include <atomic>
 #include <condition_variable>
 
+#include <gtest/gtest.h>
+
+#include "../../../client/source/MultiSlider.h"
+
 using namespace multislider;
 
-std::atomic_bool gFlagJoin  { false };
+std::atomic_bool gFlagJoin{ false };
 std::atomic_bool gFlagFinish{ false };
 std::atomic_bool gFlagSession{ false };
 
@@ -20,7 +22,7 @@ std::condition_variable gCvSession;
 static const char SERVER_ADDRESS[] = "127.0.0.1";
 //static const char SERVER_ADDRESS[] = "95.213.199.37";
 static const uint16_t SERVER_FRONTEND_PORT = 8800;
-static const uint16_t SERVER_BACKEND_PORT  = 8700;
+static const uint16_t SERVER_BACKEND_PORT = 8700;
 
 class SessionCallbackSample
     : public SessionCallback
@@ -79,17 +81,17 @@ public:
         std::cout << std::string("[") + lobby->getPlayerName() + "]: I joined the room \"" + room.getName() + "\"!\n";
     }
 
-    void onLeft(Lobby* lobby, const RoomInfo & room, uint8_t flags) override
+    void onLeft(Lobby* lobby, const RoomInfo & room, uint8_t /*flags*/) override
     {
         std::cout << std::string("[") + lobby->getPlayerName() + "]: I left the room \"" + room.getName() + "\"!\n";
     }
 
-    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & sender, const std::string & message, uint8_t flags) override
+    void onBroadcast(Lobby* lobby, const RoomInfo & /*room*/, const std::string & sender, const std::string & message, uint8_t flags) override
     {
         std::cout << std::string("[") + lobby->getPlayerName() + "]: got broadcast message \"" + message + "\" [from \"" + sender + "\" flags = " + std::to_string(flags) + "]\n";
     }
 
-    void onMessage(Lobby* lobby, const RoomInfo & room, const std::string & sender, const std::string & message) override
+    void onMessage(Lobby* lobby, const RoomInfo & /*room*/, const std::string & sender, const std::string & message) override
     {
         std::cout << std::string("[") + lobby->getPlayerName() + "]: Got message from " + sender + ": " + message + "\n";
     }
@@ -125,8 +127,8 @@ public:
             gFlagJoin = true;
             gCvJoin.notify_one();
 
-            while (0 == lobby.receive()) 
-            { }
+            while (0 == lobby.receive()) {
+            }
             std::this_thread::sleep_for(std::chrono::seconds(2));
 
             //lobby.broadcast("TestMessage1", false);
@@ -144,8 +146,8 @@ public:
             }
 
             lobby.startSession("<initial data here>");
-            while (0 == lobby.receive()) 
-            { }
+            while (0 == lobby.receive()) {
+            }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -157,8 +159,8 @@ public:
 
                 gHostSession->broadcast("ServerDataHere", "OverwrittenShared", false);
 
-                while (0 == gHostSession->receive())
-                { }
+                while (0 == gHostSession->receive()) {
+                }
 
                 std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -205,14 +207,14 @@ public:
                     throw std::runtime_error("Failed to join the room!");
                 }
 
-                while (0 == lobby.receive())
-                { }
+                while (0 == lobby.receive()) {
+                }
 
                 gFlagSession = true;
                 gCvSession.notify_one();
 
-                while (0 == lobby.receive())
-                { }
+                while (0 == lobby.receive()) {
+                }
 
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 lobby.leaveRoom();
@@ -232,8 +234,8 @@ public:
                 std::cout << "ping = " + std::to_string(gClientSession->getLastPing()) + "\n";
 
                 gClientSession->broadcast("ForcedData", true);
-                while (0 == gClientSession->receive()) 
-                { }
+                while (0 == gClientSession->receive()) {
+                }
 
                 std::cout << "ping = " + std::to_string(gClientSession->getLastPing()) + "\n";
 
@@ -245,27 +247,28 @@ public:
     }
 };
 
-int main()
+TEST(Functional, ApiTest)
 {
-    auto host   = std::async(std::launch::async, []() { 
+    auto host = std::async(std::launch::async, []() {
         try {
             HostSample().run();
         }
         catch (RuntimeError & e) {
             std::cout << e.what() << std::endl;
+            EXPECT_TRUE(false);
         }
     });
-    auto client = std::async(std::launch::async, []() { 
+    auto client = std::async(std::launch::async, []() {
         try {
             ClientSample().run();
         }
         catch (RuntimeError & e) {
             std::cout << e.what() << std::endl;
+            EXPECT_TRUE(false);
         }
     });
 
     client.wait();
     host.wait();
-
-    return 0;
+    EXPECT_TRUE(true);
 }

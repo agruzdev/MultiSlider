@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.5)
 
 project(MultiSlider)
 
@@ -50,3 +50,11 @@ add_library(MultiSlider SHARED ${all_sources})
 target_link_libraries(MultiSlider PRIVATE RakNetDLL)
 target_link_libraries(MultiSlider PRIVATE ${THIRD_PARTY_TARGETS})
 target_link_libraries(MultiSlider PRIVATE enet)
+
+#--------------------------------
+
+option(BUILD_TESTS "Build tests target" ON)
+if(BUILD_TESTS)
+   add_subdirectory(./tests)
+endif()
+
