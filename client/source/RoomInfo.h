@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include "CommonIncludes.h"
+
 namespace jsonxx
 {
     class Object;

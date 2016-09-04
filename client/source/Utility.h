@@ -150,11 +150,11 @@ namespace multislider
     /**
      *  Get size of a C-style array
      */
-    template <typename _T, size_t _N>
+    template <typename _Type, size_t _Size>
     inline
-    size_t arrayLengh(const _T(&)[_N])
+    size_t arrayLengh(const _Type(&)[_Size])
     {
-        return _N;
+        return _Size;
     }
 
     /**

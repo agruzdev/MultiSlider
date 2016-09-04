@@ -8,7 +8,7 @@
 #ifndef _MULTI_SLIDER_CONSTANTS_H_
 #define _MULTI_SLIDER_CONSTANTS_H_
 
-#include <cstdint>
+#include "CommonIncludes.h"
 
 namespace multislider
 {
