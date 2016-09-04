@@ -77,7 +77,7 @@ object Application extends Controller {
 
   def run(id: Int) = Action {
     try {
-      Seq("sh", "-c", "cd /home/wr/MultiSlider && /home/wr/MultiSlider/run.sh").!
+      Seq("sh", "-c", "cd /home/wr/MultiSlider && python run_latest.py").!
     }catch {
       case e : Exception =>
         Logger.error("Exception", e)
