@@ -48,6 +48,8 @@ namespace multislider
         bool mIsHost;
 
         mutable std::vector<uint8_t> mReceiveBuffer;
+    
+        mutable std::vector<RoomInfo> mRooms;
         //-------------------------------------------------------
 
         jsonxx::Object makeEnvelop(const jsonxx::Object & obj) const;
@@ -93,7 +95,7 @@ namespace multislider
          *  Get a list of all opened rooms on the server
          */
         MULTISLIDER_EXPORT
-        std::vector<RoomInfo> getRooms() const;
+        const std::vector<RoomInfo>& getRooms() const;
 
         /**
          *  Join a room

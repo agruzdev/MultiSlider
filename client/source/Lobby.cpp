@@ -158,7 +158,7 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    std::vector<RoomInfo> Lobby::getRooms() const
+    const std::vector<RoomInfo>& Lobby::getRooms() const
     {
 #if 0
         assert(mTcp.get() != NULL);
@@ -181,6 +181,7 @@ namespace multislider
         }
         return rooms;
 #else
+        mRooms.clear();
         Object jsonGetRooms;
         jsonGetRooms << MESSAGE_KEY_CLASS << frontend::GET_ROOMS;
         UdpInterface::Instance().sendUpdDatagram(*mUpdSocket, mServerIp, mServerPort, jsonGetRooms.write(JSON));
@@ -190,12 +191,12 @@ namespace multislider
         }
         Array roomsArray;
         roomsArray.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), len));
-        std::vector<RoomInfo> rooms;
-        rooms.resize(roomsArray.size());
+        
+        mRooms.resize(roomsArray.size());
         for (size_t i = 0; i < roomsArray.size(); ++i) {
-            rooms[i].deserialize(roomsArray.get<Object>(i));
+            mRooms[i].deserialize(roomsArray.get<Object>(i));
         }
-        return rooms;
+        return mRooms;
 #endif
     }
     //-------------------------------------------------------
