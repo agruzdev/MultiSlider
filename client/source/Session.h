@@ -200,6 +200,14 @@ namespace multislider
             return mPlayerName;
         }
 
+        /**
+         *  Check if the session was started
+         */
+        bool started() const
+        {
+            return mStarted;
+        }
+
         //-------------------------------------------------------
         /**
          *  Get connection timeout 
