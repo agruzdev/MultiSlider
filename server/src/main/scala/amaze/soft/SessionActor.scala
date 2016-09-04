@@ -229,20 +229,22 @@ class SessionActor(m_id: Int, m_name: String, players: List[String]) extends Act
                   m_logger.info("Got a RequestSync message")
                   val scheduleSync = (msgIdx: Int) => {
                     Depot.actorsSystem.scheduler.scheduleOnce(delay milliseconds) {
-                      m_stats.values.foreach(player => if (player != null) socket ! Udp.Send(ByteString(json.Serialization.write(Sync(syncId, msgIdx))), player.address))
+                      for(player <- m_stats.values if player != null) {
+                        socket ! Udp.Send(ByteString(json.Serialization.write(Sync(syncId, msgIdx))), player.address)
+                      }
                     }(Depot.actorsSystem.dispatcher)
                   }
                   if (seqIdx < IDX_WRAP_MODULE) {
-                    if(checkAcknowlegment(seqIdx, playerName)) {
+                    if (checkAcknowlegment(seqIdx, playerName)) {
                       // Reliable
                       val info = m_seqStats.get(playerName).get
-                      m_seqStats.update(playerName, MessagesSequenceInfo(if(info.localSeqIdx < IDX_WRAP_MODULE - 1) info.localSeqIdx + 1 else 0, info.remoteSeqIdx, info.remoteIdxBits))
+                      m_seqStats.update(playerName, MessagesSequenceInfo(if (info.localSeqIdx < IDX_WRAP_MODULE - 1) info.localSeqIdx + 1 else 0, info.remoteSeqIdx, info.remoteIdxBits))
                       scheduleSync(info.localSeqIdx)
                       socket ! Udp.Send(ByteString(json.Serialization.write(Ack(seqIdx))), senderAddress)
-                    } else {
-                      // Simple
-                      scheduleSync(IDX_WRAP_MODULE + 1)
                     }
+                  }else {
+                    // Simple
+                    scheduleSync(IDX_WRAP_MODULE + 1)
                   }
 
                 case ClockSync(id, requestTime, _) =>
