@@ -5,6 +5,13 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
+#if defined(_MSC_VER) && (_MSC_VER < 1800)
+# include "CommonIncludes.h"
+# ifndef _STDINT_H_
+#  define _STDINT_H_
+# endif
+#endif
+
 #include "TCPInterface.h"
 
 #include "Lobby.h"
@@ -14,7 +21,10 @@
 #include "Session.h"
 #include "UdpInterface.h"
 
-#include "jsonxx.h"
+#pragma warning(push)
+#pragma warning(disable: 4127)
+#include <jsonxx.h>
+#pragma warning(pop)
 
 
 using namespace RakNet;

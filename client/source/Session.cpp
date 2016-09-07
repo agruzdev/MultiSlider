@@ -11,6 +11,13 @@
 #define NOMINMAX
 #endif
 
+#if defined(_MSC_VER) && (_MSC_VER < 1800)
+# include "CommonIncludes.h"
+# ifndef _STDINT_H_
+#  define _STDINT_H_
+# endif
+#endif
+
 #include "Session.h"
 #include "Exception.h"
 #include "Utility.h"
@@ -18,7 +25,11 @@
 
 #include "UdpInterface.h"
 
+#pragma warning(push)
+#pragma warning(disable: 4127)
 #include <jsonxx.h>
+#pragma warning(pop)
+
 #include <GetTime.h> // From RakNet
 
 using namespace RakNet;
