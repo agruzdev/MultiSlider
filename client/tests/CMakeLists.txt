@@ -7,8 +7,8 @@ project(MultiSliderTests)
 configure_file(./gtest/CMakeLists.txt.in ${CMAKE_BINARY_DIR}/googletest-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
-#execute_process(COMMAND ${CMAKE_COMMAND} --build .
-#  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
  
 # Prevent GoogleTest from overriding our compiler/linker options
 # when building with Visual Studio
