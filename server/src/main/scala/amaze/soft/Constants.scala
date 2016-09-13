@@ -12,8 +12,8 @@ object Constants {
   val DEFAULT_NAME = "MultiSlider"
 
   val VERSION_MAJOR = 0
-  val VERSION_MINOR = 7
-  val VERSION_REVISION = 1
+  val VERSION_MINOR = 8
+  val VERSION_REVISION = 0
 
   val RESPONCE_GREETINGS = "HALO"
   val RESPONSE_SUCC = "SUCC"

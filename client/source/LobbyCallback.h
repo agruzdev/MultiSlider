@@ -20,6 +20,8 @@ namespace multislider
         MULTISLIDER_EXPORT static const uint8_t FLAG_JOINED;                   ///< Somebody joined the room
         MULTISLIDER_EXPORT static const uint8_t FLAG_LEFT;                     ///< Somebody left the room
         MULTISLIDER_EXPORT static const uint8_t FLAG_NEW_HOST;                 ///< Room has a new host
+        MULTISLIDER_EXPORT static const uint8_t FLAG_RECONFIGURED_BY_HOST;     ///< Room has been reconfigured by host
+        MULTISLIDER_EXPORT static const uint8_t FLAG_RECONFIGURE_FAIL;         ///< Couldn't change room parameters
         MULTISLIDER_EXPORT static const uint8_t FLAG_ROOM_CLOSED_BY_HOST;      ///< The player was ejected because the room was closed by host
 
         virtual ~LobbyCallback() 
@@ -44,14 +46,14 @@ namespace multislider
         { }
 
         /**
-         *  Is called for each broadcast message
+         *  Is called for each update of the room state
          *  @param lobby This lobby pointer
          *  @param room This room info
          *  @param sender Name of the player who sent this broadcast. Or name of joined/left player if flags variable contains FLAG_JOINED/FLAG_LEFT respectively
-         *  @param message User message
-         *  @param flags May be FLAG_JOINED or FLAG_LEFT, if somebody has joined or left the room 
+         *  @param flags May be FLAG_JOINED or FLAG_LEFT, if somebody has joined or left the room. FLAG_RECONFIGURED_BY_HOST is host has changed room parameters
+         *               FLAG_RECONFIGURE_FAIL is set for the host if reconfigure operation failed
          */
-        virtual void onBroadcast(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*sender*/, const std::string & /*message*/, uint8_t /*flags*/)
+        virtual void onRoomUpdate(Lobby* /*lobby*/, const RoomInfo & /*room*/, const std::string & /*sender*/, uint8_t /*flags*/)
         { }
 
         /**

@@ -86,9 +86,9 @@ public:
         std::cout << std::string("[") + lobby->getPlayerName() + "]: I left the room \"" + room.getName() + "\"!\n";
     }
 
-    void onBroadcast(Lobby* lobby, const RoomInfo & /*room*/, const std::string & sender, const std::string & message, uint8_t flags) override
+    void onRoomUpdate(Lobby* lobby, const RoomInfo & /*room*/, const std::string & sender, uint8_t flags) override
     {
-        std::cout << std::string("[") + lobby->getPlayerName() + "]: got broadcast message \"" + message + "\" [from \"" + sender + "\" flags = " + std::to_string(flags) + "]\n";
+        std::cout << std::string("[") + lobby->getPlayerName() + "]: Room was updated [from \"" + sender + "\" flags = " + std::to_string(flags) + "]\n";
     }
 
     void onMessage(Lobby* lobby, const RoomInfo & /*room*/, const std::string & sender, const std::string & message) override
@@ -132,7 +132,7 @@ public:
             std::this_thread::sleep_for(std::chrono::seconds(2));
 
             //lobby.broadcast("TestMessage1", false);
-            lobby.say("TestMessage1");
+            lobby.say("TestMessage1", false);
             std::cout << "Server sent broadcast\n";
 
             {

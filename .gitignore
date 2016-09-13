@@ -6,6 +6,8 @@
 /server/multislider-log.txt
 /client/build/*
 /sample/build/*
+/client/build_vc9/*
+/sample/build_vc9/*
 /watchdog/.idea
 /watchdog/logs/*
 /watchdog/target/*

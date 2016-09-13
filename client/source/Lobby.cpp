@@ -54,6 +54,8 @@ namespace multislider
     const uint8_t LobbyCallback::FLAG_LEFT                  = 1 << 2;
     const uint8_t LobbyCallback::FLAG_NEW_HOST              = 1 << 3;
     const uint8_t LobbyCallback::FLAG_ROOM_CLOSED_BY_HOST   = 1 << 4;
+    const uint8_t LobbyCallback::FLAG_RECONFIGURED_BY_HOST  = 1 << 5;
+    const uint8_t LobbyCallback::FLAG_RECONFIGURE_FAIL      = 1 << 6;
     //-------------------------------------------------------
 
     Lobby::Lobby(const std::string & serverIp, uint16_t serverPort)
@@ -115,6 +117,12 @@ namespace multislider
     }
     //-------------------------------------------------------
 
+    void Lobby::sendTcpMessage(const std::string & message) const
+    {
+        mTcp->Send(message.c_str(), narrow_cast<unsigned int>(message.size()), *mServerAddress, false);
+    }
+    //-------------------------------------------------------
+
     Lobby::Status Lobby::createRoom(const std::string & playerName, const std::string & roomName, const std::string & description, uint32_t playersLimit, uint32_t playersReserved, const std::string & userParameter, LobbyCallback* callback)
     {
         if (playerName.empty()) {
@@ -168,29 +176,28 @@ namespace multislider
     }
     //-------------------------------------------------------
 
+    void Lobby::reconfigure(uint32_t playersLimit, uint32_t playersReserved)
+    {
+        if (!(mIsJoined && mIsHost)) {
+            throw ProtocolError("Lobby[reconfigure]: Can't reconfigure the room. I'm not the host!");
+        }
+        if (playersLimit < 1) {
+            throw ProtocolError("Lobby[reconfigure]: players limit can't be less than 1");
+        }
+        if (playersReserved > playersLimit - 1) {
+            throw ProtocolError("Lobby[reconfigure]: players reserved number can't be greater or equal to player limit");
+        }
+        Object reconfigureJson;
+        reconfigureJson << MESSAGE_KEY_CLASS << frontend::RECONFIGURE;
+        reconfigureJson << MESSAGE_KEY_PLAYERS_LIMIT << playersLimit;
+        reconfigureJson << MESSAGE_KEY_PLAYERS_RESERVED << playersReserved;
+        sendTcpMessage(makeEnvelop(reconfigureJson).write(JSON));
+    }
+
+    //-------------------------------------------------------
+
     const std::vector<RoomInfo>& Lobby::getRooms() const
     {
-#if 0
-        assert(mTcp.get() != NULL);
-
-        Object jsonGetRooms;
-        jsonGetRooms << MESSAGE_KEY_CLASS << frontend::GET_ROOMS;
-        std::string message = jsonGetRooms.write(JSON);
-        mTcp->Send(message.c_str(), message.size(), *mServerAddress, false);
-        shared_ptr<Packet> packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
-        if (packet == NULL || responsed(packet, constants::RESPONSE_SUCK)) {
-            throw ServerError("Lobby[Lobby]: Failed to get rooms list!");
-        }
-
-        Array roomsArray;
-        roomsArray.parse(std::string(pointer_cast<char*>(packet->data), packet->length));
-        std::vector<RoomInfo> rooms;
-        rooms.resize(roomsArray.size());
-        for (size_t i = 0; i < roomsArray.size(); ++i) {
-            rooms[i].deserialize(roomsArray.get<Object>(i));
-        }
-        return rooms;
-#else
         mRooms.clear();
         Object jsonGetRooms;
         jsonGetRooms << MESSAGE_KEY_CLASS << frontend::GET_ROOMS;
@@ -207,7 +214,6 @@ namespace multislider
             mRooms[i].deserialize(roomsArray.get<Object>(i));
         }
         return mRooms;
-#endif
     }
     //-------------------------------------------------------
 
@@ -233,8 +239,7 @@ namespace multislider
         joinRoomJson << MESSAGE_KEY_CLASS << frontend::JOIN_ROOM;
         joinRoomJson << MESSAGE_KEY_PLAYER_NAME << playerName;
         joinRoomJson << MESSAGE_KEY_ROOM_NAME << room.getName();
-        std::string joinRoomMessage = joinRoomJson.write(JSON);
-        mTcp->Send(joinRoomMessage.c_str(), joinRoomMessage.size(), *mServerAddress, false);
+        sendTcpMessage(joinRoomJson.write(JSON));
 
         // Await sync responce 
         shared_ptr<Packet> packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
@@ -262,13 +267,12 @@ namespace multislider
 
     void Lobby::leaveRoom()
     {
-        if (!(mIsJoined && !mIsHost)) {
-            throw ProtocolError("Lobby[closeRoom]: Can't close room. I'm not the host!");
+        if (!mIsJoined) {
+            throw ProtocolError("Lobby[leaveRoom]: Can't leave room. I'm not joined!");
         }
         Object leaveRoomJson;
         leaveRoomJson << MESSAGE_KEY_CLASS << frontend::LEAVE_ROOM;
-        std::string leaveRoomMessage = makeEnvelop(leaveRoomJson).write(JSON);
-        mTcp->Send(leaveRoomMessage.c_str(), leaveRoomMessage.size(), *mServerAddress, false);
+        sendTcpMessage(makeEnvelop(leaveRoomJson).write(JSON));
         mCallback->onLeft(this, mMyRoom, 0);
         mIsJoined = false;
     }
@@ -282,8 +286,7 @@ namespace multislider
         Object ejectPlayerJson;
         ejectPlayerJson << MESSAGE_KEY_CLASS << frontend::EJECT_PLAYER;
         ejectPlayerJson << MESSAGE_KEY_PLAYER_NAME << playerName;
-        std::string ejectPlayerMessage = makeEnvelop(ejectPlayerJson).write(JSON);
-        mTcp->Send(ejectPlayerMessage.c_str(), ejectPlayerMessage.size(), *mServerAddress, false);
+        sendTcpMessage(makeEnvelop(ejectPlayerJson).write(JSON));
     }
     //-------------------------------------------------------
 
@@ -294,8 +297,7 @@ namespace multislider
         }
         Object closeRoomJson;
         closeRoomJson << MESSAGE_KEY_CLASS << frontend::CLOSE_ROOM;
-        std::string closeRoomMessage = closeRoomJson.write(JSON);
-        mTcp->Send(closeRoomMessage.c_str(), closeRoomMessage.size(), *mServerAddress, false);
+        sendTcpMessage(closeRoomJson.write(JSON));
     }
     //-------------------------------------------------------
 
@@ -304,8 +306,7 @@ namespace multislider
         Object startSessionJson;
         startSessionJson << MESSAGE_KEY_CLASS << frontend::START_SESSION;
         startSessionJson << MESSAGE_KEY_DATA << sessionData;
-        std::string startSessionMessage = makeEnvelop(startSessionJson).write(JSON);
-        mTcp->Send(startSessionMessage.c_str(), startSessionMessage.size(), *mServerAddress, false);
+        sendTcpMessage(makeEnvelop(startSessionJson).write(JSON));
     }
     //-------------------------------------------------------
 
@@ -315,34 +316,17 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Lobby::broadcast(const std::string & data, bool toSelf)
-    {
-        if (!mIsJoined) {
-            throw ProtocolError("Lobby[broadcast]: I'm not in a room!");
-        }
-        Object broadcastJson;
-        broadcastJson << MESSAGE_KEY_CLASS << frontend::BROADCAST;
-        broadcastJson << MESSAGE_KEY_ROOM << jsonxx::Null();
-        broadcastJson << MESSAGE_KEY_DATA << data;
-        broadcastJson << MESSAGE_KEY_SENDER << mPlayerName;
-        broadcastJson << MESSAGE_KEY_TO_SELF << toSelf;
-        broadcastJson << MESSAGE_KEY_FLAGS << 0;
-        std::string broadcastMessage = makeEnvelop(broadcastJson).write(JSON);
-        mTcp->Send(broadcastMessage.c_str(), broadcastMessage.size(), *mServerAddress, false);
-    }
-    //-------------------------------------------------------
-
-    void Lobby::say(const std::string & message)
+    void Lobby::say(const std::string & message, bool toSelf)
     {
         if (!mIsJoined) {
             throw ProtocolError("Lobby[broadcast]: I'm not in a room!");
         }
         Object sayJson;
-        sayJson << MESSAGE_KEY_CLASS  << frontend::MESSAGE;
-        sayJson << MESSAGE_KEY_SENDER << mPlayerName;
-        sayJson << MESSAGE_KEY_DATA   << message;
-        std::string sayMessage = makeEnvelop(sayJson).write(JSON);
-        mTcp->Send(sayMessage.c_str(), sayMessage.size(), *mServerAddress, false);
+        sayJson << MESSAGE_KEY_CLASS   << frontend::MESSAGE;
+        sayJson << MESSAGE_KEY_SENDER  << mPlayerName;
+        sayJson << MESSAGE_KEY_DATA    << message;
+        sayJson << MESSAGE_KEY_TO_SELF << toSelf;
+        sendTcpMessage(makeEnvelop(sayJson).write(JSON));
     }
     //-------------------------------------------------------
 
@@ -361,9 +345,8 @@ namespace multislider
             messageJson.parse(std::string(pointer_cast<char*>(packet->data), packet->length));
             std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
             if (isMessageClass(messageClass, frontend::BROADCAST)) {
-                std::string message = messageJson.get<std::string>(constants::MESSAGE_KEY_DATA, "");
                 if (mMyRoom.deserialize(messageJson.get<Object>(constants::MESSAGE_KEY_ROOM, Object()))) {
-                    mCallback->onBroadcast(this, mMyRoom, messageJson.get<jsonxx::String>(MESSAGE_KEY_SENDER), message, narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));
+                    mCallback->onRoomUpdate(this, mMyRoom, messageJson.get<jsonxx::String>(MESSAGE_KEY_SENDER), narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_FLAGS, 0.0)));
                 }
             }
             else if (isMessageClass(messageClass, frontend::SESSION_STARTED)) {
@@ -381,6 +364,15 @@ namespace multislider
             }
             else if (isMessageClass(messageClass, frontend::MESSAGE)) {
                 mCallback->onMessage(this, mMyRoom, messageJson.get<jsonxx::String>(MESSAGE_KEY_SENDER, ""), messageJson.get<jsonxx::String>(MESSAGE_KEY_DATA, ""));
+            }
+            else if (isMessageClass(messageClass, frontend::RECONFIGURE_SUCC)) {
+                if (mMyRoom.deserialize(messageJson.get<Object>(constants::MESSAGE_KEY_ROOM, Object()))) {
+                    mCallback->onRoomUpdate(this, mMyRoom, mMyRoom.getHostName(), LobbyCallback::FLAG_RECONFIGURED_BY_HOST);
+                }
+            }
+            else if (isMessageClass(messageClass, frontend::RECONFIGURE_SUCK)) {
+                assert(mMyRoom.getHostName() == mPlayerName);
+                mCallback->onRoomUpdate(this, mMyRoom, mPlayerName, LobbyCallback::FLAG_RECONFIGURE_FAIL);
             }
             else {
                 throw ProtocolError("Lobby[receive]: Unknown message type");

@@ -15,7 +15,7 @@ namespace multislider
     namespace constants
     {
         static const uint32_t VERSION_MAJOR    = 0;
-        static const uint32_t VERSION_MINOR    = 7;
+        static const uint32_t VERSION_MINOR    = 8;
         static const uint32_t VERSION_REVISION = 0;
 
         static const char RESPONSE_GREET[] = "HALO";
@@ -68,6 +68,7 @@ namespace multislider
 
             // Outcoming
             static const char CREATE_ROOM[]   = "FrontendMessage$CreateRoom";
+            static const char RECONFIGURE[]   = "FrontendMessage$Reconfigure";
             static const char GET_ROOMS[]     = "FrontendMessage$GetRooms";
 
             static const char CLOSE_ROOM[]    = "FrontendMessage$CloseRoom";
@@ -82,6 +83,9 @@ namespace multislider
             static const char SESSION_STARTED[] = "FrontendMessage$SessionStarted";
 
             static const char GREETING[]      = "FrontendMessage$Greeting";
+
+            static const char RECONFIGURE_SUCK[] = "FrontendMessage$ReconfigureSuck";
+            static const char RECONFIGURE_SUCC[] = "FrontendMessage$ReconfigureSucc";
 
             // Both directions
             static const char BROADCAST[]     = "FrontendMessage$Update";

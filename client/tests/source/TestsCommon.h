@@ -89,6 +89,7 @@ public:
     }
 };
 
+inline 
 void RunSessionTest(TestUser* host, TestUser* client, const std::string & ip, uint16_t port)
 {
     host->initHost(ip, port);

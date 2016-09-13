@@ -28,6 +28,11 @@ object FrontendMessage {
   case class CreateRoom(playerName: String, roomName: String, description: String, playersLimit: Int, playersReserved: Int, userParam: String) extends JsonMessage
 
   /**
+   * Change parameters of the room
+   */
+  case class Reconfigure(playersLimit: Int, playersReserved: Int) extends JsonMessage
+
+  /**
    * Close a previously created room
    */
   case class CloseRoom() extends JsonMessage
@@ -63,7 +68,7 @@ object FrontendMessage {
   /**
    * Message between players without any caching
    */
-  case class Message(sender: String, data: String) extends JsonMessage
+  case class Message(sender: String, data: String, toSelf: Boolean) extends JsonMessage
 
   /**
    * Start game session for all current players
@@ -87,4 +92,14 @@ object FrontendMessage {
    * Sent when client was ejected
    */
   case class Ejected(flags: Int) extends JsonMessage
+
+  /**
+   * Changed room parameters successfully
+   */
+  case class ReconfigureSucc(room: RoomInfo) extends JsonMessage
+
+  /**
+   * Failed to change room parameters
+   */
+  case class ReconfigureSuck() extends JsonMessage
 }

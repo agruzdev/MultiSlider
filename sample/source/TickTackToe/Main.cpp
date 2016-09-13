@@ -142,11 +142,11 @@ class Controller
                 auto cmd = splitCommand(line);
                 if (cmd.size() == 2 && cmd[0] == CMD_PLAY_SYM) {
                     if (mLobby->isHost() && (cmd[1] == "X" || cmd[1] == "O")) {
-                        mLobby->broadcast(cmd[1], true);
+                        mLobby->say(cmd[1], true);
                     }
                 }
                 else if (cmd.size() == 1 && cmd[0] == CMD_START) {
-                    mLobby->broadcast((mLobby->isHost() ? "HR" : "CR"), true);
+                    mLobby->say((mLobby->isHost() ? "HR" : "CR"), true);
                     std::cout << "Waiting for all players..." << std::endl;
                     break;
                 }
@@ -300,7 +300,7 @@ class Controller
         drawRoomScreen(room, lobby->isHost());
     }
 
-    void onBroadcast(Lobby* lobby, const RoomInfo & room, const std::string & sender, const std::string & message, uint8_t flags) override
+    void onMessage(Lobby* lobby, const RoomInfo & room, const std::string & sender, const std::string & message)
     {
         const bool isHost = lobby->isHost();
         if (!message.empty()) {

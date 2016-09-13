@@ -44,8 +44,8 @@ class LobbyActor2() extends Actor {
   m_logger.info("Started actor " + self.toString())
 
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(
-    classOf[CloseRoom], classOf[JoinRoom], classOf[LeaveRoom], classOf[EjectPlayer], classOf[StartSession],
-    classOf[SessionStarted], classOf[Update], classOf[Ejected], classOf[Message])))
+    classOf[CloseRoom], classOf[JoinRoom], classOf[LeaveRoom], classOf[EjectPlayer], classOf[StartSession], classOf[SessionStarted],
+    classOf[Update], classOf[Ejected], classOf[Message], classOf[Reconfigure], classOf[ReconfigureSuck], classOf[ReconfigureSucc])))
 
   private def getHost = m_players.head
 
@@ -94,9 +94,9 @@ class LobbyActor2() extends Actor {
           case updateMessage: Update =>
             self forward updateMessage
 
-          case Message(sender, _) =>
+          case Message(sender, _, toSelf) =>
             m_logger.info("Got a Message message!")
-            for(player <- m_players if player.name != sender) {
+            for(player <- m_players if toSelf || player.name != sender) {
               player.actor ! Tcp.Write(ByteString(jsonRaw))
             }
 
@@ -121,6 +121,18 @@ class LobbyActor2() extends Actor {
                 ejectPlayer(player.get, Constants.FLAG_EJECTED)
                 m_players -= player.get
                 self forward FrontendMessage.Update(makeRoomInfo(), "", playerName, toSelf = true, Constants.FLAG_LEFT)
+              }
+            }
+
+          case Reconfigure(newLimit, newReserved) =>
+            m_logger.info("Got a Reconfigure message!")
+            if(getHost.actor == sender()){
+              if(m_players.size > newLimit) {
+                sender() ! Tcp.Write(ByteString(json.Serialization.write(ReconfigureSuck())))
+              } else {
+                m_playersLimit = newLimit
+                m_playersReserved = newReserved
+                m_players.foreach(player => player.actor ! Tcp.Write(ByteString(json.Serialization.write(ReconfigureSucc(makeRoomInfo())))))
               }
             }
 

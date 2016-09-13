@@ -48,11 +48,12 @@ namespace multislider
         bool mIsHost;
 
         mutable std::vector<uint8_t> mReceiveBuffer;
-    
         mutable std::vector<RoomInfo> mRooms;
         //-------------------------------------------------------
 
         jsonxx::Object makeEnvelop(const jsonxx::Object & obj) const;
+
+        void sendTcpMessage(const std::string & message) const;
 
         Lobby(const Lobby &);
         Lobby & operator=(const Lobby &);
@@ -90,6 +91,15 @@ namespace multislider
         MULTISLIDER_EXPORT
         Status createRoom(const std::string & playerName, const std::string & roomName, const std::string & description, uint32_t playersLimit, uint32_t playersReserved, const std::string & userParameter, LobbyCallback* callback);
          
+        /**
+         * Change room parameters
+         * In the case of success all players get onRoomUpdate callback with the new parameters
+         * In the case of fail only host gets onRoomUpdate callback with the flag FLAG_RECONFIGURE_FAIL
+         * @param playersLimit new players limit (should be >= 1)
+         * @param new number of reserved players (0 <= playersReserved < playersLimit)
+         */
+        MULTISLIDER_EXPORT
+        void reconfigure(uint32_t playersLimit, uint32_t playersReserved);
 
         /**
          *  Get a list of all opened rooms on the server
@@ -145,19 +155,12 @@ namespace multislider
         void leaveRoom();
 
         /**
-         *  Broadcast data to all players in the room. 
-         *  Not blocking call
-         */
-        MULTISLIDER_DEPRECATED(Will be changed to room reconfiguration later. Use the method say() instead.)
-        MULTISLIDER_EXPORT
-        void broadcast(const std::string & data, bool toSelf);
-
-        /**
          *  Send message to all players
          *  @param message User's message
+         *  @param toSelf Send message to self as well
          */
         MULTISLIDER_EXPORT
-        void say(const std::string & message);
+        void say(const std::string & message, bool toSelf);
 
         /**
          *  Check incoming broadcast messages and call callback for the each message

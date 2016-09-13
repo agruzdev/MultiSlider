@@ -28,6 +28,13 @@ include_directories(${THIRD_PARTY_INCLUDES})
 
 #--------------------------------
 
+option(BUILD_TESTS "Build tests target" ON)
+if(BUILD_TESTS)
+   add_subdirectory(./tests)
+endif()
+
+#--------------------------------
+
 add_definitions("/D_MULTISLIDER_EXPORT_DLL")
 
 if(MSVC)
@@ -50,11 +57,4 @@ add_library(MultiSlider SHARED ${all_sources})
 target_link_libraries(MultiSlider PRIVATE RakNetDLL)
 target_link_libraries(MultiSlider PRIVATE ${THIRD_PARTY_TARGETS})
 target_link_libraries(MultiSlider PRIVATE enet)
-
-#--------------------------------
-
-option(BUILD_TESTS "Build tests target" ON)
-if(BUILD_TESTS)
-   add_subdirectory(./tests)
-endif()
 
