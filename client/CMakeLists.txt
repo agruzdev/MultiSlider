@@ -12,13 +12,17 @@ set(RAKNET_LIBRARY_DIR "" CACHE PATH "RakNet library dir")
 link_directories(${RAKNET_LIBRARY_DIR})
 
 #--------------------------------
-# ENET
+# Boost Asio
 
-set(ENET_INCLUDE_DIR "" CACHE PATH "ENET include dir")
-include_directories(${ENET_INCLUDE_DIR})
+#set(BOOST_ROOT $ENV{BOOST_ROOT})
+#set(Boost_DIR $ENV{BOOST_ROOT})
+#find_package(Boost REQUIRED COMPONENTS system)
+#
+#include_directories(${Boost_INCLUDE_DIRS})
+#link_directories(${Boost_LIBRARY_DIRS})
 
-set(ENET_LIBRARY_DIR "" CACHE PATH "ENET library dir")
-link_directories(${ENET_LIBRARY_DIR})
+include_directories("C:/Boost-1.62/include/boost-1_62")
+link_directories("C:/Boost-1.62/lib")
 
 #--------------------------------
 # 3rdParty projects
@@ -56,5 +60,4 @@ add_library(MultiSlider SHARED ${all_sources})
 
 target_link_libraries(MultiSlider PRIVATE RakNetDLL)
 target_link_libraries(MultiSlider PRIVATE ${THIRD_PARTY_TARGETS})
-target_link_libraries(MultiSlider PRIVATE enet)
-
+#target_link_libraries(MultiSlider PRIVATE ${Boost_LIBRARIES})

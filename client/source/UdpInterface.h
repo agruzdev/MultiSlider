@@ -10,104 +10,74 @@
 
 #include <vector>
 
-#include <enet/enet.h>
 #include <RakSleep.h>
+
+#include <boost/asio.hpp>
 
 #include "CommonIncludes.h"
 #include "Utility.h"
 
 namespace multislider
 {
-    class UdpSocket
-    {
-        ENetSocket mEnetSocket;
-
-    public:
-        UdpSocket()
-        {
-            mEnetSocket = enet_socket_create(ENET_SOCKET_TYPE_DATAGRAM);
-        }
-
-        ~UdpSocket()
-        {
-            enet_socket_destroy(mEnetSocket);
-        }
-
-        ENetSocket & get()
-        {
-            return mEnetSocket;
-        }
-
-        operator ENetSocket()
-        {
-            return mEnetSocket;
-        }
-    };
-
 
     /**
      *  Singleton wrapper for ENet library
      */
     class UdpInterface
     {
+    public:
+        const static size_t MAX_BUFFER_SIZE;
+
     private:
-        static UdpInterface msInstance;
+        boost::asio::io_service mIoService;
+        boost::asio::ip::udp::socket mAsioSocket;
+        boost::asio::ip::udp::endpoint mEndpoint;
 
-        UdpInterface()
-        {
-            enet_initialize();
-        }
-
-        ~UdpInterface()
-        {
-            enet_deinitialize();
-        }
+        boost::asio::streambuf mStreamBuffer;
+        std::istream mReceiveStream;
 
         UdpInterface(const UdpInterface &);
         UdpInterface & operator= (const UdpInterface &);
 
     public:
-        static UdpInterface & Instance()
+        UdpInterface(const std::string & ip, uint16_t port)
+            : mIoService(), mAsioSocket(mIoService), mStreamBuffer(MAX_BUFFER_SIZE), mReceiveStream(&mStreamBuffer)
         {
-            return msInstance;
+            boost::asio::ip::udp::resolver resolver(mIoService);
+            boost::asio::ip::udp::resolver::query query(boost::asio::ip::udp::v4(), ip, to_string(port));
+            mEndpoint = *resolver.resolve(query);
+            mAsioSocket.open(boost::asio::ip::udp::v4());
         }
 
-        bool sendUpdDatagram(UdpSocket & socket, const::std::string & ip, uint16_t port, const std::string & message)
+        bool sendUpdDatagram(const std::string & message)
         {
-            ENetAddress address;
-            enet_address_set_host(&address, ip.c_str());
-            address.port = port;
-
-            ENetBuffer buffer;
-            buffer.data = const_cast<void*>(pointer_cast<const void*>(message.c_str()));
-            buffer.dataLength = message.size();
-            return (enet_socket_send(socket, &address, &buffer, 1) > 0);
+            boost::system::error_code err;
+            size_t len = mAsioSocket.send_to(boost::asio::buffer(message), mEndpoint, 0, err);
+            return !err && (len == message.size());
         }
 
-        size_t awaitUdpDatagram(UdpSocket & socket, std::vector<uint8_t> & receiveBuffer, uint64_t timeoutMilliseconds, uint32_t attemptsTimeoutMilliseconds = 100)
+        std::string awaitUdpDatagram(uint64_t timeoutMilliseconds, uint32_t attemptsTimeoutMilliseconds = 100)
         {
-            ENetAddress address;
-            ENetBuffer buffer;
-            buffer.data = &receiveBuffer[0];
-            buffer.dataLength = receiveBuffer.size();
+            std::string message;
             uint64_t time = 0;
-
-            int len = 0;
             while (time < timeoutMilliseconds) {
-                len = enet_socket_receive(socket, &address, &buffer, 1);
-                if (len != 0) {
-                    break;
+                size_t available = mAsioSocket.available();
+                if (available > 0) {
+                    boost::asio::ip::udp::endpoint sender;
+                    size_t len = mAsioSocket.receive_from(mStreamBuffer.prepare(available), sender);
+                    if (sender == mEndpoint) {
+                        mStreamBuffer.commit(len);
+                        message = std::string(std::istreambuf_iterator<char>(mReceiveStream), std::istreambuf_iterator<char>());
+                        break;
+                    }
+                    else {
+                        mStreamBuffer.consume(len);
+                    }
                 }
                 RakSleep(attemptsTimeoutMilliseconds);
                 time += attemptsTimeoutMilliseconds;
             }
-
-            if (len < 0) {
-                return 0;
-            }
-            else {
-                return static_cast<size_t>(len);
-            }
+            return message;
         }
     };
 

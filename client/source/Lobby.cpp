@@ -21,6 +21,8 @@
 #include "Session.h"
 #include "UdpInterface.h"
 
+#include <boost/asio.hpp>
+
 #pragma warning(push)
 #pragma warning(disable: 4127)
 #include <jsonxx.h>
@@ -32,7 +34,7 @@ using namespace jsonxx;
 
 namespace
 {
-    static const size_t RECEIVE_BIFFER_SIZE = 4096;
+    static const size_t RECEIVE_BIFFER_SIZE = 32 * 1024; // 32 Kb
 
     struct TcpDeleter
     {
@@ -88,9 +90,7 @@ namespace multislider
         else {
             throw ProtocolError("Lobby[Lobby]: Unrecognized greeting");
         }
-
-        mUpdSocket.reset(new UdpSocket);
-        mReceiveBuffer.resize(RECEIVE_BIFFER_SIZE);
+        mUdpInterface.reset(new UdpInterface(serverIp, serverPort));
     }
     //-------------------------------------------------------
 
@@ -201,13 +201,17 @@ namespace multislider
         mRooms.clear();
         Object jsonGetRooms;
         jsonGetRooms << MESSAGE_KEY_CLASS << frontend::GET_ROOMS;
-        UdpInterface::Instance().sendUpdDatagram(*mUpdSocket, mServerIp, mServerPort, jsonGetRooms.write(JSON));
-        size_t len = UdpInterface::Instance().awaitUdpDatagram(*mUpdSocket, mReceiveBuffer, DEFAULT_TIMEOUT_MS);
-        if(0 == len){
+        //UdpInterface::Instance().sendUpdDatagram(*mUpdSocket, mServerIp, mServerPort, jsonGetRooms.write(JSON));
+        if (!mUdpInterface->sendUpdDatagram(jsonGetRooms.write(JSON))) {
+            throw ServerError("Lobby[Lobby]: Failed to request rooms list!");
+        }
+        //size_t len = UdpInterface::Instance().awaitUdpDatagram(*mUpdSocket, mReceiveBuffer, DEFAULT_TIMEOUT_MS);
+        std::string message = mUdpInterface->awaitUdpDatagram(DEFAULT_TIMEOUT_MS);
+        if(message.empty()){
             throw ServerError("Lobby[Lobby]: Failed to get rooms list!");
         }
         Array roomsArray;
-        roomsArray.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), len));
+        roomsArray.parse(message);
         
         mRooms.resize(roomsArray.size());
         for (size_t i = 0; i < roomsArray.size(); ++i) {

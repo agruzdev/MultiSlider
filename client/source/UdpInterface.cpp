@@ -15,6 +15,6 @@
 
 namespace multislider
 {
-    UdpInterface UdpInterface::msInstance;
+    const size_t UdpInterface::MAX_BUFFER_SIZE = 4 * 1024 * 1024; // 4 Mb
 }
 

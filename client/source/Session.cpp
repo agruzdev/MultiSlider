@@ -18,6 +18,8 @@
 # endif
 #endif
 
+#include <boost/date_time.hpp>
+
 #include "Session.h"
 #include "Exception.h"
 #include "Utility.h"
@@ -52,7 +54,6 @@ namespace multislider
 
 
     //-------------------------------------------------------
-    static const size_t RECEIVE_BIFFER_SIZE = 4096 * 4;
     static const size_t MESSSAGES_BUFFER_SIZE = 32;
     static const size_t IDX_WRAP_MODULO = 1024;
     static const uint64_t CLOCK_SYNC_TIMEOUT_MS = 30 * 1000;
@@ -75,7 +76,6 @@ namespace multislider
         assert(!mServerIp.empty());
         assert(!mPlayerName.empty());
         assert(!mSessionName.empty());
-        mReceiveBuffer.resize(RECEIVE_BIFFER_SIZE);
     }
     //-------------------------------------------------------
 
@@ -91,7 +91,7 @@ namespace multislider
             Object quitJson;
             quitJson << MESSAGE_KEY_CLASS << backend::QUIT;
             quitJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
-            sendUpdDatagram(makeEnvelop(quitJson).write(JSON));
+            mUdpInterface->sendUpdDatagram(makeEnvelop(quitJson).write(JSON));
             mCallback->onQuit(this, getPlayerName(), false);
             mStarted = false;
         }
@@ -116,21 +116,12 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Session::sendUpdDatagram(const std::string & message) const
+    uint64_t Session::getTimeLocalMS() const
     {
-        if (!UdpInterface::Instance().sendUpdDatagram(*mSocket, mServerIp, mServerPort, message)) {
-            throw RuntimeError("Session[Startup]: Failed to send UDP datagram");
-        }
+        return boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
     }
-    //-------------------------------------------------------
 
-    size_t Session::awaitUdpDatagram(uint64_t timeoutMilliseconds, uint32_t attemptsTimeoutMilliseconds /* = 100 */) 
-    {
-        return UdpInterface::Instance().awaitUdpDatagram(*mSocket, mReceiveBuffer, timeoutMilliseconds, attemptsTimeoutMilliseconds);
-    }
-    //-------------------------------------------------------
-
-    uint64_t Session::getTimeMS() const
+    uint64_t Session::getTimeSyncronizedMS() const
     {
         return narrow_cast<uint64_t>(RakNet::GetTimeMS() + mTimeShift);
     }
@@ -142,16 +133,16 @@ namespace multislider
         Object clockSyncJson;
         clockSyncJson << MESSAGE_KEY_CLASS << backend::CLOCK_SYNC;
         clockSyncJson << MESSAGE_KEY_ID << mClockSyncId;
-        clockSyncJson << MESSAGE_KEY_REQUEST_TIME << getTimeMS();
+        clockSyncJson << MESSAGE_KEY_REQUEST_TIME << getTimeSyncronizedMS();
         clockSyncJson << MESSAGE_KEY_RESPONSE_TIME << 0;
-        sendUpdDatagram(makeEnvelop(clockSyncJson).write(JSON));
+        mUdpInterface->sendUpdDatagram(makeEnvelop(clockSyncJson).write(JSON));
     }
     //-------------------------------------------------------
 
     void Session::updatePing(uint64_t timestamp)
     {
         if (mLastSyncTime > 0) {
-            const uint64_t currTime = getTimeMS();
+            const uint64_t currTime = getTimeSyncronizedMS();
             if (timestamp > currTime) {
                 mLastPing = (mLastPing + (timestamp - currTime)) / 2;
             }
@@ -164,10 +155,11 @@ namespace multislider
         if (callback == NULL) {
             throw RuntimeError("Session[Startup]: callback can't be null!");
         }
-        mSocket = shared_ptr<UdpSocket>(new UdpSocket);
-        if (0 != enet_socket_set_option(*mSocket, ENET_SOCKOPT_NONBLOCK, 1)) {
-            throw RuntimeError("Session[Session]: Failed to setup socket");
-        }
+        //mSocket = shared_ptr<UdpSocket>(new UdpSocket);
+        mUdpInterface.reset(new UdpInterface(mServerIp, mServerPort));
+        //if (0 != enet_socket_set_option(*mSocket, ENET_SOCKOPT_NONBLOCK, 1)) {
+        //    throw RuntimeError("Session[Session]: Failed to setup socket");
+        //}
         mCallback = callback;
 
         // Now ready
@@ -175,36 +167,36 @@ namespace multislider
         readyJson << MESSAGE_KEY_CLASS << backend::READY;
         readyJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
         const std::string readyMessage = makeEnvelop(readyJson).write(JSON);
-        sendUpdDatagram(readyMessage);
+        mUdpInterface->sendUpdDatagram(readyMessage);
 
         uint64_t time = 0;
-        size_t dataLength = 0;
-        while (0 == (dataLength = awaitUdpDatagram(DEFAULT_TIMEOUT_MS))) {
+        std::string receivedMessage;
+        while ((receivedMessage = mUdpInterface->awaitUdpDatagram(DEFAULT_TIMEOUT_MS)).empty()) {
             time += DEFAULT_TIMEOUT_MS;
             if (time > timeout) {
                 throw RuntimeError("Session[Startup]: Failed to get response from server");
             }
             // Resend
-            sendUpdDatagram(readyMessage);
+            mUdpInterface->sendUpdDatagram(readyMessage);
         }
-        if(responsed(&mReceiveBuffer[0], dataLength, RESPONSE_SUCC)) {
-            while (0 == (dataLength = awaitUdpDatagram(DEFAULT_TIMEOUT_MS))) {
+        if(responsed(receivedMessage, RESPONSE_SUCC)) {
+            while ((receivedMessage = mUdpInterface->awaitUdpDatagram(DEFAULT_TIMEOUT_MS)).empty()) {
                 time += DEFAULT_TIMEOUT_MS;
                 if (time > timeout) {
                     throw RuntimeError("Session[Startup]: Failed to get response from server");
                 }
                 // Resend
-                sendUpdDatagram(readyMessage);
+                mUdpInterface->sendUpdDatagram(readyMessage);
             }
             Object messageJson;
-            messageJson.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), dataLength));
+            messageJson.parse(receivedMessage);
             std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
             if (!messageClass.empty()) {
                 if (isMessageClass(messageClass, backend::START)) {
                     mStarted = true;
                     mCallback->onStart(this);
                     sendClockSync();
-                    mLastTimestamp = getTimeMS();
+                    mLastTimestamp = getTimeSyncronizedMS();
                     return;
                 }
             }
@@ -212,14 +204,14 @@ namespace multislider
         }
 
         Object messageJson;
-        messageJson.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), dataLength));
+        messageJson.parse(receivedMessage);
         std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
         if (!messageClass.empty()) {
             if (isMessageClass(messageClass, backend::START)) {
                 mStarted = true;
                 mCallback->onStart(this);
                 sendClockSync();
-                mLastTimestamp = getTimeMS();
+                mLastTimestamp = getTimeSyncronizedMS();
                 return;
             }
         }
@@ -236,11 +228,11 @@ namespace multislider
         Object updateJson;
         updateJson << MESSAGE_KEY_CLASS << backend::UPDATE;
         updateJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
-        updateJson << MESSAGE_KEY_TIMESTAMP << enet_time_get();
+        updateJson << MESSAGE_KEY_TIMESTAMP << getTimeLocalMS();
         updateJson << MESSAGE_KEY_FORCE_BROADCAST << forced;
         updateJson << MESSAGE_KEY_DATA << data;
         updateJson << MESSAGE_KEY_SHARED_DATA << sharedData;
-        sendUpdDatagram(makeEnvelop(updateJson).write(JSON));
+        mUdpInterface->sendUpdDatagram(makeEnvelop(updateJson).write(JSON));
     }
     //-------------------------------------------------------
 
@@ -268,11 +260,11 @@ namespace multislider
             syncJson << MESSAGE_KEY_SEQ_INDEX << seqIdx;
             std::string syncMessage = makeEnvelop(syncJson).write(JSON);
             mOutputQueue.push_back(shared_ptr<MsgInfo>(new MsgInfo(seqIdx, RakNet::GetTimeMS(), syncMessage)));
-            sendUpdDatagram(syncMessage);
+            mUdpInterface->sendUpdDatagram(syncMessage);
         }
         else {
             syncJson << MESSAGE_KEY_SEQ_INDEX << (IDX_WRAP_MODULO + 1);
-            sendUpdDatagram(makeEnvelop(syncJson).write(JSON));
+            mUdpInterface->sendUpdDatagram(makeEnvelop(syncJson).write(JSON));
         }
         return true;
     }
@@ -293,7 +285,7 @@ namespace multislider
         sayJson << MESSAGE_KEY_CLASS  << backend::MESSAGE;
         sayJson << MESSAGE_KEY_SENDER << mPlayerName;
         sayJson << MESSAGE_KEY_DATA   << message;
-        sendUpdDatagram(makeEnvelop(sayJson).write(JSON));
+        mUdpInterface->sendUpdDatagram(makeEnvelop(sayJson).write(JSON));
     }
     //-------------------------------------------------------
 
@@ -305,19 +297,19 @@ namespace multislider
         Object keepAliveJson;
         keepAliveJson << MESSAGE_KEY_CLASS << backend::KEEP_ALIVE;
         keepAliveJson << MESSAGE_KEY_PLAYER_NAME << mPlayerName;
-        keepAliveJson << MESSAGE_KEY_TIMESTAMP << getTimeMS();
-        sendUpdDatagram(makeEnvelop(keepAliveJson).write(JSON));
+        keepAliveJson << MESSAGE_KEY_TIMESTAMP << getTimeSyncronizedMS();
+        mUdpInterface->sendUpdDatagram(makeEnvelop(keepAliveJson).write(JSON));
     }
     //-------------------------------------------------------
 
     uint32_t Session::receive(uint32_t messagesLimit)
     {
         uint32_t counter = 0;
-        size_t dataLength = 0; 
-        while(mStarted && counter < messagesLimit && (dataLength = awaitUdpDatagram(1, 1)) > 0) {
+        std::string receiveMessage;
+        while(mStarted && counter < messagesLimit && !(receiveMessage = mUdpInterface->awaitUdpDatagram(1, 1)).empty()) {
             ++counter;
             Object messageJson;
-            messageJson.parse(std::string(pointer_cast<char*>(&mReceiveBuffer[0]), dataLength));
+            messageJson.parse(receiveMessage);
             std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
             if (isMessageClass(messageClass, backend::START)) {
                 mCallback->onStart(this);
@@ -361,7 +353,7 @@ namespace multislider
             else if (isMessageClass(messageClass, backend::CLOCK_SYNC)) {
                 if (mClockSyncId == narrow_cast<uint8_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_ID, 255))) {
                     if (messageJson.has<jsonxx::Number>(MESSAGE_KEY_REQUEST_TIME) && messageJson.has<jsonxx::Number>(MESSAGE_KEY_RESPONSE_TIME)) {
-                        const uint64_t currTime = getTimeMS();
+                        const uint64_t currTime = getTimeSyncronizedMS();
                         const uint64_t requestTime = narrow_cast<uint64_t>(messageJson.get<jsonxx::Number>(MESSAGE_KEY_REQUEST_TIME));
                         mLastSyncTime = currTime;
                         assert(currTime > requestTime);
@@ -383,9 +375,9 @@ namespace multislider
             else {
                 throw RuntimeError("Session[receive]: Unknown datagram type!");
             }
-            mLastTimestamp = getTimeMS();
+            mLastTimestamp = getTimeSyncronizedMS();
         }
-        const uint64_t currentTime = getTimeMS();
+        const uint64_t currentTime = getTimeSyncronizedMS();
         if (mStarted) {
             // Check timeout
             if (currentTime > mLastTimestamp + KEEP_ALIVE_LIMIT) {
@@ -398,7 +390,7 @@ namespace multislider
             for (size_t idx = 0; idx < mOutputQueue.size(); ++idx) {
                 shared_ptr<MsgInfo> & msg = mOutputQueue[idx];
                 if (currentTime > msg->sentTime + RESEND_INTERVAL) {
-                    sendUpdDatagram(msg->msgData);
+                    mUdpInterface->sendUpdDatagram(msg->msgData);
                     msg->sentTime = currentTime;
                 }
             }

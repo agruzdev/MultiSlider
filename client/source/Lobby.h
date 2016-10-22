@@ -15,7 +15,7 @@
 
 namespace multislider
 {
-    class UdpSocket;
+    class UdpInterface;
 
     class Lobby
     {
@@ -36,7 +36,7 @@ namespace multislider
     private:
         shared_ptr<RakNet::TCPInterface> mTcp;
         shared_ptr<RakNet::SystemAddress> mServerAddress;
-        shared_ptr<UdpSocket> mUpdSocket;
+        shared_ptr<UdpInterface> mUdpInterface;
 
         std::string mServerIp;
         uint16_t mServerPort;
@@ -47,7 +47,6 @@ namespace multislider
         bool mIsJoined;
         bool mIsHost;
 
-        mutable std::vector<uint8_t> mReceiveBuffer;
         mutable std::vector<RoomInfo> mRooms;
         //-------------------------------------------------------
 

@@ -9,6 +9,7 @@
 #define _MULTI_SLIDER_UTILITY_H_
 
 #include <cstring>
+#include <sstream>
 
 #include "CommonIncludes.h"
 #include "TCPInterface.h"
@@ -105,6 +106,17 @@ namespace multislider
     }
 
     /**
+    *  Compare default server response
+    *  @param bytes response bytes, should be at least 4 bytes
+    *  @param expected expected response, should be exactly 4 bytes
+    */
+    inline
+    bool responsed(const std::string & msg, const char* expected)
+    {
+        return responsed(pointer_cast<const uint8_t*>(&msg[0]), msg.size(), expected);
+    }
+
+    /**
      *  Compare default server response 
      *  @param bytes response bytes, should be at least 4 bytes
      *  @param expected expected response, should be exactly 4 bytes
@@ -166,6 +178,15 @@ namespace multislider
     {
         assert(static_cast<_TypeFrom>(static_cast<_TypeTo>(val)) == val);
         return static_cast<_TypeTo>(val);
+    }
+
+
+    template <typename T>
+    std::string to_string(const T & value)
+    {
+        std::stringstream ss;
+        ss << value;
+        return ss.str();
     }
 }
 
