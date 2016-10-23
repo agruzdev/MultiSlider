@@ -20,6 +20,7 @@
 #include "Exception.h"
 #include "Session.h"
 #include "UdpInterface.h"
+#include "TcpInterface.h"
 
 #include <boost/asio.hpp>
 
@@ -63,22 +64,17 @@ namespace multislider
     Lobby::Lobby(const std::string & serverIp, uint16_t serverPort)
         : mServerIp(serverIp), mServerPort(serverPort), mCallback(NULL), mIsJoined(false), mIsHost(false)
     {
-        mTcp.reset(RakNet::TCPInterface::GetInstance(), TcpDeleter());
-        if (!mTcp->Start(8801, 64)) {
-            throw NetworkError("Lobby[Lobby]: Failed to start TCP interface");
-        }
-        mServerAddress.reset(new SystemAddress);
-        *mServerAddress = mTcp->Connect(serverIp.c_str(), serverPort);
-        if (*mServerAddress == UNASSIGNED_SYSTEM_ADDRESS) {
+        mTcpInterface.reset(new TcpInterface());
+        if(!mTcpInterface->connect(serverIp, serverPort)) {
             throw NetworkError("Lobby[Lobby]: Failed to connect to server");
         }
 
-        shared_ptr<Packet> packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
-        if (packet == NULL) {
+        std::string response = mTcpInterface->tryReceive(constants::DEFAULT_TIMEOUT_MS);
+        if (response.empty()) {
             throw ProtocolError("Lobby[Lobby]: No responce from the server");
         }
         Object messageJson;
-        messageJson.parse(std::string(pointer_cast<char*>(packet->data), packet->length));
+        messageJson.parse(response);
         std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
         if (isMessageClass(messageClass, frontend::GREETING)) {
             const uint32_t verMajor = narrow_cast<uint32_t>(messageJson.get<jsonxx::Number>(constants::MESSAGE_KEY_VERSION_MAJOR, 0));
@@ -117,12 +113,6 @@ namespace multislider
     }
     //-------------------------------------------------------
 
-    void Lobby::sendTcpMessage(const std::string & message) const
-    {
-        mTcp->Send(message.c_str(), narrow_cast<unsigned int>(message.size()), *mServerAddress, false);
-    }
-    //-------------------------------------------------------
-
     Lobby::Status Lobby::createRoom(const std::string & playerName, const std::string & roomName, const std::string & description, uint32_t playersLimit, uint32_t playersReserved, const std::string & userParameter, LobbyCallback* callback)
     {
         if (playerName.empty()) {
@@ -140,8 +130,7 @@ namespace multislider
         if (playersReserved > playersLimit - 1) {
             throw ProtocolError("Lobby[createRoom]: players reserved number can't be greater or equal to player limit");
         }
-        assert(mTcp.get() != NULL);
-        assert(*mServerAddress != UNASSIGNED_SYSTEM_ADDRESS);
+        assert(mTcpInterface.get() != NULL);
 
         Object createRoomJson;
         createRoomJson << MESSAGE_KEY_CLASS << frontend::CREATE_ROOM;
@@ -153,10 +142,10 @@ namespace multislider
         createRoomJson << MESSAGE_KEY_USER_PARAM << userParameter;
         std::string createRoomMessage = createRoomJson.write(JSON);
 
-        mTcp->Send(createRoomMessage.c_str(), createRoomMessage.size(), *mServerAddress, false);
-        shared_ptr<Packet> responce = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
-        if (!mMyRoom.deserialize(std::string(pointer_cast<const char*>(responce->data), responce->length))) {
-            if (responsed(responce, constants::RESPONSE_ROOM_EXISTS)) {
+        mTcpInterface->send(createRoomMessage);
+        std::string response = mTcpInterface->tryReceive(constants::DEFAULT_TIMEOUT_MS);
+        if (!mMyRoom.deserialize(response)) {
+            if (responsed(response, constants::RESPONSE_ROOM_EXISTS)) {
                 return ROOM_EXISTS;
             }
             return FAIL;
@@ -191,7 +180,7 @@ namespace multislider
         reconfigureJson << MESSAGE_KEY_CLASS << frontend::RECONFIGURE;
         reconfigureJson << MESSAGE_KEY_PLAYERS_LIMIT << playersLimit;
         reconfigureJson << MESSAGE_KEY_PLAYERS_RESERVED << playersReserved;
-        sendTcpMessage(makeEnvelop(reconfigureJson).write(JSON));
+        mTcpInterface->send(makeEnvelop(reconfigureJson).write(JSON));
     }
 
     //-------------------------------------------------------
@@ -201,11 +190,9 @@ namespace multislider
         mRooms.clear();
         Object jsonGetRooms;
         jsonGetRooms << MESSAGE_KEY_CLASS << frontend::GET_ROOMS;
-        //UdpInterface::Instance().sendUpdDatagram(*mUpdSocket, mServerIp, mServerPort, jsonGetRooms.write(JSON));
         if (!mUdpInterface->sendUpdDatagram(jsonGetRooms.write(JSON))) {
             throw ServerError("Lobby[Lobby]: Failed to request rooms list!");
         }
-        //size_t len = UdpInterface::Instance().awaitUdpDatagram(*mUpdSocket, mReceiveBuffer, DEFAULT_TIMEOUT_MS);
         std::string message = mUdpInterface->awaitUdpDatagram(DEFAULT_TIMEOUT_MS);
         if(message.empty()){
             throw ServerError("Lobby[Lobby]: Failed to get rooms list!");
@@ -235,25 +222,23 @@ namespace multislider
         if (mIsJoined) {
             throw ProtocolError("Lobby[joinRoom]: Already joined!");
         }
-
-        assert(mTcp.get() != NULL);
-        assert(*mServerAddress != UNASSIGNED_SYSTEM_ADDRESS);
+        assert(mTcpInterface.get() != NULL);
 
         Object joinRoomJson;
         joinRoomJson << MESSAGE_KEY_CLASS << frontend::JOIN_ROOM;
         joinRoomJson << MESSAGE_KEY_PLAYER_NAME << playerName;
         joinRoomJson << MESSAGE_KEY_ROOM_NAME << room.getName();
-        sendTcpMessage(joinRoomJson.write(JSON));
+        mTcpInterface->send(joinRoomJson.write(JSON));
 
         // Await sync responce 
-        shared_ptr<Packet> packet = awaitResponse(mTcp, constants::DEFAULT_TIMEOUT_MS);
+        std::string response = mTcpInterface->tryReceive(constants::DEFAULT_TIMEOUT_MS);
         
         // Check responce
-        if (!mMyRoom.deserialize(std::string(pointer_cast<const char*>(packet->data), packet->length))) {
-            if (responsed(packet, constants::RESPONSE_ROOM_IS_FULL)) {
+        if (!mMyRoom.deserialize(response)) {
+            if (responsed(response, constants::RESPONSE_ROOM_IS_FULL)) {
                 return ROOM_IS_FULL;
             }
-            if (responsed(packet, constants::RESPONSE_NAME_EXISTS)) {
+            if (responsed(response, constants::RESPONSE_NAME_EXISTS)) {
                 return NAME_EXISTS;
             }
             return FAIL;
@@ -276,7 +261,7 @@ namespace multislider
         }
         Object leaveRoomJson;
         leaveRoomJson << MESSAGE_KEY_CLASS << frontend::LEAVE_ROOM;
-        sendTcpMessage(makeEnvelop(leaveRoomJson).write(JSON));
+        mTcpInterface->send(makeEnvelop(leaveRoomJson).write(JSON));
         mCallback->onLeft(this, mMyRoom, 0);
         mIsJoined = false;
     }
@@ -290,7 +275,7 @@ namespace multislider
         Object ejectPlayerJson;
         ejectPlayerJson << MESSAGE_KEY_CLASS << frontend::EJECT_PLAYER;
         ejectPlayerJson << MESSAGE_KEY_PLAYER_NAME << playerName;
-        sendTcpMessage(makeEnvelop(ejectPlayerJson).write(JSON));
+        mTcpInterface->send(makeEnvelop(ejectPlayerJson).write(JSON));
     }
     //-------------------------------------------------------
 
@@ -301,7 +286,7 @@ namespace multislider
         }
         Object closeRoomJson;
         closeRoomJson << MESSAGE_KEY_CLASS << frontend::CLOSE_ROOM;
-        sendTcpMessage(closeRoomJson.write(JSON));
+        mTcpInterface->send(closeRoomJson.write(JSON));
     }
     //-------------------------------------------------------
 
@@ -310,7 +295,7 @@ namespace multislider
         Object startSessionJson;
         startSessionJson << MESSAGE_KEY_CLASS << frontend::START_SESSION;
         startSessionJson << MESSAGE_KEY_DATA << sessionData;
-        sendTcpMessage(makeEnvelop(startSessionJson).write(JSON));
+        mTcpInterface->send(makeEnvelop(startSessionJson).write(JSON));
     }
     //-------------------------------------------------------
 
@@ -330,7 +315,7 @@ namespace multislider
         sayJson << MESSAGE_KEY_SENDER  << mPlayerName;
         sayJson << MESSAGE_KEY_DATA    << message;
         sayJson << MESSAGE_KEY_TO_SELF << toSelf;
-        sendTcpMessage(makeEnvelop(sayJson).write(JSON));
+        mTcpInterface->send(makeEnvelop(sayJson).write(JSON));
     }
     //-------------------------------------------------------
 
@@ -341,12 +326,12 @@ namespace multislider
         }
         uint32_t counter = 0;
         while (mIsJoined) {
-            shared_ptr<Packet> packet = awaitResponse(mTcp);
-            if (packet == NULL) {
+            std::string message = mTcpInterface->tryReceive(0);
+            if(message.empty()) {
                 break;
             }
             Object messageJson;
-            messageJson.parse(std::string(pointer_cast<char*>(packet->data), packet->length));
+            messageJson.parse(message);
             std::string messageClass(messageJson.get<std::string>(MESSAGE_KEY_CLASS, ""));
             if (isMessageClass(messageClass, frontend::BROADCAST)) {
                 if (mMyRoom.deserialize(messageJson.get<Object>(constants::MESSAGE_KEY_ROOM, Object()))) {

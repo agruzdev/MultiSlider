@@ -19,7 +19,6 @@
 
 namespace multislider
 {
-
     /**
      *  Singleton wrapper for ENet library
      */
@@ -60,7 +59,7 @@ namespace multislider
         {
             std::string message;
             uint64_t time = 0;
-            while (time < timeoutMilliseconds) {
+            while (time <= timeoutMilliseconds) {
                 size_t available = mAsioSocket.available();
                 if (available > 0) {
                     boost::asio::ip::udp::endpoint sender;

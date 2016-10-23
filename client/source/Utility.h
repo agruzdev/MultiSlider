@@ -12,8 +12,8 @@
 #include <sstream>
 
 #include "CommonIncludes.h"
-#include "TCPInterface.h"
-#include "RakSleep.h"
+#include <TCPInterface.h>
+#include <RakSleep.h>
 
 namespace multislider
 {

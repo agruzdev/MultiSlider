@@ -16,6 +16,7 @@
 namespace multislider
 {
     class UdpInterface;
+    class TcpInterface;
 
     class Lobby
     {
@@ -34,9 +35,10 @@ namespace multislider
         //-------------------------------------------------------
 
     private:
-        shared_ptr<RakNet::TCPInterface> mTcp;
-        shared_ptr<RakNet::SystemAddress> mServerAddress;
+        //shared_ptr<RakNet::TCPInterface> mTcp;
+        //shared_ptr<RakNet::SystemAddress> mServerAddress;
         shared_ptr<UdpInterface> mUdpInterface;
+        shared_ptr<TcpInterface> mTcpInterface;
 
         std::string mServerIp;
         uint16_t mServerPort;
@@ -52,7 +54,7 @@ namespace multislider
 
         jsonxx::Object makeEnvelop(const jsonxx::Object & obj) const;
 
-        void sendTcpMessage(const std::string & message) const;
+        //void sendTcpMessage(const std::string & message) const;
 
         Lobby(const Lobby &);
         Lobby & operator=(const Lobby &);
