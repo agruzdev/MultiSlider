@@ -24,7 +24,6 @@
 #include "Exception.h"
 #include "Utility.h"
 #include "Constants.h"
-
 #include "UdpInterface.h"
 
 #pragma warning(push)
@@ -32,9 +31,6 @@
 #include <jsonxx.h>
 #pragma warning(pop)
 
-#include <GetTime.h> // From RakNet
-
-using namespace RakNet;
 using namespace jsonxx;
 
 namespace multislider
@@ -57,8 +53,6 @@ namespace multislider
     static const size_t MESSSAGES_BUFFER_SIZE = 32;
     static const size_t IDX_WRAP_MODULO = 1024;
     static const uint64_t CLOCK_SYNC_TIMEOUT_MS = 30 * 1000;
-
-    //bool Session::msEnetInited = false;
 
     void Session::destoyInstance(Session* ptr)
     {
@@ -120,10 +114,11 @@ namespace multislider
     {
         return boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
     }
+    //-------------------------------------------------------
 
     uint64_t Session::getTimeSyncronizedMS() const
     {
-        return narrow_cast<uint64_t>(RakNet::GetTimeMS() + mTimeShift);
+        return narrow_cast<uint64_t>(getTimeLocalMS() + mTimeShift);
     }
     //-------------------------------------------------------
 
@@ -155,11 +150,11 @@ namespace multislider
         if (callback == NULL) {
             throw RuntimeError("Session[Startup]: callback can't be null!");
         }
-        //mSocket = shared_ptr<UdpSocket>(new UdpSocket);
-        mUdpInterface.reset(new UdpInterface(mServerIp, mServerPort));
-        //if (0 != enet_socket_set_option(*mSocket, ENET_SOCKOPT_NONBLOCK, 1)) {
-        //    throw RuntimeError("Session[Session]: Failed to setup socket");
-        //}
+
+        mUdpInterface.reset(new UdpInterface());
+        if (!mUdpInterface->open(mServerIp, mServerPort)) {
+            throw RuntimeError("Session[Session]: Failed to setup socket");
+        }
         mCallback = callback;
 
         // Now ready
@@ -259,7 +254,7 @@ namespace multislider
             uint32_t seqIdx = getNextSeqIdx();
             syncJson << MESSAGE_KEY_SEQ_INDEX << seqIdx;
             std::string syncMessage = makeEnvelop(syncJson).write(JSON);
-            mOutputQueue.push_back(shared_ptr<MsgInfo>(new MsgInfo(seqIdx, RakNet::GetTimeMS(), syncMessage)));
+            mOutputQueue.push_back(shared_ptr<MsgInfo>(new MsgInfo(seqIdx, getTimeSyncronizedMS(), syncMessage)));
             mUdpInterface->sendUpdDatagram(syncMessage);
         }
         else {

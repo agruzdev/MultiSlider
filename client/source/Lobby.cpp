@@ -12,11 +12,8 @@
 # endif
 #endif
 
-#include "TCPInterface.h"
-
 #include "Lobby.h"
 #include "Constants.h"
-#include "Utility.h"
 #include "Exception.h"
 #include "Session.h"
 #include "UdpInterface.h"
@@ -30,22 +27,7 @@
 #pragma warning(pop)
 
 
-using namespace RakNet;
 using namespace jsonxx;
-
-namespace
-{
-    static const size_t RECEIVE_BIFFER_SIZE = 32 * 1024; // 32 Kb
-
-    struct TcpDeleter
-    {
-        void operator()(RakNet::TCPInterface* tcp) const
-        {
-            tcp->Stop();
-            RakNet::TCPInterface::DestroyInstance(tcp);
-        }
-    };
-}
 
 namespace multislider
 {
@@ -69,6 +51,11 @@ namespace multislider
             throw NetworkError("Lobby[Lobby]: Failed to connect to server");
         }
 
+        mUdpInterface.reset(new UdpInterface());
+        if (!mUdpInterface->open(serverIp, serverPort)) {
+            throw ProtocolError("Lobby[Lobby]: failed to open udp socket");
+        }
+
         std::string response = mTcpInterface->tryReceive(constants::DEFAULT_TIMEOUT_MS);
         if (response.empty()) {
             throw ProtocolError("Lobby[Lobby]: No responce from the server");
@@ -86,7 +73,6 @@ namespace multislider
         else {
             throw ProtocolError("Lobby[Lobby]: Unrecognized greeting");
         }
-        mUdpInterface.reset(new UdpInterface(serverIp, serverPort));
     }
     //-------------------------------------------------------
 

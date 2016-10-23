@@ -3,7 +3,7 @@
 
 namespace
 {
-    static const uint32_t MESSAGES_NUM = 50;
+    static const uint32_t MESSAGES_NUM = 10;
 
     class ReliabilitySyncHost
         : public TestUser

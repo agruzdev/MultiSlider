@@ -8,11 +8,8 @@
 #ifndef _MULTI_SLIDER_TCP_INTERFACE_H_
 #define _MULTI_SLIDER_TCP_INTERFACE_H_
 
-#include <vector>
-
-#include <RakSleep.h>
-
 #include <boost/asio.hpp>
+#include <boost/thread.hpp>
 
 #include "CommonIncludes.h"
 #include "Utility.h"
@@ -79,7 +76,7 @@ namespace multislider
                     message = std::string(std::istreambuf_iterator<char>(mReceiveStream), std::istreambuf_iterator<char>());
                     break;
                 }
-                RakSleep(attemptsTimeoutMilliseconds);
+                boost::this_thread::sleep_for(boost::chrono::milliseconds(attemptsTimeoutMilliseconds));
                 time += attemptsTimeoutMilliseconds;
             }
             return message;

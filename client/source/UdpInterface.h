@@ -8,11 +8,8 @@
 #ifndef _MULTI_SLIDER_UDP_INTERFACE_H_
 #define _MULTI_SLIDER_UDP_INTERFACE_H_
 
-#include <vector>
-
-#include <RakSleep.h>
-
 #include <boost/asio.hpp>
+#include <boost/thread.hpp>
 
 #include "CommonIncludes.h"
 #include "Utility.h"
@@ -39,13 +36,21 @@ namespace multislider
         UdpInterface & operator= (const UdpInterface &);
 
     public:
-        UdpInterface(const std::string & ip, uint16_t port)
+        UdpInterface()
             : mIoService(), mAsioSocket(mIoService), mStreamBuffer(MAX_BUFFER_SIZE), mReceiveStream(&mStreamBuffer)
+        { }
+
+        bool open(const std::string & ip, uint16_t port)
         {
+            boost::system::error_code err;
             boost::asio::ip::udp::resolver resolver(mIoService);
             boost::asio::ip::udp::resolver::query query(boost::asio::ip::udp::v4(), ip, to_string(port));
-            mEndpoint = *resolver.resolve(query);
-            mAsioSocket.open(boost::asio::ip::udp::v4());
+            mEndpoint = *resolver.resolve(query, err);
+            if (err) {
+                return false;
+            }
+            mAsioSocket.open(boost::asio::ip::udp::v4(), err);
+            return !err;
         }
 
         bool sendUpdDatagram(const std::string & message)
@@ -73,7 +78,7 @@ namespace multislider
                         mStreamBuffer.consume(len);
                     }
                 }
-                RakSleep(attemptsTimeoutMilliseconds);
+                boost::this_thread::sleep_for(boost::chrono::milliseconds(attemptsTimeoutMilliseconds));
                 time += attemptsTimeoutMilliseconds;
             }
             return message;

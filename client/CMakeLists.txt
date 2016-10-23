@@ -3,15 +3,6 @@ cmake_minimum_required (VERSION 3.5)
 project(MultiSlider)
 
 #--------------------------------
-# RakNet
-
-set(RAKNET_INCLUDE_DIR "" CACHE PATH "RakNet include dir")
-include_directories(${RAKNET_INCLUDE_DIR})
-
-set(RAKNET_LIBRARY_DIR "" CACHE PATH "RakNet library dir")
-link_directories(${RAKNET_LIBRARY_DIR})
-
-#--------------------------------
 # Boost Asio
 
 #set(BOOST_ROOT $ENV{BOOST_ROOT})
@@ -58,6 +49,5 @@ set(CMAKE_DEBUG_POSTFIX "_d")
 
 add_library(MultiSlider SHARED ${all_sources})
 
-target_link_libraries(MultiSlider PRIVATE RakNetDLL)
 target_link_libraries(MultiSlider PRIVATE ${THIRD_PARTY_TARGETS})
 #target_link_libraries(MultiSlider PRIVATE ${Boost_LIBRARIES})

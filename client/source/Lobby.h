@@ -35,8 +35,6 @@ namespace multislider
         //-------------------------------------------------------
 
     private:
-        //shared_ptr<RakNet::TCPInterface> mTcp;
-        //shared_ptr<RakNet::SystemAddress> mServerAddress;
         shared_ptr<UdpInterface> mUdpInterface;
         shared_ptr<TcpInterface> mTcpInterface;
 
