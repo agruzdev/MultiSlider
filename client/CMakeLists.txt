@@ -5,15 +5,14 @@ project(MultiSlider)
 #--------------------------------
 # Boost Asio
 
-#set(BOOST_ROOT $ENV{BOOST_ROOT})
-#set(Boost_DIR $ENV{BOOST_ROOT})
-#find_package(Boost REQUIRED COMPONENTS system)
-#
-#include_directories(${Boost_INCLUDE_DIRS})
-#link_directories(${Boost_LIBRARY_DIRS})
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+set(BOOST_ROOT $ENV{BOOST_ROOT})
+find_package(Boost REQUIRED COMPONENTS system date_time regex)
 
-include_directories("C:/Boost-1.62/include/boost-1_62")
-link_directories("C:/Boost-1.62/lib")
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
 
 #--------------------------------
 # 3rdParty projects
@@ -50,4 +49,4 @@ set(CMAKE_DEBUG_POSTFIX "_d")
 add_library(MultiSlider SHARED ${all_sources})
 
 target_link_libraries(MultiSlider PRIVATE ${THIRD_PARTY_TARGETS})
-#target_link_libraries(MultiSlider PRIVATE ${Boost_LIBRARIES})
+target_link_libraries(MultiSlider PRIVATE ${Boost_LIBRARIES})
