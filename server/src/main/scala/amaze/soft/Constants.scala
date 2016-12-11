@@ -13,7 +13,7 @@ object Constants {
 
   val VERSION_MAJOR = 0
   val VERSION_MINOR = 8
-  val VERSION_REVISION = 0
+  val VERSION_REVISION = 1
 
   val RESPONCE_GREETINGS = "HALO"
   val RESPONSE_SUCC = "SUCC"

@@ -37,7 +37,8 @@ object Depot {
   var backend:  ActorRef = null
   var dogapi:   ActorRef = null
 
-  var ip_address = ""
+  var ip_frontend = ""
+  var ip_backend = ""
   var port_frontend = 0
   var port_backend = 0
 
@@ -81,19 +82,19 @@ object Depot {
 
 
   def getAddressFront = {
-    ip_address + ":" + port_frontend.toString
+    ip_frontend + ":" + port_frontend.toString
   }
 
   def getAddressBack = {
-    ip_address + ":" + port_backend.toString
+    ip_backend + ":" + port_backend.toString
   }
 
   def getIpBack = {
-    ip_address
+    ip_backend
   }
 
   def getIpFront = {
-    ip_address
+    ip_frontend
   }
 
   def getPortFront = {

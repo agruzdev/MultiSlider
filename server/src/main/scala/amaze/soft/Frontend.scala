@@ -1,16 +1,19 @@
 package amaze.soft
 
+import java.io.File
 import java.net.InetSocketAddress
 
 import akka.actor._
 import akka.io.{IO, Tcp, Udp}
 import akka.util.ByteString
 import amaze.soft.FrontendMessage.{GetRooms, Greeting, JsonMessage}
+import com.typesafe.config.ConfigFactory
 import net.liftweb.json
 import net.liftweb.json.{DefaultFormats, ShortTypeHints}
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._
+
 
 /**
  * Created by Alexey on 19.05.2016.
@@ -27,18 +30,45 @@ object Frontend extends App {
 
   private val m_logger = LoggerFactory.getLogger(Frontend.getClass.getName)
 
-  // Cmd arguments: <ip> <frontend port> <backend port>
-  Depot.ip_address    = if(args.length > 0) args(0) else "localhost"
-  Depot.port_frontend = if(args.length > 1) args(1).toInt else 8800
-  Depot.port_backend  = if(args.length > 2) args(2).toInt else 8700
+  // defaults
+  Depot.ip_frontend   = "localhost"
+  Depot.ip_backend    = "localhost"
+  Depot.port_frontend = 8800
+  Depot.port_backend  = 8700
+
+  if(args.isEmpty){
+    println("Invalid arguments")
+    println("Cmd arguments: <config path>")
+    System.exit(1)
+  }
+  try {
+    val configFile = new File(args(0))
+    val config = ConfigFactory.parseFile(configFile)
+    m_logger.info("Using config: " + configFile.getAbsolutePath)
+    if (config.hasPath("multislider.frontend")) {
+      val frontend = config.getConfig("multislider.frontend")
+      Depot.ip_frontend   = frontend.getString("ip");
+      Depot.port_frontend = frontend.getInt("port");
+    }
+    if (config.hasPath("multislider.backends")) {
+      val backends = config.getConfigList("multislider.backends")
+      if (!backends.isEmpty) {
+        val defaultBackend = backends.get(0)
+        if (defaultBackend.hasPath("ip") && defaultBackend.hasPath("port")) {
+          Depot.ip_backend   = defaultBackend.getString("ip")
+          Depot.port_backend = defaultBackend.getInt("port")
+        }
+      }
+    }
+  } catch { case _ : Exception  =>
+    println("Failed to read config file")
+    System.exit(1)
+  }
 
   Depot.frontend = Depot.actorsSystem.actorOf(Props[Frontend], Constants.FRONTEND_NAME)
-  Depot.backend  = Depot.actorsSystem.actorOf(Props(classOf[Backend], Depot.ip_address, Depot.port_backend), Constants.BACKEND_NAME)
+  Depot.backend  = Depot.actorsSystem.actorOf(Props(classOf[Backend], Depot.ip_backend, Depot.port_backend), Constants.BACKEND_NAME)
 
   Depot.dogapi = Depot.actorsSystem.actorOf(Props[DogApi], Constants.DOG_API_NAME)
-  //val address = Address("akka.tcp", Depot.actorsSystem.name, Constants.DOG_API_NAME, 8600)
-  //Depot.dogapi = Depot.actorsSystem.actorOf(Props[DogApi].withDeploy(Deploy(scope = RemoteScope(address))), Constants.DOG_API_NAME)
-  //m_logger.info("API = " + Depot.dogapi.path)
 }
 
 
@@ -48,10 +78,10 @@ class Frontend extends Actor {
   private implicit val formats = DefaultFormats.withHints(ShortTypeHints(List(classOf[GetRooms], classOf[Greeting])))
 
   m_logger.info("Frontend is created!")
-  IO(Tcp)(Depot.actorsSystem) ! Tcp.Bind(self, new InetSocketAddress(Depot.ip_address, Depot.port_frontend))
-  m_logger.info("Created TCP socket for " + Depot.ip_address + ":" + Depot.port_frontend)
-  IO(Udp)(Depot.actorsSystem) ! Udp.Bind(self, new InetSocketAddress(Depot.ip_address, Depot.port_frontend))
-  m_logger.info("Created UDP socket for " + Depot.ip_address + ":" + Depot.port_frontend)
+  IO(Tcp)(Depot.actorsSystem) ! Tcp.Bind(self, new InetSocketAddress(Depot.ip_frontend, Depot.port_frontend))
+  m_logger.info("Created TCP socket for " + Depot.ip_frontend + ":" + Depot.port_frontend)
+  IO(Udp)(Depot.actorsSystem) ! Udp.Bind(self, new InetSocketAddress(Depot.ip_frontend, Depot.port_frontend))
+  m_logger.info("Created UDP socket for " + Depot.ip_frontend + ":" + Depot.port_frontend)
 
   def receive = {
     case Tcp.Bound(localAddress) =>
