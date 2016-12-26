@@ -301,7 +301,7 @@ namespace multislider
     {
         uint32_t counter = 0;
         std::string receiveMessage;
-        while(mStarted && counter < messagesLimit && !(receiveMessage = mUdpInterface->awaitUdpDatagram(1, 1)).empty()) {
+        while(mStarted && counter < messagesLimit && !(receiveMessage = mUdpInterface->awaitUdpDatagram(0)).empty()) {
             ++counter;
             Object messageJson;
             messageJson.parse(receiveMessage);

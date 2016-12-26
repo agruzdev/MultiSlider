@@ -76,10 +76,16 @@ namespace multislider
                     }
                     else {
                         mStreamBuffer.consume(len);
+                        continue;
                     }
                 }
-                boost::this_thread::sleep_for(boost::chrono::milliseconds(attemptsTimeoutMilliseconds));
-                time += attemptsTimeoutMilliseconds;
+                if (timeoutMilliseconds > 0) {
+                    boost::this_thread::sleep_for(boost::chrono::milliseconds(attemptsTimeoutMilliseconds));
+                    time += attemptsTimeoutMilliseconds;
+                }
+                else {
+                    break;
+                }
             }
             return message;
         }

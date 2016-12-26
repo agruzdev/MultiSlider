@@ -76,8 +76,13 @@ namespace multislider
                     message = std::string(std::istreambuf_iterator<char>(mReceiveStream), std::istreambuf_iterator<char>());
                     break;
                 }
-                boost::this_thread::sleep_for(boost::chrono::milliseconds(attemptsTimeoutMilliseconds));
-                time += attemptsTimeoutMilliseconds;
+                if (timeoutMilliseconds > 0) {
+                    boost::this_thread::sleep_for(boost::chrono::milliseconds(attemptsTimeoutMilliseconds));
+                    time += attemptsTimeoutMilliseconds;
+                }
+                else {
+                    break;
+                }
             }
             return message;
         }
