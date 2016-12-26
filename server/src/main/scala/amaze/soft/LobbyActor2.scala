@@ -129,12 +129,14 @@ class LobbyActor2() extends Actor {
             if(getHost.actor == sender()){
               if(m_players.size > newLimit - newReserved) {
                 sender() ! Tcp.Write(ByteString(json.Serialization.write(ReconfigureSuck())))
+                m_logger.info("Failed to reconfigure!")
               } else {
                 m_playersLimit = newLimit
                 m_playersReserved = newReserved
                 val room = makeRoomInfo()
                 Depot.updateRoomInfo(m_name, room)
                 m_players.foreach(player => player.actor ! Tcp.Write(ByteString(json.Serialization.write(ReconfigureSucc(room)))))
+                m_logger.info("Reconfigured successfully!")
               }
             }
 

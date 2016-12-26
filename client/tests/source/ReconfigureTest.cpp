@@ -37,11 +37,11 @@ namespace
 
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
-            mLobby->reconfigure(4, 3);
+            mLobby->reconfigure(5, 3);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
-            mLobby->reconfigure(3, 2);
+            mLobby->reconfigure(4, 2);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
